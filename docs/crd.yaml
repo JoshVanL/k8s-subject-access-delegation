@@ -1,0 +1,14 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: subjectaccessdelegations.authz.k8s.co
+spec:
+  group: authz.k8s.co
+  version: v1alpha1
+  names:
+    plural: subjectaccessdelegations
+    singular: subjectaccessdelegation
+    kind: SubjectAccessDelegation
+    shortNames:
+    - sad
+  scope: Namespaced

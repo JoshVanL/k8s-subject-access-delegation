@@ -1,0 +1,8 @@
+apiVersion: authz.k8s.io/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: test-sad
+spec:
+  user: "This is a user"
+  duration: "This is a duration"
+  somestuff: "This is some stuff"
