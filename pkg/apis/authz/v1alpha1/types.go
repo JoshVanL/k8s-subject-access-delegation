@@ -4,26 +4,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +genclient=true
-// +k8s:openapi-gen=true
+// +genclient
+// +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resource:path=SubjectAccessDelegation
+// +resource:path=subjectaccessdelegation
 
 type SubjectAccessDelegation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SubjectAccessDelegationSpec   `json:"spec,omitempty"`
-	Status SubjectAccessDelegationStatus `json:"status,omitempty"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type SubjectAccessDelegationList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Items []SubjectAccessDelegation `json:"items"`
+	Spec   SubjectAccessDelegationSpec   `json:"spec"`
+	Status SubjectAccessDelegationStatus `json:"status"`
 }
 
 type SubjectAccessDelegationSpec struct {
@@ -34,4 +25,14 @@ type SubjectAccessDelegationSpec struct {
 
 type SubjectAccessDelegationStatus struct {
 	Processed bool `json:"processed"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resource:path=subjectaccessdelegationlist
+
+type SubjectAccessDelegationList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+
+	Items []SubjectAccessDelegation `json:"items"`
 }
