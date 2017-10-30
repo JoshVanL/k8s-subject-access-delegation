@@ -6,9 +6,9 @@ spec:
   duration: 30
   repeat: 3
   originSubject:
-    kind: User
-    name: user-a
+    kind: Role
+    name: pod-reader
   destinationSubject:
     kind: ServiceAccount
-    name: default
+    name: test-sa
     namespace: default

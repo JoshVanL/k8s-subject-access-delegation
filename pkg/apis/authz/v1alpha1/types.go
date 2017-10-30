@@ -17,10 +17,22 @@ type SubjectAccessDelegation struct {
 	Status SubjectAccessDelegationStatus `json:"status"`
 }
 
+type OriginSubject struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+type DestinationSubject struct {
+	Name      string `json"name"`
+	Kind      string `json:"kind"`
+	Namespace string `json:"namespace"`
+}
+
 type SubjectAccessDelegationSpec struct {
-	User      string `json:"user"`
-	Duration  string `json:"duration"`
-	SomeStuff string `json:"somestuff"`
+	Duration           int64              `json:"duration"`
+	Repeat             int                `json:"repeat"`
+	OriginSubject      OriginSubject      `json:"originSubject"`
+	DestinationSubject DestinationSubject `json:"destinationSubject"`
 }
 
 type SubjectAccessDelegationStatus struct {

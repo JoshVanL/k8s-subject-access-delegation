@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -14,7 +13,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	appslisters "k8s.io/client-go/listers/apps/v1beta2"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -23,6 +21,7 @@ import (
 	sadscheme "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned/scheme"
 	informers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions"
 	listers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/listers/authz/v1alpha1"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/trigger"
 )
 
 const controllerAgentName = "SAD-controller"
@@ -38,10 +37,8 @@ type Controller struct {
 	kubeclientset kubernetes.Interface
 	sadclientset  clientset.Interface
 
-	deploymentsLister appslisters.DeploymentLister
-	deploymentsSynced cache.InformerSynced
-	sadsLister        listers.SubjectAccessDelegationLister
-	sadsSynced        cache.InformerSynced
+	sadsLister listers.SubjectAccessDelegationLister
+	sadsSynced cache.InformerSynced
 
 	workqueue workqueue.RateLimitingInterface
 
@@ -58,20 +55,17 @@ func NewController(
 	sadInformerFactory informers.SharedInformerFactory,
 	log *logrus.Entry) *Controller {
 
-	deploymentInformer := kubeInformerFactory.Apps().V1beta2().Deployments()
 	sadInformer := sadInformerFactory.Authz().V1alpha1().SubjectAccessDelegations()
 
 	sadscheme.AddToScheme(scheme.Scheme)
 
 	controller := &Controller{
-		kubeclientset:     kubeclientset,
-		sadclientset:      sadclientset,
-		deploymentsLister: deploymentInformer.Lister(),
-		deploymentsSynced: deploymentInformer.Informer().HasSynced,
-		sadsLister:        sadInformer.Lister(),
-		sadsSynced:        sadInformer.Informer().HasSynced,
-		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
-		log:               log,
+		kubeclientset: kubeclientset,
+		sadclientset:  sadclientset,
+		sadsLister:    sadInformer.Lister(),
+		sadsSynced:    sadInformer.Informer().HasSynced,
+		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
+		log:           log,
 	}
 
 	log.Info("Setting up event handlers")
@@ -85,19 +79,6 @@ func NewController(
 		DeleteFunc: controller.deleteSad,
 	})
 
-	deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.handleObject,
-		UpdateFunc: func(old, new interface{}) {
-			newDepl := new.(*appsv1beta2.Deployment)
-			oldDepl := old.(*appsv1beta2.Deployment)
-			if newDepl.ResourceVersion == oldDepl.ResourceVersion {
-				return
-			}
-			controller.handleObject(new)
-		},
-		DeleteFunc: controller.handleObject,
-	})
-
 	return controller
 }
 
@@ -108,7 +89,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	c.log.Info("Starting SAD controller")
 
 	c.log.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.deploymentsSynced, c.sadsSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.sadsSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -179,7 +160,12 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	if !sad.Status.Processed {
-		c.log.Infof("Here is someYou have deleted a sad stuff:\n%s\n%s\n%s", sad.Spec.User, sad.Spec.Duration, sad.Spec.SomeStuff)
+		c.log.Infof("Here is some stuff:\n%s\n%s\n%s\n%s", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
+
+		timeTrigger := trigger.New(c.log, sad, c.kubeclientset)
+		if err := timeTrigger.Validate(); err != nil {
+			c.log.Infof("THIS IS AN ERROR: %v", err)
+		}
 	}
 
 	//// Get the deployment with the name specified in Foo.spec
@@ -289,52 +275,6 @@ func (c *Controller) handleObject(obj interface{}) {
 		c.enqueueSad(sad)
 		return
 	}
-}
-
-// newDeployment creates a new Deployment for a Foo resource. It also sets
-// the appropriate OwnerReferences on the resource so handleObject can discover
-// the Foo resource that 'owns' it.
-func newDeployment(sad *authzv1alpha1.SubjectAccessDelegation) *appsv1beta2.Deployment {
-	labels := map[string]string{
-		"app":        "nginx",
-		"controller": sad.Name,
-	}
-
-	fmt.Printf("%s\n", labels)
-
-	return nil
-	//return &appsv1beta2.Deployment{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:      foo.Spec.DeploymentName,
-	//		Namespace: foo.Namespace,
-	//		OwnerReferences: []metav1.OwnerReference{
-	//			*metav1.NewControllerRef(foo, schema.GroupVersionKind{
-	//				Group:   samplev1alpha1.SchemeGroupVersion.Group,
-	//				Version: samplev1alpha1.SchemeGroupVersion.Version,
-	//				Kind:    "Foo",
-	//			}),
-	//		},
-	//	},
-	//	Spec: appsv1beta2.DeploymentSpec{
-	//		Replicas: foo.Spec.Replicas,
-	//		Selector: &metav1.LabelSelector{
-	//			MatchLabels: labels,
-	//		},
-	//		Template: corev1.PodTemplateSpec{
-	//			ObjectMeta: metav1.ObjectMeta{
-	//				Labels: labels,
-	//			},
-	//			Spec: corev1.PodSpec{
-	//				Containers: []corev1.Container{
-	//					{
-	//						Name:  "nginx",
-	//						Image: "nginx:latest",
-	//					},
-	//				},
-	//			},
-	//		},
-	//	},
-	//}
 }
 
 func (c *Controller) deleteSad(obj interface{}) {
