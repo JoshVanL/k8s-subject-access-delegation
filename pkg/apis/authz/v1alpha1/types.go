@@ -31,8 +31,8 @@ type SubjectAccessDelegationStatus struct {
 // +resource:path=subjectaccessdelegationlist
 
 type SubjectAccessDelegationList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []SubjectAccessDelegation `json:"items"`
 }

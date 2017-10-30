@@ -4,5 +4,5 @@ metadata:
   name: test-sad
 spec:
   user: "This is a user"
-  duration: "This is a duration"
+  duration: "This is a duration, but changed!"
   somestuff: "This is some stuff"

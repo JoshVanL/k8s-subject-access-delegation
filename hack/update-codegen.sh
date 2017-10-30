@@ -14,7 +14,6 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/joshvanl/k8s-subject-access-delegation/pkg/client github.com/joshvanl/k8s-subject-access-delegation/pkg/apis \
   authz:v1alpha1 \
-  --output-base "$(dirname ${BASH_SOURCE})/../../../.."
-
+  #--output-base "$(dirname ${BASH_SOURCE})/../../../.."
 # To use your own boilerplate text append:
 #   --go-header-file ${SCRIPT_ROOT}/hack/custom-boilerplate.go.txt
