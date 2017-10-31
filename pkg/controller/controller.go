@@ -185,46 +185,6 @@ func (c *Controller) syncHandler(key string) error {
 		}()
 	}
 
-	//// Get the deployment with the name specified in Foo.spec
-	//sadc.sadsLister.SubjectAccessDelegations(
-	//deployment, err := c.deploymentsLister.Deployments(sad.Namespace).Get(deploymentName)
-	//// If the resource doesn't exist, we'll create it
-	//if errors.IsNotFound(err) {
-	//	deployment, err = c.kubeclientset.AppsV1beta2().Deployments(sa.Namespace).Create(newDeployment(sad))
-	//}
-
-	// If an error occurs during Get/Create, we'll requeue the item so we can
-	// attempt processing again later. This could have been caused by a
-	// temporary network failure, or any other transient reason.
-	//if err != nil {
-	//	return err
-	//}
-
-	// If the Deployment is not controlled by this Foo resource, we should log
-	// a warning to the event recorder and ret
-	//if !metav1.IsControlledBy(deployment, sad) {
-	//	msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
-	//	c.recorder.Event(sad, corev1.EventTypeWarning, ErrResourceExists, msg)
-	//	return fmt.Errorf(msg)
-	//}
-
-	//// If this number of the replicas on the Foo resource is specified, and the
-	//// number does not equal the current desired replicas on the Deployment, we
-	//// should update the Deployment resource.
-	//if sad.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-	//	glog.V(4).Infof("Foor: %d, deplR: %d", *foo.Spec.Replicas, *deployment.Spec.Replicas)
-	//	deployment, err = c.kubeclientset.AppsV1beta2().Deployments(foo.Namespace).Update(newDeployment(foo))
-	//}
-
-	//// If an error occurs during Update, we'll requeue the item so we can
-	//// attempt processing again later. THis could have been caused by a
-	//// temporary network failure, or any other transient reason.
-	//if err != nil {
-	//	return err
-	//}
-
-	// Finally, we update the status block of the Sad resource to reflect the
-	// current state of the world
 	err = c.updateSadStatus(sad)
 	if err != nil {
 		return err
@@ -241,9 +201,6 @@ func (c *Controller) updateSadStatus(sad *authzv1alpha1.SubjectAccessDelegation)
 	return err
 }
 
-// enqueueSad takes a Sad resource and converts it into a namespace/name
-// string which is then put onto the work queue. This method should *not* be
-// passed resources of any type other than Foo.
 func (c *Controller) enqueueSad(obj interface{}) {
 	var key string
 	var err error
@@ -255,17 +212,12 @@ func (c *Controller) enqueueSad(obj interface{}) {
 
 }
 
-// handleObject will take any resource implementing metav1.Object and attempt
-// to find the Sad resource that 'owns' it. It does this by looking at the
-// objects metadata.ownerReferences field for an appropriate OwnerReference.
-// It then enqueues that Foo resource to be processed. If the object does not
-// have an appropriate OwnerReference, it will simply be skipped.
 func (c *Controller) handleObject(obj interface{}) {
-
 	sad, err := c.getSADObject(obj)
 	if err != nil {
-		runtime.HandleError(err)
+		c.log.Error(err)
 	}
+
 	c.enqueueSad(sad)
 }
 

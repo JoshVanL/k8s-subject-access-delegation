@@ -10,7 +10,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	//rbacapi "k8s.io/kubernetes/pkg/apis/rbac"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 )
@@ -22,6 +21,7 @@ type Trigger struct {
 	sad       *authzv1alpha1.SubjectAccessDelegation
 	client    kubernetes.Interface
 	namespace string
+	StopCh    chan struct{}
 
 	role           *rbacv1.Role
 	serviceAccount *corev1.ServiceAccount
@@ -38,6 +38,7 @@ func New(log *logrus.Entry, sad *authzv1alpha1.SubjectAccessDelegation, client k
 		sad:       sad,
 		client:    client,
 		namespace: namespace,
+		StopCh:    make(chan struct{}),
 	}
 }
 
@@ -84,7 +85,10 @@ func (t *Trigger) Delegate() error {
 			return fmt.Errorf("failed to validated Role: %v", err)
 		}
 
-		t.TickTock()
+		close := t.TickTock()
+		if close {
+			return nil
+		}
 
 		if err := t.ValidateServiceAccount(); err != nil {
 			return fmt.Errorf("failed to validated Service Account: %v", err)
@@ -115,6 +119,7 @@ func (t *Trigger) ApplyRoleBinding() error {
 }
 
 func (t *Trigger) DeleteTrigger() error {
+	close(t.StopCh)
 	return t.removeRoleBinding()
 }
 
@@ -134,13 +139,21 @@ func (t *Trigger) removeRoleBinding() error {
 	return nil
 }
 
-func (t *Trigger) TickTock() {
+func (t *Trigger) TickTock() (close bool) {
 	delta := time.Second * time.Duration(t.sad.Spec.Duration)
 	ticker := time.NewTicker(delta)
-	<-ticker.C
+
+	select {
+	case <-t.StopCh:
+		return true
+	case <-ticker.C:
+		return false
+	}
 
 	//Get roles of origin subject
 	// Update to origin of subject
+
+	return false
 }
 
 func (t *Trigger) Duration() int64 {

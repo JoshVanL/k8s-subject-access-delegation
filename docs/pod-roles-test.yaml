@@ -3,7 +3,7 @@ kind: SubjectAccessDelegation
 metadata:
   name: test-sad
 spec:
-  duration: 15
+  duration: 10
   repeat: 3
   namespace: default
   originSubject:
