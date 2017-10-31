@@ -5,10 +5,10 @@ metadata:
 spec:
   duration: 30
   repeat: 3
+  namespace: default
   originSubject:
     kind: User
     name: user-a
   destinationSubject:
     kind: ServiceAccount
     name: default
-    namespace: default

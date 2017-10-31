@@ -24,6 +24,12 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/trigger"
 )
 
+// TODO: Add a name to a subject access delegatio
+// When a delete happens of a SAD remove the permissions of that delegation
+// Add a start and stop time/duration of the permissions
+// Don't stop the delegation repeating if it wasn't ablt to apply, just wait again?? (Not sure, repeat on failure)
+// Support more resources and origin subejects, not just role bindings. e.g. get the role bindings of a user and use that to apply permissions
+
 const controllerAgentName = "SAD-controller"
 
 const (
@@ -160,12 +166,14 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	if !sad.Status.Processed {
-		c.log.Infof("Here is some stuff:\n%s\n%s\n%s\n%s", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
-
-		timeTrigger := trigger.New(c.log, sad, c.kubeclientset)
-		if err := timeTrigger.Validate(); err != nil {
-			c.log.Infof("THIS IS AN ERROR: %v", err)
-		}
+		c.log.Infof("Here is the delegation:\n%s\n%s\n%s\n%s\n", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
+		var err error
+		go func() {
+			timeTrigger := trigger.New(c.log, sad, c.kubeclientset)
+			if err = timeTrigger.Delegate(); err != nil {
+				c.log.Infof("failed to apply Subject Access Delegation: %v", err)
+			}
+		}()
 	}
 
 	//// Get the deployment with the name specified in Foo.spec
@@ -235,6 +243,7 @@ func (c *Controller) enqueueSad(obj interface{}) {
 		return
 	}
 	c.workqueue.AddRateLimited(key)
+
 }
 
 // handleObject will take any resource implementing metav1.Object and attempt

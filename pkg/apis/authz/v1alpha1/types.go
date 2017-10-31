@@ -23,14 +23,14 @@ type OriginSubject struct {
 }
 
 type DestinationSubject struct {
-	Name      string `json"name"`
-	Kind      string `json:"kind"`
-	Namespace string `json:"namespace"`
+	Name string `json"name"`
+	Kind string `json:"kind"`
 }
 
 type SubjectAccessDelegationSpec struct {
 	Duration           int64              `json:"duration"`
 	Repeat             int                `json:"repeat"`
+	Namespace          string             `json:"namespace"`
 	OriginSubject      OriginSubject      `json:"originSubject"`
 	DestinationSubject DestinationSubject `json:"destinationSubject"`
 }

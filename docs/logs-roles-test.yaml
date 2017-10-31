@@ -1,14 +1,14 @@
 apiVersion: authz.k8s.io/v1alpha1
 kind: SubjectAccessDelegation
 metadata:
-  name: test-sad
+  name: test-sad2
 spec:
-  duration: 30
+  duration: 6
   repeat: 3
+  namespace: default
   originSubject:
     kind: Role
-    name: pod-reader
+    name: pod-logs-reader
   destinationSubject:
     kind: ServiceAccount
     name: test-sa
-    namespace: default
