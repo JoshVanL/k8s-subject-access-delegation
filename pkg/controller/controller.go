@@ -173,7 +173,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	if !sad.Status.Processed {
-		c.log.Infof("Here is the delegation:\n%s\n%s\n%s\n%s\n", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
+		//c.log.Infof("Here is the delegation:\n%s\n%s\n%s\n%s\n", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
 		var err error
 		go func() {
 			timeTrigger := trigger.New(c.log, sad, c.kubeclientset, sad.Namespace)

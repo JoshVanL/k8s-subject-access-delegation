@@ -1,0 +1,14 @@
+apiVersion: authz.k8s.io/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: test-sa-sad
+spec:
+  duration: 2
+  repeat: 1
+  namespace: default
+  originSubject:
+    kind: ServiceAccount
+    name: test-sa
+  destinationSubject:
+    kind: ServiceAccount
+    name: test-sa2
