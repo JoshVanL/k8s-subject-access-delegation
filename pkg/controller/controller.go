@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,8 @@ import (
 // Don't stop the delegation repeating if it wasn't ablt to apply, just wait again?? (Not sure, repeat on failure)
 // Support more resources and origin subejects, not just role bindings. e.g. get the role bindings of a user and use that to apply permissions
 
+//TODO How to map the sads with the triggers? Maybe string map or something, Doesn't work!
+
 const controllerAgentName = "SAD-controller"
 
 const (
@@ -50,6 +53,8 @@ type Controller struct {
 
 	apiserverURL string
 	log          *logrus.Entry
+
+	triggers map[string][]*trigger.Trigger
 }
 
 var stopCh = make(chan struct{})
@@ -84,6 +89,8 @@ func NewController(
 		},
 		DeleteFunc: controller.deleteSad,
 	})
+
+	controller.triggers = make(map[string][]*trigger.Trigger)
 
 	return controller
 }
@@ -169,7 +176,9 @@ func (c *Controller) syncHandler(key string) error {
 		c.log.Infof("Here is the delegation:\n%s\n%s\n%s\n%s\n", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
 		var err error
 		go func() {
-			timeTrigger := trigger.New(c.log, sad, c.kubeclientset)
+			timeTrigger := trigger.New(c.log, sad, c.kubeclientset, sad.Namespace)
+			c.appendTrigger(sad, timeTrigger)
+
 			if err = timeTrigger.Delegate(); err != nil {
 				c.log.Infof("failed to apply Subject Access Delegation: %v", err)
 			}
@@ -252,18 +261,26 @@ func (c *Controller) enqueueSad(obj interface{}) {
 // It then enqueues that Foo resource to be processed. If the object does not
 // have an appropriate OwnerReference, it will simply be skipped.
 func (c *Controller) handleObject(obj interface{}) {
+
+	sad, err := c.getSADObject(obj)
+	if err != nil {
+		runtime.HandleError(err)
+	}
+	c.enqueueSad(sad)
+}
+
+func (c *Controller) getSADObject(obj interface{}) (sad *authzv1alpha1.SubjectAccessDelegation, err error) {
+
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			runtime.HandleError(fmt.Errorf("error decoding object, invalid type"))
-			return
+			return nil, fmt.Errorf("error decoding object, invalid type")
 		}
 		object, ok = tombstone.Obj.(metav1.Object)
 		if !ok {
-			runtime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
-			return
+			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 		}
 		c.log.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
@@ -278,14 +295,41 @@ func (c *Controller) handleObject(obj interface{}) {
 		sad, err := c.sadsLister.SubjectAccessDelegations(object.GetNamespace()).Get(ownerRef.Name)
 		if err != nil {
 			c.log.Infof("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
-			return
+			return nil, nil
 		}
 
-		c.enqueueSad(sad)
-		return
+		return sad, nil
 	}
+
+	return nil, nil
 }
 
 func (c *Controller) deleteSad(obj interface{}) {
-	c.log.Info("You have deleted a sad")
+	var result error
+
+	object, ok := obj.(metav1.Object)
+	if !ok {
+		c.log.Warn("unable to retrieve object for deletion")
+	}
+
+	name := object.GetName()
+
+	for _, trigger := range c.triggers[name] {
+		if err := trigger.DeleteTrigger(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	if result != nil {
+		c.log.Errorf("error deleting Subject Access Delegation: %v", result)
+	}
+
+	c.triggers[name] = nil
+
+	c.log.Infof("Subject Access Delegation \"%s\" has been deleted", name)
+}
+
+func (c *Controller) appendTrigger(sad *authzv1alpha1.SubjectAccessDelegation, trigger *trigger.Trigger) {
+	triggers := c.triggers[sad.Name]
+	triggers = append(triggers, trigger)
+	c.triggers[sad.Name] = triggers
 }
