@@ -23,12 +23,17 @@ type SubjectAccessDelegation struct {
 	destinationSubject interfaces.DestinationSubject
 }
 
-func New(log *logrus.Entry, sad *authzv1alpha1.SubjectAccessDelegation, namespace string, client kubernetes.Interface) *SubjectAccessDelegation {
+func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
 	return &SubjectAccessDelegation{
-		log:    log,
-		sad:    sad,
-		client: client,
+		log:       log,
+		sad:       sad,
+		client:    client,
+		namespace: sad.Namespace,
 	}
+}
+
+func (s *SubjectAccessDelegation) Delegate() error {
+	return nil
 }
 
 func (s *SubjectAccessDelegation) GetSubjects() error {
@@ -55,6 +60,10 @@ func (s *SubjectAccessDelegation) getOriginSubject() (interfaces.OriginSubject, 
 func (s *SubjectAccessDelegation) getDestinationSubject() (interfaces.DestinationSubject, error) {
 
 	return destination_subject.New(s)
+}
+
+func (s *SubjectAccessDelegation) Delete() error {
+	return nil
 }
 
 func (s *SubjectAccessDelegation) Log() *logrus.Entry {
