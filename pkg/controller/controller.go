@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
+	//"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,7 @@ import (
 	sadscheme "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned/scheme"
 	informers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions"
 	listers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/listers/authz/v1alpha1"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/trigger"
+	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
 )
 
 // TODO: Add a name to a subject access delegatio
@@ -54,7 +54,8 @@ type Controller struct {
 	apiserverURL string
 	log          *logrus.Entry
 
-	triggers map[string][]*trigger.Trigger
+	//sads []*subjectaccessdelegation.
+	//triggers map[string][]*trigger.Trigger
 }
 
 var stopCh = make(chan struct{})
@@ -90,7 +91,7 @@ func NewController(
 		DeleteFunc: controller.deleteSad,
 	})
 
-	controller.triggers = make(map[string][]*trigger.Trigger)
+	//controller.triggers = make(map[string][]*trigger.Trigger)
 
 	return controller
 }
@@ -174,15 +175,15 @@ func (c *Controller) syncHandler(key string) error {
 
 	if !sad.Status.Processed {
 		//c.log.Infof("Here is the delegation:\n%s\n%s\n%s\n%s\n", sad.Spec.OriginSubject, sad.Spec.Duration, sad.Spec.Repeat, sad.Spec.DestinationSubject)
-		var err error
-		go func() {
-			timeTrigger := trigger.New(c.log, sad, c.kubeclientset, sad.Namespace)
-			c.appendTrigger(sad, timeTrigger)
+		//var err error
+		//go func() {
+		//	//timeTrigger := trigger.New(c.log, sad, c.kubeclientset, sad.Namespace)
+		//	//c.appendTrigger(sad, timeTrigger)
 
-			if err = timeTrigger.Delegate(); err != nil {
-				c.log.Infof("failed to apply Subject Access Delegation: %v", err)
-			}
-		}()
+		//	//if err = timeTrigger.Delegate(); err != nil {
+		//	//	c.log.Infof("failed to apply Subject Access Delegation: %v", err)
+		//	//}
+		//}()
 	}
 
 	err = c.updateSadStatus(sad)
@@ -257,7 +258,7 @@ func (c *Controller) getSADObject(obj interface{}) (sad *authzv1alpha1.SubjectAc
 }
 
 func (c *Controller) deleteSad(obj interface{}) {
-	var result error
+	//var result error
 
 	object, ok := obj.(metav1.Object)
 	if !ok {
@@ -266,22 +267,22 @@ func (c *Controller) deleteSad(obj interface{}) {
 
 	name := object.GetName()
 
-	for _, trigger := range c.triggers[name] {
-		if err := trigger.DeleteTrigger(); err != nil {
-			result = multierror.Append(result, err)
-		}
-	}
-	if result != nil {
-		c.log.Errorf("error deleting Subject Access Delegation: %v", result)
-	}
+	//for _, trigger := range c.triggers[name] {
+	//	if err := trigger.DeleteTrigger(); err != nil {
+	//		result = multierror.Append(result, err)
+	//	}
+	//}
+	//if result != nil {
+	//	c.log.Errorf("error deleting Subject Access Delegation: %v", result)
+	//}
 
-	c.triggers[name] = nil
+	//c.triggers[name] = nil
 
 	c.log.Infof("Subject Access Delegation \"%s\" has been deleted", name)
 }
 
-func (c *Controller) appendTrigger(sad *authzv1alpha1.SubjectAccessDelegation, trigger *trigger.Trigger) {
-	triggers := c.triggers[sad.Name]
-	triggers = append(triggers, trigger)
-	c.triggers[sad.Name] = triggers
-}
+//func (c *Controller) appendTrigger(sad *authzv1alpha1.SubjectAccessDelegation, trigger *trigger.Trigger) {
+//	triggers := c.triggers[sad.Name]
+//	triggers = append(triggers, trigger)
+//	c.triggers[sad.Name] = triggers
+//}
