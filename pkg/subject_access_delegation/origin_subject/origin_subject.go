@@ -16,5 +16,6 @@ func New(sad interfaces.SubjectAccessDelegation) (interfaces.OriginSubject, erro
 		return originSubject, nil
 	}
 
+	//unsupported kind
 	return nil, nil
 }

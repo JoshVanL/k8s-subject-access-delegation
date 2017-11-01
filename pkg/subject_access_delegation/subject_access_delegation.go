@@ -33,6 +33,10 @@ func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface
 }
 
 func (s *SubjectAccessDelegation) Delegate() error {
+	if err := s.GetSubjects(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -54,12 +58,29 @@ func (s *SubjectAccessDelegation) GetSubjects() error {
 }
 
 func (s *SubjectAccessDelegation) getOriginSubject() (interfaces.OriginSubject, error) {
-	return origin_subject.New(s)
+	originSubject, err := origin_subject.New(s)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := originSubject.Origin(); err != nil {
+		return nil, err
+	}
+
+	return originSubject, nil
 }
 
 func (s *SubjectAccessDelegation) getDestinationSubject() (interfaces.DestinationSubject, error) {
+	destinationSubject, err := destination_subject.New(s)
+	if err != nil {
+		return nil, err
+	}
 
-	return destination_subject.New(s)
+	if err := destinationSubject.Destination(); err != nil {
+		return nil, err
+	}
+
+	return destinationSubject, nil
 }
 
 func (s *SubjectAccessDelegation) Delete() error {
@@ -75,7 +96,7 @@ func (s *SubjectAccessDelegation) Namespace() string {
 }
 
 func (s *SubjectAccessDelegation) Kind() string {
-	return s.sad.Kind
+	return s.sad.Name
 }
 
 func (s *SubjectAccessDelegation) Client() kubernetes.Interface {
@@ -84,4 +105,12 @@ func (s *SubjectAccessDelegation) Client() kubernetes.Interface {
 
 func (s *SubjectAccessDelegation) Name() string {
 	return s.sad.Name
+}
+
+func (s *SubjectAccessDelegation) OriginName() string {
+	return s.sad.Spec.OriginSubject.Name
+}
+
+func (s *SubjectAccessDelegation) DestinationName() string {
+	return s.sad.Spec.DestinationSubject.Name
 }

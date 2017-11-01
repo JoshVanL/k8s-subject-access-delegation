@@ -12,14 +12,18 @@ type SubjectAccessDelegation interface {
 	Kind() string
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
+	OriginName() string
+	DestinationName() string
 }
 
 type OriginSubject interface {
+	Origin() error
 	//ApplyDelegation() error
 	//BuildDelegations() ([]*rbacv1.RoleBinding, error)
 }
 
 type DestinationSubject interface {
+	Destination() error
 }
 
 type Trigger interface {

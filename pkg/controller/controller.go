@@ -203,13 +203,6 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		}
 	}()
 
-	//timeTrigger := trigger.New(c.log, sad, c.kubeclientset, sad.Namespace)
-	//c.appendTrigger(sad, timeTrigger)
-
-	//if err = timeTrigger.Delegate(); err != nil {
-	//	c.log.Infof("failed to apply Subject Access Delegation: %v", err)
-	//}
-
 	return nil
 }
 

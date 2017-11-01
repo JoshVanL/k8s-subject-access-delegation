@@ -1,21 +1,23 @@
 package service_account
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
 type DestinationSA struct {
-	log *logrus.Entry
+	log    *logrus.Entry
+	client kubernetes.Interface
+	sad    interfaces.SubjectAccessDelegation
 
-	namespace string
-
-	sad interfaces.SubjectAccessDelegation
-
-	client         kubernetes.Interface
+	namespace      string
+	name           string
 	serviceAccount *corev1.ServiceAccount
 }
 
@@ -24,22 +26,33 @@ var _ interfaces.DestinationSubject = &DestinationSA{}
 func New(sad interfaces.SubjectAccessDelegation) *DestinationSA {
 	return &DestinationSA{
 		log:       sad.Log(),
-		sad:       sad,
 		client:    sad.Client(),
+		sad:       sad,
 		namespace: sad.Namespace(),
+		name:      sad.DestinationName(),
 	}
 }
 
-//func (d *DestinationSA) getServiceAccount(serviceAccountName, namespace string) (serviceAccount *corev1.ServiceAccount, err error) {
-//	options := metav1.GetOptions{}
-//	sa, err := t.client.Core().ServiceAccounts(namespace).Get(serviceAccountName, options)
-//	if err != nil {
-//		return nil, fmt.Errorf("failed to get service account %s: %v", serviceAccountName, err)
-//	}
-//
-//	return sa, nil
-//}
-//
-//func (d *DestinationSA) Name() string {
-//	return d.serviceAccount.Name
-//}
+func (d *DestinationSA) getServiceAccount() error {
+	options := metav1.GetOptions{}
+
+	sa, err := d.client.Core().ServiceAccounts(d.Namespace()).Get(d.Name(), options)
+	if err != nil {
+		return fmt.Errorf("failed to get service account %s: %v", d.Name(), err)
+	}
+	d.serviceAccount = sa
+
+	return nil
+}
+
+func (d *DestinationSA) Destination() error {
+	return d.getServiceAccount()
+}
+
+func (d *DestinationSA) Namespace() string {
+	return d.namespace
+}
+
+func (d *DestinationSA) Name() string {
+	return d.name
+}

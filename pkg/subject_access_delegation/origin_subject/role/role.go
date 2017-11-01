@@ -14,44 +14,45 @@ import (
 )
 
 type OriginRole struct {
-	log *logrus.Entry
+	log    *logrus.Entry
+	client kubernetes.Interface
+	sad    interfaces.SubjectAccessDelegation
 
 	namespace string
-
-	sad interfaces.SubjectAccessDelegation
-
-	client kubernetes.Interface
-	role   *rbacv1.Role
-	//trigger *trigger.Trigger
+	name      string
+	role      *rbacv1.Role
 }
 
 var _ interfaces.OriginSubject = &OriginRole{}
 
-//func New(client kubernetes.Interface, sad interfaces.SubjectAccessDelegation, trigger *trigger.Trigger) *OriginRole {
 func New(sad interfaces.SubjectAccessDelegation) *OriginRole {
 	return &OriginRole{
-		log:    sad.Log(),
-		sad:    sad,
-		client: sad.Client(),
-		//trigger:   trigger,
+		log:       sad.Log(),
+		client:    sad.Client(),
+		sad:       sad,
 		namespace: sad.Namespace(),
+		name:      sad.OriginName(),
 	}
 }
 
-func (o *OriginRole) GetRole(name string) error {
+func (o *OriginRole) getRole() error {
 	options := metav1.GetOptions{}
-	role, err := o.client.Rbac().Roles(o.Namespace()).Get(name, options)
-	if err != nil {
-		return fmt.Errorf("failed to get role '%s': %v", name, err)
-	}
 
+	role, err := o.client.Rbac().Roles(o.Namespace()).Get(o.Name(), options)
+	if err != nil {
+		return fmt.Errorf("failed to get role '%s': %v", o.Name(), err)
+	}
 	o.role = role
 
 	return nil
 }
 
-//func (o *OriginRole) BuildDelegation() (roleBindings *[]rbacv1.RoleBinding, err error) {
-//	var roleBindings *[]rbacv1.RoleBinding
+func (o *OriginRole) Origin() error {
+	return o.getRole()
+}
+
+//func (o *OriginRole) buildDelegation() error {
+//	var roleBinding *rbacv1.RoleBinding
 //
 //	sa, err := t.getServiceAccount(t.sad.Spec.DestinationSubject.Name, t.Namespace())
 //	if err != nil {
@@ -70,4 +71,8 @@ func (o *OriginRole) GetRole(name string) error {
 
 func (o *OriginRole) Namespace() string {
 	return o.namespace
+}
+
+func (o *OriginRole) Name() string {
+	return o.name
 }
