@@ -2,3 +2,4 @@ bin/
 .get_deps
 .generate_exes
 k8s-subject-access-delegation
+*.swp
