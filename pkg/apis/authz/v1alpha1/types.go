@@ -23,7 +23,7 @@ type OriginSubject struct {
 }
 
 type DestinationSubject struct {
-	Name string `json"name"`
+	Name string `json:"name"`
 	Kind string `json:"kind"`
 }
 

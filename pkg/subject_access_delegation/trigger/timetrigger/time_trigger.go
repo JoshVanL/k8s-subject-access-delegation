@@ -38,16 +38,16 @@ func (t *TimeTrigger) Activate() {
 	t.TickTock()
 }
 
-func (t *TimeTrigger) WaitOn() error {
+func (t *TimeTrigger) WaitOn() (forceClosed bool, err error) {
 	t.log.Debug("Trigger waiting")
 
-	forceClose := t.watchChannels()
-	if forceClose {
-		t.log.Debug("time trigger force closed")
+	if t.watchChannels() {
+		t.log.Debug("Time Trigger was force closed")
+		return true, nil
 	}
-	t.log.Debug("time trigger time expired")
 
-	return nil
+	t.log.Debug("Time Trigger time expired")
+	return false, nil
 }
 
 func (t *TimeTrigger) watchChannels() (forceClose bool) {
@@ -58,19 +58,16 @@ func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	case <-t.StopCh:
 		return true
 	}
-
-	return false
 }
 
 func (t *TimeTrigger) Ready() (ready bool, err error) {
 	return t.ready, nil
 }
 
-//func (t *Trigger) DeleteTrigger() error {
-//	close(t.StopCh)
-//	return t.removeRoleBindings()
-//}
-//
+func (t *TimeTrigger) Delete() error {
+	close(t.StopCh)
+	return nil
+}
 
 func (t *TimeTrigger) TickTock() {
 	delta := time.Second * time.Duration(t.duration)

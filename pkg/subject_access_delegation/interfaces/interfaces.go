@@ -32,5 +32,6 @@ type DestinationSubject interface {
 type Trigger interface {
 	Activate()
 	Ready() (bool, error)
-	WaitOn() error
+	WaitOn() (forcedClosed bool, err error)
+	Delete() error
 }

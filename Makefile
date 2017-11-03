@@ -24,7 +24,10 @@ build:
 generate:
 	./hack/update-codegen.sh
 
-verify: go_fmt
+verify: go_fmt go_vet
+
+go_vet:
+	go vet $$(go list ./pkg/... ./cmd/...)
 
 go_test:
 	go test $$(go list ./pkg/... ./cmd/...)

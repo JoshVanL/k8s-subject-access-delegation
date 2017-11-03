@@ -3,7 +3,7 @@ kind: SubjectAccessDelegation
 metadata:
   name: test-delegation
 spec:
-  duration: 6
+  duration: 4
   repeat: 3
   namespace: default
   originSubject:

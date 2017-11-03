@@ -45,13 +45,12 @@ func main() {
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-
 	controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, log)
 
 	go kubeInformerFactory.Start(stopCh)
 	go exampleInformerFactory.Start(stopCh)
 
 	if err = controller.Run(2, stopCh); err != nil {
-		log.Fatalf("Error running controller: %s", err.Error())
+		log.Fatalf("error running controller: %s", err.Error())
 	}
 }

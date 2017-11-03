@@ -19,7 +19,6 @@ type SubjectAccessDelegation struct {
 
 	sad       *authzv1alpha1.SubjectAccessDelegation
 	namespace string
-	stopChs   []chan struct{}
 	client    kubernetes.Interface
 
 	originSubject      interfaces.OriginSubject
@@ -36,48 +35,60 @@ func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface
 	}
 }
 
-func (s *SubjectAccessDelegation) Delegate() error {
+func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	for i := 0; i < s.Repeat(); i++ {
 		s.log.Infof("Subject Access Delegation \"%s\" (%d/%d)", s.Name(), i+1, s.Repeat())
 
 		if err := s.GetSubjects(); err != nil {
-			return err
+			return false, err
 		}
 
 		if err := s.BuildTriggers(); err != nil {
-			return err
+			return false, err
 		}
 
-		if err := s.ActivateTriggers(); err != nil {
-			return err
+		closed, err := s.ActivateTriggers()
+		if err != nil {
+			return false, err
+		}
+		if closed {
+			s.log.Infof("A Trigger was found closed, exiting")
+			return true, nil
 		}
 
 		s.log.Infof("All triggers fired!")
+
+		//Apply Delegation
 	}
 
-	return nil
+	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
+
+	return false, nil
 }
 
-func (s *SubjectAccessDelegation) ActivateTriggers() error {
+func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	s.log.Debugf("Activating Triggers")
 	for _, trigger := range s.triggers {
 		trigger.Activate()
 	}
 	s.log.Debugf("Triggers Activated")
 
-	var err error
 	ready := false
 
 	for !ready {
-		if err = s.waitOnTriggers(); err != nil {
-			return fmt.Errorf("error waiting on triggers to fire: %v", err)
+		closed, err := s.waitOnTriggers()
+		if err != nil {
+			return false, fmt.Errorf("error waiting on triggers to fire: %v", err)
+		}
+		if closed {
+			return true, nil
 		}
 
 		s.log.Debugf("All triggers have been satisfied, checking still true")
 
 		ready, err = s.checkTriggers()
 		if err != nil {
-			return fmt.Errorf("error waiting on triggers to fire: %v", err)
+			return false, fmt.Errorf("error waiting on triggers to fire: %v", err)
 		}
 
 		if !ready {
@@ -85,17 +96,23 @@ func (s *SubjectAccessDelegation) ActivateTriggers() error {
 		}
 	}
 
-	return nil
+	s.log.Debug("All triggers ready")
+
+	return false, nil
 }
 
-func (s *SubjectAccessDelegation) waitOnTriggers() error {
+func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool, err error) {
 	for _, trigger := range s.triggers {
-		if err := trigger.WaitOn(); err != nil {
-			return fmt.Errorf("error waiting on trigger to fire: %v", err)
+		closed, err := trigger.WaitOn()
+		if err != nil {
+			return false, fmt.Errorf("error waiting on trigger to fire: %v", err)
+		}
+		if closed {
+			return true, nil
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 func (s *SubjectAccessDelegation) checkTriggers() (ready bool, err error) {
@@ -124,7 +141,7 @@ func (s *SubjectAccessDelegation) BuildTriggers() error {
 }
 
 func (s *SubjectAccessDelegation) GetSubjects() error {
-	var result error
+	var result *multierror.Error
 
 	originSubject, err := s.getOriginSubject()
 	if err != nil {
@@ -141,7 +158,7 @@ func (s *SubjectAccessDelegation) GetSubjects() error {
 		s.destinationSubject = destinationSubject
 	}
 
-	return result
+	return result.ErrorOrNil()
 }
 
 func (s *SubjectAccessDelegation) getOriginSubject() (interfaces.OriginSubject, error) {
@@ -171,7 +188,16 @@ func (s *SubjectAccessDelegation) getDestinationSubject() (interfaces.Destinatio
 }
 
 func (s *SubjectAccessDelegation) Delete() error {
-	return nil
+	s.log.Debugf("Attempting to delete delegation '%s' triggers", s.Name())
+
+	var result *multierror.Error
+	for _, trigger := range s.triggers {
+		if err := trigger.Delete(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	return result.ErrorOrNil()
 }
 
 func (s *SubjectAccessDelegation) Log() *logrus.Entry {

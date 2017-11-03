@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"time"
 
-	//"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,10 +195,16 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 	}
 
 	go func() {
-		err := delegation.Delegate()
+		closed, err := delegation.Delegate()
 		if err != nil {
 			// ----> If it fails here, delete from queue etc. <----
-			c.log.Errorf("error during Subject Access Delegation '%s': %v", delegation.Name(), err)
+			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
+		} else if !closed {
+			options := &metav1.DeleteOptions{}
+			if err := c.sadclientset.Authz().SubjectAccessDelegations(sad.Namespace).Delete(sad.Name, options); err != nil {
+				c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
+			}
+
 		}
 	}()
 
@@ -278,16 +283,16 @@ func (c *Controller) deleteSad(obj interface{}) {
 
 	delegation, ok := c.delegations[name]
 	if !ok {
-		c.log.Errorf("unable to delete delegation '%s': no longer exists in controller")
+		c.log.Errorf("unable to delete delegation '%s': no longer exists in controller", name)
 		return
 	}
+
+	delete(c.delegations, name)
 
 	if err := delegation.Delete(); err != nil {
 		c.log.Errorf("error deleting Subject Access Delegation: %v", err)
 		return
 	}
-
-	c.delegations[name] = nil
 
 	c.log.Infof("Subject Access Delegation '%s' has been deleted", name)
 }
