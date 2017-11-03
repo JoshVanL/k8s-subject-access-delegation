@@ -61,8 +61,9 @@ func (s *SubjectAccessDelegation) Delegate() error {
 func (s *SubjectAccessDelegation) ActivateTriggers() error {
 	s.log.Debugf("Activating Triggers")
 	for _, trigger := range s.triggers {
-		go trigger.Activate()
+		trigger.Activate()
 	}
+	s.log.Debugf("Triggers Activated")
 
 	var err error
 	ready := false

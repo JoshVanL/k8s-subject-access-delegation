@@ -1,49 +1,46 @@
 package timetrigger
 
 import (
-	"errors"
 	"time"
 
 	"github.com/sirupsen/logrus"
-	//corev1 "k8s.io/api/core/v1"
-	//rbacv1 "k8s.io/api/rbac/v1"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/client-go/kubernetes"
 
-	//authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
 type TimeTrigger struct {
-	log          *logrus.Entry
-	creationTime *time.Time
+	log *logrus.Entry
 
-	sad      interfaces.SubjectAccessDelegation
+	sad interfaces.SubjectAccessDelegation
+
 	StopCh   chan struct{}
 	tickerCh <-chan time.Time
 	duration int64
+	ready    bool
 }
 
 var _ interfaces.Trigger = &TimeTrigger{}
 
 func New(sad interfaces.SubjectAccessDelegation) *TimeTrigger {
-	now := time.Now()
 
 	return &TimeTrigger{
-		log:          sad.Log(),
-		creationTime: &now,
+		log: sad.Log(),
 
 		sad:      sad,
 		StopCh:   make(chan struct{}),
 		duration: sad.Duration(),
+		ready:    false,
 	}
 }
 
 func (t *TimeTrigger) Activate() {
+	t.log.Debug("Time Trigger activated")
 	t.TickTock()
 }
 
 func (t *TimeTrigger) WaitOn() error {
+	t.log.Debug("Trigger waiting")
+
 	forceClose := t.watchChannels()
 	if forceClose {
 		t.log.Debug("time trigger force closed")
@@ -56,6 +53,7 @@ func (t *TimeTrigger) WaitOn() error {
 func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	select {
 	case <-t.tickerCh:
+		t.ready = true
 		return false
 	case <-t.StopCh:
 		return true
@@ -65,20 +63,7 @@ func (t *TimeTrigger) watchChannels() (forceClose bool) {
 }
 
 func (t *TimeTrigger) Ready() (ready bool, err error) {
-	select {
-	case _, ok := <-t.tickerCh:
-		if ok {
-			return true, nil
-
-		} else {
-			return false, errors.New("channel was unexpectedly closed")
-		}
-
-	default:
-		return false, nil
-	}
-
-	return false, nil
+	return t.ready, nil
 }
 
 //func (t *Trigger) DeleteTrigger() error {
@@ -89,15 +74,11 @@ func (t *TimeTrigger) Ready() (ready bool, err error) {
 
 func (t *TimeTrigger) TickTock() {
 	delta := time.Second * time.Duration(t.duration)
-	t.tickerCh = time.NewTicker(delta).C
+	t.tickerCh = time.After(delta)
 }
 
 //func (t *Trigger) Duration() int64 {
 //	return t.sad.Spec.Duration
-//}
-//
-//func (t *Trigger) CreationTime() *time.Time {
-//	return t.creationTime
 //}
 //
 
