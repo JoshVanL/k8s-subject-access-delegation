@@ -1,6 +1,8 @@
 package origin_subject
 
 import (
+	"fmt"
+
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
 )
@@ -11,11 +13,10 @@ const ServiceAccountKind = "ServiceAccount"
 func New(sad interfaces.SubjectAccessDelegation) (interfaces.OriginSubject, error) {
 	var originSubject interfaces.OriginSubject
 
-	if sad.Kind() == RoleKind {
+	if sad.OriginKind() == RoleKind {
 		originSubject = role.New(sad)
 		return originSubject, nil
 	}
 
-	//unsupported kind
-	return nil, nil
+	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", sad.DestinationKind())
 }

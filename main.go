@@ -23,7 +23,9 @@ var (
 )
 
 func main() {
-	log := logrus.NewEntry(logrus.New())
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	log := logrus.NewEntry(logger)
 	stopCh := signals.SetupSignalHandler()
 
 	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)

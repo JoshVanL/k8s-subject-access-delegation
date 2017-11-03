@@ -13,7 +13,10 @@ type SubjectAccessDelegation interface {
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
 	OriginName() string
+	OriginKind() string
 	DestinationName() string
+	DestinationKind() string
+	Duration() int64
 }
 
 type OriginSubject interface {
@@ -27,4 +30,7 @@ type DestinationSubject interface {
 }
 
 type Trigger interface {
+	Activate()
+	Ready() (bool, error)
+	WaitOn() error
 }
