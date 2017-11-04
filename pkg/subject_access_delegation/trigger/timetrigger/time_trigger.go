@@ -70,23 +70,14 @@ func (t *TimeTrigger) Delete() error {
 }
 
 func (t *TimeTrigger) TickTock() {
-	delta := time.Second * time.Duration(t.duration)
+	delta := time.Second * time.Duration(t.Duration())
 	t.tickerCh = time.After(delta)
 }
 
-//func (t *Trigger) Duration() int64 {
-//	return t.sad.Spec.Duration
-//}
-//
+func (t *TimeTrigger) Duration() int64 {
+	return t.duration
+}
 
 func (t *TimeTrigger) Repeat() int64 {
 	return t.sad.Duration()
 }
-
-//func (t *Trigger) Namespace() string {
-//	return t.namespace
-//}
-//
-//func (t *Trigger) RoleBindings() []*rbacv1.RoleBinding {
-//	return t.roleBindings
-//}

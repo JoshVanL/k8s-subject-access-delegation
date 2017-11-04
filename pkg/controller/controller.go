@@ -199,16 +199,24 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		if err != nil {
 			// ----> If it fails here, delete from queue etc. <----
 			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
+			c.manuallyDeleteSad(sad)
 		} else if !closed {
-			options := &metav1.DeleteOptions{}
-			if err := c.sadclientset.Authz().SubjectAccessDelegations(sad.Namespace).Delete(sad.Name, options); err != nil {
-				c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
-			}
-
+			c.manuallyDeleteSad(sad)
 		}
 	}()
 
 	return nil
+}
+
+func (c *Controller) manuallyDeleteSad(sad *authzv1alpha1.SubjectAccessDelegation) {
+	options := &metav1.DeleteOptions{}
+	err := c.sadclientset.Authz().SubjectAccessDelegations(sad.Namespace).Delete(sad.Name, options)
+	if err != nil {
+		c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
+		return
+	}
+
+	c.log.Infof("Subject Access Delegation '%s' manually deleted", sad.Name)
 }
 
 func (c *Controller) updateSadStatus(sad *authzv1alpha1.SubjectAccessDelegation) error {

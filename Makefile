@@ -27,10 +27,12 @@ generate:
 verify: go_fmt go_vet
 
 go_vet:
-	go vet $$(go list ./pkg/... ./cmd/...)
+	go vet $$(go list ./pkg/...)
+#go vet $$(go list ./pkg/... ./cmd/...)
 
 go_test:
-	go test $$(go list ./pkg/... ./cmd/...)
+	go test $$(go list ./pkg/...)
+#go test $$(go list ./pkg/... ./cmd/...)
 
 go_fmt:
 	@set -e; \
