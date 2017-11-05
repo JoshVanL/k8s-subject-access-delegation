@@ -4,7 +4,7 @@ metadata:
   name: test-delegation
   namespace: default
 spec:
-  duration: 4
+  duration: 6
   repeat: 1
   namespace: default
   originSubject:

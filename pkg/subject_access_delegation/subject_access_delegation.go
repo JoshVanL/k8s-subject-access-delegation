@@ -26,6 +26,7 @@ type SubjectAccessDelegation struct {
 	originSubject       interfaces.OriginSubject
 	destinationSubjects interfaces.DestinationSubjects
 	triggers            []interfaces.Trigger
+	roleBindings        []*rbacv1.RoleBinding
 }
 
 func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
@@ -72,14 +73,18 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
 func (s *SubjectAccessDelegation) ApplyDelegation() error {
 	s.log.Infof("Applying Subject Access Delegation '%s'", s.Name())
-	roleBindings := s.buildRoleBindings()
-	return s.applyRoleBindings(roleBindings)
+
+	if err := s.buildRoleBindings(); err != nil {
+		return fmt.Errorf("failed to build rolebindings: %v", err)
+	}
+
+	return s.applyRoleBindings()
 }
 
-func (s *SubjectAccessDelegation) applyRoleBindings(roleBindings []*rbacv1.RoleBinding) error {
+func (s *SubjectAccessDelegation) applyRoleBindings() error {
 	var result *multierror.Error
 
-	for _, roleBinding := range roleBindings {
+	for _, roleBinding := range s.roleBindings {
 		_, err := s.client.Rbac().RoleBindings(s.Namespace()).Create(roleBinding)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to create role binding: %v", err))
@@ -88,13 +93,27 @@ func (s *SubjectAccessDelegation) applyRoleBindings(roleBindings []*rbacv1.RoleB
 		}
 	}
 
-	return nil
+	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) buildRoleBindings() []*rbacv1.RoleBinding {
+func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
+	var result *multierror.Error
+	options := &metav1.DeleteOptions{}
+
+	for _, roleBinding := range s.roleBindings {
+		err := s.client.Rbac().RoleBindings(s.Namespace()).Delete(roleBinding.Name, options)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("failed to delete role binding: %v", err))
+		} else {
+			s.log.Infof("Role Binding '%s' Deleted", roleBinding.Name)
+		}
+	}
+
+	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) buildRoleBindings() error {
 	var roleBindings []*rbacv1.RoleBinding
-	s.log.Infof("HERE")
-	s.log.Infof("%+v", s.destinationSubjects.Subjects())
 
 	for _, destinationSubject := range s.destinationSubjects.Subjects() {
 		name := fmt.Sprintf("%s-%s", s.Name(), destinationSubject.Name())
@@ -107,7 +126,9 @@ func (s *SubjectAccessDelegation) buildRoleBindings() []*rbacv1.RoleBinding {
 		roleBindings = append(roleBindings, roleBinding)
 	}
 
-	return roleBindings
+	s.roleBindings = roleBindings
+
+	return nil
 }
 
 func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
