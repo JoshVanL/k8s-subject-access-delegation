@@ -28,11 +28,11 @@ type DestinationSubject struct {
 }
 
 type SubjectAccessDelegationSpec struct {
-	Duration           int64              `json:"duration"`
-	Repeat             int                `json:"repeat"`
-	Namespace          string             `json:"namespace"`
-	OriginSubject      OriginSubject      `json:"originSubject"`
-	DestinationSubject DestinationSubject `json:"destinationSubject"`
+	Duration            int64                `json:"duration"`
+	Repeat              int                  `json:"repeat"`
+	Namespace           string               `json:"namespace"`
+	OriginSubject       OriginSubject        `json:"originSubject"`
+	DestinationSubjects []DestinationSubject `json:"destinationSubjects"`
 }
 
 type SubjectAccessDelegationStatus struct {

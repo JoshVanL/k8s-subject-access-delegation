@@ -100,7 +100,7 @@ func (in *SubjectAccessDelegation) DeepCopyInto(out *SubjectAccessDelegation) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	out.Status = in.Status
 	return
 }
@@ -162,7 +162,11 @@ func (in *SubjectAccessDelegationList) DeepCopyObject() runtime.Object {
 func (in *SubjectAccessDelegationSpec) DeepCopyInto(out *SubjectAccessDelegationSpec) {
 	*out = *in
 	out.OriginSubject = in.OriginSubject
-	out.DestinationSubject = in.DestinationSubject
+	if in.DestinationSubjects != nil {
+		in, out := &in.DestinationSubjects, &out.DestinationSubjects
+		*out = make([]DestinationSubject, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

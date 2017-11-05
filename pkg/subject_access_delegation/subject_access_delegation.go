@@ -5,10 +5,12 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subjects"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger"
@@ -21,9 +23,9 @@ type SubjectAccessDelegation struct {
 	namespace string
 	client    kubernetes.Interface
 
-	originSubject      interfaces.OriginSubject
-	destinationSubject interfaces.DestinationSubject
-	triggers           []interfaces.Trigger
+	originSubject       interfaces.OriginSubject
+	destinationSubjects interfaces.DestinationSubjects
+	triggers            []interfaces.Trigger
 }
 
 func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
@@ -58,12 +60,54 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
 		s.log.Infof("All triggers fired!")
 
-		//Apply Delegation
+		if err := s.ApplyDelegation(); err != nil {
+			return false, fmt.Errorf("failed to apply delegation: %v", err)
+		}
 	}
 
 	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
 
 	return false, nil
+}
+
+func (s *SubjectAccessDelegation) ApplyDelegation() error {
+	s.log.Infof("Applying Subject Access Delegation '%s'", s.Name())
+	roleBindings := s.buildRoleBindings()
+	return s.applyRoleBindings(roleBindings)
+}
+
+func (s *SubjectAccessDelegation) applyRoleBindings(roleBindings []*rbacv1.RoleBinding) error {
+	var result *multierror.Error
+
+	for _, roleBinding := range roleBindings {
+		_, err := s.client.Rbac().RoleBindings(s.Namespace()).Create(roleBinding)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("failed to create role binding: %v", err))
+		} else {
+			s.log.Infof("Role Binding '%s' Created", roleBinding.Name)
+		}
+	}
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) buildRoleBindings() []*rbacv1.RoleBinding {
+	var roleBindings []*rbacv1.RoleBinding
+	s.log.Infof("HERE")
+	s.log.Infof("%+v", s.destinationSubjects.Subjects())
+
+	for _, destinationSubject := range s.destinationSubjects.Subjects() {
+		name := fmt.Sprintf("%s-%s", s.Name(), destinationSubject.Name())
+		roleBinding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.Namespace()},
+			RoleRef:    rbacv1.RoleRef{Kind: s.OriginKind(), Name: s.OriginName()},
+			Subjects:   []rbacv1.Subject{{Kind: destinationSubject.Kind(), Name: destinationSubject.Name()}},
+		}
+
+		roleBindings = append(roleBindings, roleBinding)
+	}
+
+	return roleBindings
 }
 
 func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
@@ -148,14 +192,14 @@ func (s *SubjectAccessDelegation) GetSubjects() error {
 		result = multierror.Append(result, fmt.Errorf("failed to resolve origin subject: %v", err))
 	}
 
-	destinationSubject, err := s.getDestinationSubject()
+	destinationSubjects, err := s.getDestinationSubjects()
 	if err != nil {
-		result = multierror.Append(result, fmt.Errorf("failed to resolve destination subject: %v", err))
+		result = multierror.Append(result, fmt.Errorf("failed to resolve destination subjects: %v", err))
 	}
 
 	if result == nil {
 		s.originSubject = originSubject
-		s.destinationSubject = destinationSubject
+		s.destinationSubjects = destinationSubjects
 	}
 
 	return result.ErrorOrNil()
@@ -167,24 +211,24 @@ func (s *SubjectAccessDelegation) getOriginSubject() (interfaces.OriginSubject, 
 		return nil, err
 	}
 
-	if err := originSubject.Origin(); err != nil {
+	if err := originSubject.ResolveOrigin(); err != nil {
 		return nil, err
 	}
 
 	return originSubject, nil
 }
 
-func (s *SubjectAccessDelegation) getDestinationSubject() (interfaces.DestinationSubject, error) {
-	destinationSubject, err := destination_subject.New(s)
+func (s *SubjectAccessDelegation) getDestinationSubjects() (interfaces.DestinationSubjects, error) {
+	destinationSubjects, err := destination_subjects.New(s)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := destinationSubject.Destination(); err != nil {
+	if err := destinationSubjects.ResolveDestinations(); err != nil {
 		return nil, err
 	}
 
-	return destinationSubject, nil
+	return destinationSubjects, nil
 }
 
 func (s *SubjectAccessDelegation) Delete() error {
@@ -228,13 +272,21 @@ func (s *SubjectAccessDelegation) OriginKind() string {
 	return s.sad.Spec.OriginSubject.Kind
 }
 
-func (s *SubjectAccessDelegation) DestinationKind() string {
-	return s.sad.Spec.DestinationSubject.Kind
+func (s *SubjectAccessDelegation) DestinationSubjects() []authzv1alpha1.DestinationSubject {
+	return s.sad.Spec.DestinationSubjects
 }
 
-func (s *SubjectAccessDelegation) DestinationName() string {
-	return s.sad.Spec.DestinationSubject.Name
-}
+//func (s *SubjectAccessDelegation) DestinationKind() []string {
+//	for _, subject := range s.sad.Spec.DestinationSubjects {
+//
+//	}
+//
+//	return s.sad.Spec.DestinationSubject.Kind
+//}
+//
+//func (s *SubjectAccessDelegation) DestinationNames() []string {
+//	return s.sad.Spec.DestinationSubject.Name
+//}
 
 func (s *SubjectAccessDelegation) Duration() int64 {
 	return s.sad.Spec.Duration

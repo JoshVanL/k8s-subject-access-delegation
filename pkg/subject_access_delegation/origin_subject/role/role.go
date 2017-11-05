@@ -47,7 +47,7 @@ func (o *OriginRole) getRole() error {
 	return nil
 }
 
-func (o *OriginRole) Origin() error {
+func (o *OriginRole) ResolveOrigin() error {
 	return o.getRole()
 }
 

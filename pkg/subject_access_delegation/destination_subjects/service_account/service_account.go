@@ -11,7 +11,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
-type DestinationSA struct {
+type ServiceAccount struct {
 	log    *logrus.Entry
 	client kubernetes.Interface
 	sad    interfaces.SubjectAccessDelegation
@@ -21,19 +21,19 @@ type DestinationSA struct {
 	serviceAccount *corev1.ServiceAccount
 }
 
-var _ interfaces.DestinationSubject = &DestinationSA{}
+var _ interfaces.DestinationSubject = &ServiceAccount{}
 
-func New(sad interfaces.SubjectAccessDelegation) *DestinationSA {
-	return &DestinationSA{
+func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
+	return &ServiceAccount{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
 		namespace: sad.Namespace(),
-		name:      sad.DestinationName(),
+		name:      name,
 	}
 }
 
-func (d *DestinationSA) getServiceAccount() error {
+func (d *ServiceAccount) getServiceAccount() error {
 	options := metav1.GetOptions{}
 
 	sa, err := d.client.Core().ServiceAccounts(d.Namespace()).Get(d.Name(), options)
@@ -45,14 +45,18 @@ func (d *DestinationSA) getServiceAccount() error {
 	return nil
 }
 
-func (d *DestinationSA) Destination() error {
+func (d *ServiceAccount) ResolveDestination() error {
 	return d.getServiceAccount()
 }
 
-func (d *DestinationSA) Namespace() string {
+func (d *ServiceAccount) Namespace() string {
 	return d.namespace
 }
 
-func (d *DestinationSA) Name() string {
+func (d *ServiceAccount) Name() string {
 	return d.name
+}
+
+func (d *ServiceAccount) Kind() string {
+	return "ServiceAccount"
 }

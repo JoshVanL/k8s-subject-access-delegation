@@ -18,5 +18,5 @@ func New(sad interfaces.SubjectAccessDelegation) (interfaces.OriginSubject, erro
 		return originSubject, nil
 	}
 
-	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", sad.DestinationKind())
+	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", sad.OriginKind())
 }

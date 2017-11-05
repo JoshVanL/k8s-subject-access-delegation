@@ -32,6 +32,8 @@ import (
 
 //TODO How to map the sads with the triggers? Maybe string map or something, Doesn't work!
 
+//TODO: Support multiple destination subjects
+
 const controllerAgentName = "SAD-controller"
 
 const (
@@ -215,8 +217,6 @@ func (c *Controller) manuallyDeleteSad(sad *authzv1alpha1.SubjectAccessDelegatio
 		c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
 		return
 	}
-
-	c.log.Infof("Subject Access Delegation '%s' manually deleted", sad.Name)
 }
 
 func (c *Controller) updateSadStatus(sad *authzv1alpha1.SubjectAccessDelegation) error {
