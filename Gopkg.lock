@@ -14,6 +14,12 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/araddon/dateparse"
+  packages = ["."]
+  revision = "ca7e753bd149dae747d76fa7d52b20b920f3a814"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -102,6 +108,18 @@
   name = "github.com/gregjones/httpcache"
   packages = [".","diskcache"]
   revision = "c1f8028e62adb3d518b823a2f8e6a95c38bdd3aa"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  revision = "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  revision = "83588e72410abfbe4df460eeb6f30841ae47d4c4"
 
 [[projects]]
   branch = "master"
@@ -238,6 +256,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "74e35b28e23e73721a5d80d8d64458c14fa86a0f187cc5a5b74d9d5e28c12bb5"
+  inputs-digest = "a8004da965c100055468e79181195cb1d8d955cdb5b497ac0b3e40f9612f8df2"
   solver-name = "gps-cdcl"
   solver-version = 1
