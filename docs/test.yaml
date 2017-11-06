@@ -6,7 +6,7 @@ metadata:
 spec:
   repeat: 1
   namespace: default
-  deletionTime: 10s
+  deletionTime: 4s
   originSubject:
     kind: Role
     name: pod-reader
@@ -15,4 +15,4 @@ spec:
     name: test-sa
   triggers:
   - kind: Time
-    value: 10s
+    value: 5s

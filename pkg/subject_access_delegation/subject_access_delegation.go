@@ -2,6 +2,7 @@ package subject_access_delegation
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
 type SubjectAccessDelegation struct {
@@ -26,6 +28,8 @@ type SubjectAccessDelegation struct {
 	destinationSubjects interfaces.DestinationSubjects
 	triggers            []interfaces.Trigger
 	roleBindings        []*rbacv1.RoleBinding
+	deletionTimeStamp   *time.Time
+	stopCh              chan struct{}
 }
 
 func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
@@ -33,6 +37,7 @@ func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface
 		log:    log,
 		sad:    sad,
 		client: client,
+		stopCh: make(chan struct{}),
 	}
 }
 
@@ -40,12 +45,8 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	for i := 0; i < s.Repeat(); i++ {
 		s.log.Infof("Subject Access Delegation \"%s\" (%d/%d)", s.Name(), i+1, s.Repeat())
 
-		if err := s.GetSubjects(); err != nil {
-			return false, err
-		}
-
-		if err := s.BuildTriggers(); err != nil {
-			return false, err
+		if err := s.initDelegation(); err != nil {
+			return false, fmt.Errorf("error initiating Subject Access Delegation: %v", err)
 		}
 
 		closed, err := s.ActivateTriggers()
@@ -62,11 +63,63 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		if err := s.ApplyDelegation(); err != nil {
 			return false, fmt.Errorf("failed to apply delegation: %v", err)
 		}
+
+		if err := s.ParseDeletionTime(); err != nil {
+			return false, err
+		}
+
+		s.waitOnDeletion()
 	}
 
 	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
 
 	return false, nil
+}
+
+func (s *SubjectAccessDelegation) initDelegation() error {
+	var result *multierror.Error
+
+	if err := s.ParseDeletionTime(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	if err := s.GetSubjects(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	if err := s.BuildTriggers(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) ParseDeletionTime() error {
+	t, err := utils.ParseTime(s.sad.Spec.DeletionTime)
+	if err != nil {
+		return fmt.Errorf("failed to parse deletion time stamp: %v", err)
+	}
+
+	s.deletionTimeStamp = t
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) waitOnDeletion() {
+	if time.Now().After(*s.deletionTimeStamp) {
+		return
+	}
+
+	ticker := time.After(time.Until(*s.deletionTimeStamp))
+
+	select {
+	case <-ticker:
+		return
+	case <-s.stopCh:
+		return
+	}
+
+	return
 }
 
 func (s *SubjectAccessDelegation) ApplyDelegation() error {
@@ -259,6 +312,8 @@ func (s *SubjectAccessDelegation) Delete() error {
 			result = multierror.Append(result, err)
 		}
 	}
+
+	close(s.stopCh)
 
 	return result.ErrorOrNil()
 }
