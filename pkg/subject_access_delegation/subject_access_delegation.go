@@ -69,6 +69,9 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		}
 
 		s.waitOnDeletion()
+		if err := s.DeleteRoleBindings(); err != nil {
+			return false, err
+		}
 	}
 
 	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
@@ -118,8 +121,6 @@ func (s *SubjectAccessDelegation) waitOnDeletion() {
 	case <-s.stopCh:
 		return
 	}
-
-	return
 }
 
 func (s *SubjectAccessDelegation) ApplyDelegation() error {
@@ -353,22 +354,6 @@ func (s *SubjectAccessDelegation) DestinationSubjects() []authzv1alpha1.Destinat
 func (s *SubjectAccessDelegation) Triggers() []authzv1alpha1.EventTrigger {
 	return s.sad.Spec.EventTriggers
 }
-
-//func (s *SubjectAccessDelegation) DestinationKind() []string {
-//	for _, subject := range s.sad.Spec.DestinationSubjects {
-//
-//	}
-//
-//	return s.sad.Spec.DestinationSubject.Kind
-//}
-//
-//func (s *SubjectAccessDelegation) DestinationNames() []string {
-//	return s.sad.Spec.DestinationSubject.Name
-//}
-
-//func (s *SubjectAccessDelegation) Duration() int64 {
-//	return s.sad.Spec.Duration
-//}
 
 func (s *SubjectAccessDelegation) Repeat() int {
 	return s.sad.Spec.Repeat

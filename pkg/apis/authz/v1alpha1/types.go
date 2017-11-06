@@ -35,7 +35,7 @@ type EventTrigger struct {
 type SubjectAccessDelegationSpec struct {
 	DeletionTime string `json:"deletionTime"`
 	Repeat       int    `json:"repeat"`
-	//Namespace           string               `json:"namespace"`
+
 	OriginSubject       OriginSubject        `json:"originSubject"`
 	DestinationSubjects []DestinationSubject `json:"destinationSubjects"`
 	EventTriggers       []EventTrigger       `json:"triggers"`
