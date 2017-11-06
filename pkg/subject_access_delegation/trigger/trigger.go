@@ -9,13 +9,15 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/timetrigger"
 )
 
+const TimeKind = "Time"
+
 func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 	var triggers []interfaces.Trigger
 	var result *multierror.Error
 
 	for _, trigger := range sad.Triggers() {
 		switch trigger.Kind {
-		case "Time":
+		case TimeKind:
 			timeTrigger, err := timetrigger.New(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new time tigger: %v", err))

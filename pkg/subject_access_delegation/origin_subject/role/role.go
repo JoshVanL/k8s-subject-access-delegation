@@ -4,12 +4,10 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	//corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	//authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
-	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/trigger"
+
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
@@ -35,6 +33,15 @@ func New(sad interfaces.SubjectAccessDelegation) *OriginRole {
 	}
 }
 
+func (o *OriginRole) RoleRefs() ([]*rbacv1.RoleRef, error) {
+	return []*rbacv1.RoleRef{
+		&rbacv1.RoleRef{
+			Kind: "Role",
+			Name: o.Name(),
+		},
+	}, nil
+}
+
 func (o *OriginRole) getRole() error {
 	options := metav1.GetOptions{}
 
@@ -50,24 +57,6 @@ func (o *OriginRole) getRole() error {
 func (o *OriginRole) ResolveOrigin() error {
 	return o.getRole()
 }
-
-//func (o *OriginRole) buildDelegation() error {
-//	var roleBinding *rbacv1.RoleBinding
-//
-//	sa, err := t.getServiceAccount(t.sad.Spec.DestinationSubject.Name, t.Namespace())
-//	if err != nil {
-//		return roleBindings, fmt.Errorf("failed to validated Service Account: %v", err)
-//	}
-//
-//	Name := fmt.Sprintf("%s-role-binding", t.sad.Name)
-//	roleBinding = &rbacv1.RoleBinding{
-//		ObjectMeta: metav1.ObjectMeta{Name: Name, Namespace: sa.Namespace},
-//		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: sa.Name}},
-//		RoleRef:    rbacv1.RoleRef{Kind: "Role", Name: role},
-//	}
-//
-//	return []*rbacv1.RoleBinding{roleBinding}, nil
-//}
 
 func (o *OriginRole) Namespace() string {
 	return o.namespace

@@ -2,7 +2,7 @@ package interfaces
 
 import (
 	"github.com/sirupsen/logrus"
-	//rbacv1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
@@ -14,16 +14,15 @@ type SubjectAccessDelegation interface {
 	Kind() string
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
-	OriginName() string
-	OriginKind() string
 	DestinationSubjects() []authzv1alpha1.DestinationSubject
 	Triggers() []authzv1alpha1.EventTrigger
+	OriginName() string
+	OriginKind() string
 }
 
 type OriginSubject interface {
 	ResolveOrigin() error
-	//ApplyDelegation() error
-	//BuildDelegations() ([]*rbacv1.RoleBinding, error)
+	RoleRefs() ([]*rbacv1.RoleRef, error)
 }
 
 type DestinationSubject interface {

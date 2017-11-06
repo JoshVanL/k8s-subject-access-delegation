@@ -167,15 +167,22 @@ func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 func (s *SubjectAccessDelegation) buildRoleBindings() error {
 	var roleBindings []*rbacv1.RoleBinding
 
-	for _, destinationSubject := range s.destinationSubjects.Subjects() {
-		name := fmt.Sprintf("%s-%s", s.Name(), destinationSubject.Name())
-		roleBinding := &rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.Namespace()},
-			RoleRef:    rbacv1.RoleRef{Kind: s.OriginKind(), Name: s.OriginName()},
-			Subjects:   []rbacv1.Subject{{Kind: destinationSubject.Kind(), Name: destinationSubject.Name()}},
-		}
+	roleRefs, err := s.originSubject.RoleRefs()
+	if err != nil {
+		return fmt.Errorf("failed to resolve Role References: %v", err)
+	}
 
-		roleBindings = append(roleBindings, roleBinding)
+	for _, destinationSubject := range s.destinationSubjects.Subjects() {
+		for _, roleRef := range roleRefs {
+			name := fmt.Sprintf("%s-%s", s.Name(), destinationSubject.Name())
+			roleBinding := &rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.Namespace()},
+				RoleRef:    *roleRef,
+				Subjects:   []rbacv1.Subject{{Kind: destinationSubject.Kind(), Name: destinationSubject.Name()}},
+			}
+
+			roleBindings = append(roleBindings, roleBinding)
+		}
 	}
 
 	s.roleBindings = roleBindings
