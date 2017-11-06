@@ -1,36 +1,46 @@
 package timetrigger
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
+	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
 type TimeTrigger struct {
 	log *logrus.Entry
 
-	sad interfaces.SubjectAccessDelegation
+	sad       interfaces.SubjectAccessDelegation
+	timestamp *time.Time
 
 	StopCh   chan struct{}
 	tickerCh <-chan time.Time
-	duration int64
 	ready    bool
 }
 
 var _ interfaces.Trigger = &TimeTrigger{}
 
-func New(sad interfaces.SubjectAccessDelegation) *TimeTrigger {
+func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (timeTrigger *TimeTrigger, err error) {
+
+	timestamp, err := utils.ParseTime(trigger.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new time trigger: %v", err)
+	}
+
+	sad.Log().Debugf("%+v", timestamp)
 
 	return &TimeTrigger{
 		log: sad.Log(),
 
-		sad:      sad,
-		StopCh:   make(chan struct{}),
-		duration: sad.Duration(),
-		ready:    false,
-	}
+		sad:       sad,
+		StopCh:    make(chan struct{}),
+		timestamp: timestamp,
+		ready:     false,
+	}, nil
 }
 
 func (t *TimeTrigger) Activate() {
@@ -70,14 +80,14 @@ func (t *TimeTrigger) Delete() error {
 }
 
 func (t *TimeTrigger) TickTock() {
-	delta := time.Second * time.Duration(t.Duration())
-	t.tickerCh = time.After(delta)
+	//delta := time.Second * time.Duration(t.Duration())
+	t.tickerCh = time.After(time.Until(*t.timestamp))
 }
 
-func (t *TimeTrigger) Duration() int64 {
-	return t.duration
-}
+//func (t *TimeTrigger) Duration() int64 {
+//	return t.duration
+//}
 
-func (t *TimeTrigger) Repeat() int64 {
-	return t.sad.Duration()
-}
+//func (t *TimeTrigger) Repeat() int64 {
+//	return t.sad.Duration()
+//}

@@ -4,12 +4,15 @@ metadata:
   name: test-delegation
   namespace: default
 spec:
-  duration: 6
   repeat: 1
   namespace: default
+  deletionTime: 10s
   originSubject:
     kind: Role
     name: pod-reader
   destinationSubjects:
   - kind: ServiceAccount
     name: test-sa
+  triggers:
+  - kind: Time
+    value: 10s

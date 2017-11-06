@@ -18,21 +18,27 @@ type SubjectAccessDelegation struct {
 }
 
 type OriginSubject struct {
-	Name string `json:"name"`
 	Kind string `json:"kind"`
+	Name string `json:"name"`
 }
 
 type DestinationSubject struct {
-	Name string `json:"name"`
 	Kind string `json:"kind"`
+	Name string `json:"name"`
+}
+
+type EventTrigger struct {
+	Kind  string `json:"kind"`
+	Value string `json:"value"`
 }
 
 type SubjectAccessDelegationSpec struct {
-	Duration            int64                `json:"duration"`
-	Repeat              int                  `json:"repeat"`
-	Namespace           string               `json:"namespace"`
+	DeletionTime string `json:"deletionTime"`
+	Repeat       int    `json:"repeat"`
+	//Namespace           string               `json:"namespace"`
 	OriginSubject       OriginSubject        `json:"originSubject"`
 	DestinationSubjects []DestinationSubject `json:"destinationSubjects"`
+	EventTriggers       []EventTrigger       `json:"triggers"`
 }
 
 type SubjectAccessDelegationStatus struct {

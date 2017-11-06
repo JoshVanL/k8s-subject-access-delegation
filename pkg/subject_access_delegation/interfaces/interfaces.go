@@ -17,7 +17,7 @@ type SubjectAccessDelegation interface {
 	OriginName() string
 	OriginKind() string
 	DestinationSubjects() []authzv1alpha1.DestinationSubject
-	Duration() int64
+	Triggers() []authzv1alpha1.EventTrigger
 }
 
 type OriginSubject interface {

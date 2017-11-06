@@ -19,9 +19,8 @@ import (
 type SubjectAccessDelegation struct {
 	log *logrus.Entry
 
-	sad       *authzv1alpha1.SubjectAccessDelegation
-	namespace string
-	client    kubernetes.Interface
+	sad    *authzv1alpha1.SubjectAccessDelegation
+	client kubernetes.Interface
 
 	originSubject       interfaces.OriginSubject
 	destinationSubjects interfaces.DestinationSubjects
@@ -31,10 +30,9 @@ type SubjectAccessDelegation struct {
 
 func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
 	return &SubjectAccessDelegation{
-		log:       log,
-		sad:       sad,
-		client:    client,
-		namespace: sad.Namespace,
+		log:    log,
+		sad:    sad,
+		client: client,
 	}
 }
 
@@ -270,7 +268,7 @@ func (s *SubjectAccessDelegation) Log() *logrus.Entry {
 }
 
 func (s *SubjectAccessDelegation) Namespace() string {
-	return s.namespace
+	return s.sad.Namespace
 }
 
 func (s *SubjectAccessDelegation) Kind() string {
@@ -297,6 +295,10 @@ func (s *SubjectAccessDelegation) DestinationSubjects() []authzv1alpha1.Destinat
 	return s.sad.Spec.DestinationSubjects
 }
 
+func (s *SubjectAccessDelegation) Triggers() []authzv1alpha1.EventTrigger {
+	return s.sad.Spec.EventTriggers
+}
+
 //func (s *SubjectAccessDelegation) DestinationKind() []string {
 //	for _, subject := range s.sad.Spec.DestinationSubjects {
 //
@@ -309,9 +311,9 @@ func (s *SubjectAccessDelegation) DestinationSubjects() []authzv1alpha1.Destinat
 //	return s.sad.Spec.DestinationSubject.Name
 //}
 
-func (s *SubjectAccessDelegation) Duration() int64 {
-	return s.sad.Spec.Duration
-}
+//func (s *SubjectAccessDelegation) Duration() int64 {
+//	return s.sad.Spec.Duration
+//}
 
 func (s *SubjectAccessDelegation) Repeat() int {
 	return s.sad.Spec.Repeat
