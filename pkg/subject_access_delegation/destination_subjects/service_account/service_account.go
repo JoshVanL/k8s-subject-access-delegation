@@ -38,7 +38,7 @@ func (d *ServiceAccount) getServiceAccount() error {
 
 	sa, err := d.client.Core().ServiceAccounts(d.Namespace()).Get(d.Name(), options)
 	if err != nil {
-		return fmt.Errorf("failed to get service account %s: %v", d.Name(), err)
+		return fmt.Errorf("failed to get service account '%s': %v", d.Name(), err)
 	}
 	d.serviceAccount = sa
 
