@@ -24,13 +24,9 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
 )
 
-// TODO: Add a name to a subject access delegatio
-// When a delete happens of a SAD remove the permissions of that delegation
 // Add a start and stop time/duration of the permissions
 // Don't stop the delegation repeating if it wasn't ablt to apply, just wait again?? (Not sure, repeat on failure)
 // Support more resources and origin subejects, not just role bindings. e.g. get the role bindings of a user and use that to apply permissions
-
-//TODO How to map the sads with the triggers? Maybe string map or something, Doesn't work!
 
 //TODO: Support multiple destination subjects
 
