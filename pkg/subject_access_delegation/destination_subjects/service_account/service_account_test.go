@@ -21,8 +21,7 @@ type fakeServiceAccount struct {
 }
 
 func newFakeServiceAccount(t *testing.T) *fakeServiceAccount {
-
-	p := &fakeServiceAccount{
+	s := &fakeServiceAccount{
 		ctrl: gomock.NewController(t),
 		ServiceAccount: &ServiceAccount{
 			namespace: "fakeNamespace",
@@ -30,46 +29,46 @@ func newFakeServiceAccount(t *testing.T) *fakeServiceAccount {
 		},
 	}
 
-	p.fakeClient = mocks.NewMockInterface(p.ctrl)
-	p.fakeCore = mocks.NewMockCoreV1Interface(p.ctrl)
-	p.fakeServiceAccountInterface = mocks.NewMockServiceAccountInterface(p.ctrl)
-	p.ServiceAccount.client = p.fakeClient
+	s.fakeClient = mocks.NewMockInterface(s.ctrl)
+	s.fakeCore = mocks.NewMockCoreV1Interface(s.ctrl)
+	s.fakeServiceAccountInterface = mocks.NewMockServiceAccountInterface(s.ctrl)
+	s.ServiceAccount.client = s.fakeClient
 
-	p.fakeClient.EXPECT().Core().Times(1).Return(p.fakeCore)
-	p.fakeCore.EXPECT().ServiceAccounts(p.ServiceAccount.namespace).Times(1).Return(p.fakeServiceAccountInterface)
+	s.fakeClient.EXPECT().Core().Times(1).Return(s.fakeCore)
+	s.fakeCore.EXPECT().ServiceAccounts(s.ServiceAccount.namespace).Times(1).Return(s.fakeServiceAccountInterface)
 
-	return p
+	return s
 }
 
 func TestServiceAccount_ResolveDestination_Nil(t *testing.T) {
-	p := newFakeServiceAccount(t)
-	defer p.ctrl.Finish()
+	s := newFakeServiceAccount(t)
+	defer s.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
+	s.fakeServiceAccountInterface.EXPECT().Get(s.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
 
-	if err := p.ResolveDestination(); err == nil {
+	if err := s.ResolveDestination(); err == nil {
 		t.Errorf("expected error but got none - pod is nil")
 	}
 }
 
 func TestServiceAccount_ResolveDestination_Error(t *testing.T) {
-	p := newFakeServiceAccount(t)
-	defer p.ctrl.Finish()
+	s := newFakeServiceAccount(t)
+	defer s.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, errors.New("this is an error"))
+	s.fakeServiceAccountInterface.EXPECT().Get(s.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, errors.New("this is an error"))
 
-	if err := p.ResolveDestination(); err == nil {
+	if err := s.ResolveDestination(); err == nil {
 		t.Errorf("expected error but got none - returned error")
 	}
 }
 
 func TestServiceAccount_ResolveDestination_Successful(t *testing.T) {
-	p := newFakeServiceAccount(t)
-	defer p.ctrl.Finish()
+	s := newFakeServiceAccount(t)
+	defer s.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, nil)
+	s.fakeServiceAccountInterface.EXPECT().Get(s.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, nil)
 
-	if err := p.ResolveDestination(); err != nil {
+	if err := s.ResolveDestination(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

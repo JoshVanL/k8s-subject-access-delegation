@@ -17,9 +17,9 @@ type TimeTrigger struct {
 	sad       interfaces.SubjectAccessDelegation
 	timestamp time.Time
 
-	StopCh   chan struct{}
-	tickerCh <-chan time.Time
-	ready    bool
+	StopCh    chan struct{}
+	tickerCh  <-chan time.Time
+	completed bool
 }
 
 var _ interfaces.Trigger = &TimeTrigger{}
@@ -39,7 +39,7 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 		sad:       sad,
 		StopCh:    make(chan struct{}),
 		timestamp: timestamp,
-		ready:     false,
+		completed: false,
 	}, nil
 }
 
@@ -63,15 +63,15 @@ func (t *TimeTrigger) WaitOn() (forceClosed bool, err error) {
 func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	select {
 	case <-t.tickerCh:
-		t.ready = true
+		t.completed = true
 		return false
 	case <-t.StopCh:
 		return true
 	}
 }
 
-func (t *TimeTrigger) Ready() (ready bool, err error) {
-	return t.ready, nil
+func (t *TimeTrigger) Completed() (completed bool, err error) {
+	return t.completed, nil
 }
 
 func (t *TimeTrigger) Delete() error {

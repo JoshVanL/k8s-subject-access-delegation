@@ -21,8 +21,7 @@ type fakeUser struct {
 }
 
 func newFakeUser(t *testing.T) *fakeUser {
-
-	p := &fakeUser{
+	u := &fakeUser{
 		ctrl: gomock.NewController(t),
 		User: &User{
 			namespace: "fakeNamespace",
@@ -30,46 +29,46 @@ func newFakeUser(t *testing.T) *fakeUser {
 		},
 	}
 
-	p.fakeClient = mocks.NewMockInterface(p.ctrl)
-	p.fakeCore = mocks.NewMockCoreV1Interface(p.ctrl)
-	p.fakeServiceAccountInterface = mocks.NewMockServiceAccountInterface(p.ctrl)
-	p.User.client = p.fakeClient
+	u.fakeClient = mocks.NewMockInterface(u.ctrl)
+	u.fakeCore = mocks.NewMockCoreV1Interface(u.ctrl)
+	u.fakeServiceAccountInterface = mocks.NewMockServiceAccountInterface(u.ctrl)
+	u.User.client = u.fakeClient
 
-	p.fakeClient.EXPECT().Core().Times(1).Return(p.fakeCore)
-	p.fakeCore.EXPECT().ServiceAccounts(p.User.namespace).Times(1).Return(p.fakeServiceAccountInterface)
+	u.fakeClient.EXPECT().Core().Times(1).Return(u.fakeCore)
+	u.fakeCore.EXPECT().ServiceAccounts(u.User.namespace).Times(1).Return(u.fakeServiceAccountInterface)
 
-	return p
+	return u
 }
 
 func TestUser_ResolveDestination_Nil(t *testing.T) {
-	p := newFakeUser(t)
-	defer p.ctrl.Finish()
+	u := newFakeUser(t)
+	defer u.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.User.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
+	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
 
-	if err := p.ResolveDestination(); err == nil {
+	if err := u.ResolveDestination(); err == nil {
 		t.Errorf("expected error but got none - pod is nil")
 	}
 }
 
 func TestUser_ResolveDestination_Error(t *testing.T) {
-	p := newFakeUser(t)
-	defer p.ctrl.Finish()
+	u := newFakeUser(t)
+	defer u.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.User.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, errors.New("this is an error"))
+	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, errors.New("this is an error"))
 
-	if err := p.ResolveDestination(); err == nil {
+	if err := u.ResolveDestination(); err == nil {
 		t.Errorf("expected error but got none - returned error")
 	}
 }
 
 func TestUser_ResolveDestination_Successful(t *testing.T) {
-	p := newFakeUser(t)
-	defer p.ctrl.Finish()
+	u := newFakeUser(t)
+	defer u.ctrl.Finish()
 
-	p.fakeServiceAccountInterface.EXPECT().Get(p.User.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, nil)
+	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, nil)
 
-	if err := p.ResolveDestination(); err != nil {
+	if err := u.ResolveDestination(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

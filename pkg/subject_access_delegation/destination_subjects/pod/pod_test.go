@@ -21,7 +21,6 @@ type fakePod struct {
 }
 
 func newFakePod(t *testing.T) *fakePod {
-
 	p := &fakePod{
 		ctrl: gomock.NewController(t),
 		Pod: &Pod{
