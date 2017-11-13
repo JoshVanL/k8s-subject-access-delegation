@@ -241,7 +241,7 @@ func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool, err error) {
 
 func (s *SubjectAccessDelegation) checkTriggers() (ready bool, err error) {
 	for _, trigger := range s.triggers {
-		ready, err := trigger.Ready()
+		ready, err := trigger.Completed()
 		if err != nil {
 			return false, fmt.Errorf("error checking trigger status: %v", err)
 		}

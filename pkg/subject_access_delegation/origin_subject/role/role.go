@@ -1,6 +1,7 @@
 package role
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
-type OriginRole struct {
+type Role struct {
 	log    *logrus.Entry
 	client kubernetes.Interface
 	sad    interfaces.SubjectAccessDelegation
@@ -21,10 +22,10 @@ type OriginRole struct {
 	role      *rbacv1.Role
 }
 
-var _ interfaces.OriginSubject = &OriginRole{}
+var _ interfaces.OriginSubject = &Role{}
 
-func New(sad interfaces.SubjectAccessDelegation) *OriginRole {
-	return &OriginRole{
+func New(sad interfaces.SubjectAccessDelegation) *Role {
+	return &Role{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
@@ -33,7 +34,7 @@ func New(sad interfaces.SubjectAccessDelegation) *OriginRole {
 	}
 }
 
-func (o *OriginRole) RoleRefs() ([]*rbacv1.RoleRef, error) {
+func (o *Role) RoleRefs() ([]*rbacv1.RoleRef, error) {
 	return []*rbacv1.RoleRef{
 		&rbacv1.RoleRef{
 			Kind: "Role",
@@ -42,26 +43,30 @@ func (o *OriginRole) RoleRefs() ([]*rbacv1.RoleRef, error) {
 	}, nil
 }
 
-func (o *OriginRole) getRole() error {
+func (o *Role) getRole() error {
 	options := metav1.GetOptions{}
 
 	role, err := o.client.Rbac().Roles(o.Namespace()).Get(o.Name(), options)
 	if err != nil {
 		return fmt.Errorf("failed to get role '%s': %v", o.Name(), err)
 	}
-	o.role = role
 
+	if role == nil {
+		return errors.New("role is nil")
+	}
+
+	o.role = role
 	return nil
 }
 
-func (o *OriginRole) ResolveOrigin() error {
+func (o *Role) ResolveOrigin() error {
 	return o.getRole()
 }
 
-func (o *OriginRole) Namespace() string {
+func (o *Role) Namespace() string {
 	return o.namespace
 }
 
-func (o *OriginRole) Name() string {
+func (o *Role) Name() string {
 	return o.name
 }

@@ -1,6 +1,7 @@
 package service_account
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
-type OriginSA struct {
+type ServiceAccount struct {
 	log    *logrus.Entry
 	client kubernetes.Interface
 	sad    interfaces.SubjectAccessDelegation
@@ -22,10 +23,10 @@ type OriginSA struct {
 	serviceAccount *corev1.ServiceAccount
 }
 
-var _ interfaces.OriginSubject = &OriginSA{}
+var _ interfaces.OriginSubject = &ServiceAccount{}
 
-func New(sad interfaces.SubjectAccessDelegation) *OriginSA {
-	return &OriginSA{
+func New(sad interfaces.SubjectAccessDelegation) *ServiceAccount {
+	return &ServiceAccount{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
@@ -34,20 +35,21 @@ func New(sad interfaces.SubjectAccessDelegation) *OriginSA {
 	}
 }
 
-func (o *OriginSA) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
-	roleBindings, err := o.getSARoleBindings()
+func (o *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
+	roleBindings, err := o.getRoleBindings()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, binding := range roleBindings {
-		roleRefs = append(roleRefs, &binding.RoleRef)
+		roleRef := binding.RoleRef
+		roleRefs = append(roleRefs, &roleRef)
 	}
 
 	return roleRefs, nil
 }
 
-func (o *OriginSA) getSARoleBindings() (roleBindings []*rbacv1.RoleBinding, err error) {
+func (o *ServiceAccount) getRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
 	// make this more efficient
 	options := metav1.ListOptions{}
 
@@ -56,10 +58,15 @@ func (o *OriginSA) getSARoleBindings() (roleBindings []*rbacv1.RoleBinding, err 
 		return roleBindings, fmt.Errorf("failed to retrieve Rolebindings of Service Account '%s': %v", o.Name(), err)
 	}
 
+	if bindingsList == nil {
+		return roleBindings, errors.New("bindings list is nil")
+	}
+
 	for _, binding := range bindingsList.Items {
 		for _, subject := range binding.Subjects {
 			if subject.Kind == "ServiceAccount" && subject.Name == o.Name() {
-				roleBindings = append(roleBindings, &binding)
+				roleBindings = append(roleBindings, binding)
+				continue
 			}
 		}
 	}
@@ -67,7 +74,7 @@ func (o *OriginSA) getSARoleBindings() (roleBindings []*rbacv1.RoleBinding, err 
 	return roleBindings, nil
 }
 
-func (o *OriginSA) getServiceAccount() error {
+func (o *ServiceAccount) getServiceAccount() error {
 	options := metav1.GetOptions{}
 
 	serviceAccount, err := o.client.Core().ServiceAccounts(o.Namespace()).Get(o.Name(), options)
@@ -75,19 +82,23 @@ func (o *OriginSA) getServiceAccount() error {
 		return fmt.Errorf("failed to get Service Account '%s': %v", o.Name(), err)
 	}
 
+	if serviceAccount == nil {
+		return errors.New("service account is nil")
+	}
+
 	o.serviceAccount = serviceAccount
 
 	return nil
 }
 
-func (o *OriginSA) ResolveOrigin() error {
+func (o *ServiceAccount) ResolveOrigin() error {
 	return o.getServiceAccount()
 }
 
-func (o *OriginSA) Namespace() string {
+func (o *ServiceAccount) Namespace() string {
 	return o.namespace
 }
 
-func (o *OriginSA) Name() string {
+func (o *ServiceAccount) Name() string {
 	return o.name
 }

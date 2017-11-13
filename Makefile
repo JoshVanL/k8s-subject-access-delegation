@@ -16,10 +16,9 @@ help:
 	# generate  - generates mocks and assets files
 	# verify    - verifies generated files & scripts
 
-all: generate verify test build
+all: verify test build
 
-build:
-	go build
+build: generate go_build
 
 generate:
 	./hack/update-codegen.sh
@@ -42,3 +41,7 @@ go_fmt:
 		echo "$$GO_FMT"; \
 		exit 1; \
 	fi
+
+go_build:
+	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  .
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 .
