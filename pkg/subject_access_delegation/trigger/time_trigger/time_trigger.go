@@ -1,4 +1,4 @@
-package timetrigger
+package time_trigger
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type TimeTrigger struct {
 	log *logrus.Entry
 
 	sad       interfaces.SubjectAccessDelegation
-	timestamp *time.Time
+	timestamp time.Time
 
 	StopCh   chan struct{}
 	tickerCh <-chan time.Time
@@ -80,14 +80,5 @@ func (t *TimeTrigger) Delete() error {
 }
 
 func (t *TimeTrigger) TickTock() {
-	//delta := time.Second * time.Duration(t.Duration())
-	t.tickerCh = time.After(time.Until(*t.timestamp))
+	t.tickerCh = time.After(time.Until(t.timestamp))
 }
-
-//func (t *TimeTrigger) Duration() int64 {
-//	return t.duration
-//}
-
-//func (t *TimeTrigger) Repeat() int64 {
-//	return t.sad.Duration()
-//}

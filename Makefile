@@ -16,7 +16,7 @@ help:
 	# generate  - generates mocks and assets files
 	# verify    - verifies generated files & scripts
 
-all: generate verify build
+all: generate verify test build
 
 build:
 	go build
@@ -30,7 +30,7 @@ go_vet:
 	go vet $$(go list ./pkg/...)
 #go vet $$(go list ./pkg/... ./cmd/...)
 
-go_test:
+test:
 	go test $$(go list ./pkg/...)
 #go test $$(go list ./pkg/... ./cmd/...)
 

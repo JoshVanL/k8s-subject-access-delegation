@@ -11,23 +11,23 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-func ParseTime(stamp string) (timestamp *time.Time, err error) {
+func ParseTime(stamp string) (timestamp time.Time, err error) {
 	var result *multierror.Error
 
-	t, err := dateparse.ParseAny(stamp)
-	if err == nil {
-		return &t, nil
-	}
-	result = multierror.Append(result, err)
-
 	args := strings.Split(stamp, " ")
-	t, err = parseTimeArguments(args)
+	t, err := parseTimeArguments(args)
 	if err == nil {
-		return &t, nil
+		return t, nil
 	}
 	result = multierror.Append(result, err)
 
-	return nil, result.ErrorOrNil()
+	t, err = dateparse.ParseAny(stamp)
+	if err == nil {
+		return t, nil
+	}
+	result = multierror.Append(result, err)
+
+	return time.Time{}, result.ErrorOrNil()
 }
 
 func parseTimeArguments(args []string) (timestamp time.Time, err error) {

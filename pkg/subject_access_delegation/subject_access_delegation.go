@@ -28,7 +28,7 @@ type SubjectAccessDelegation struct {
 	destinationSubjects interfaces.DestinationSubjects
 	triggers            []interfaces.Trigger
 	roleBindings        []*rbacv1.RoleBinding
-	deletionTimeStamp   *time.Time
+	deletionTimeStamp   time.Time
 	stopCh              chan struct{}
 }
 
@@ -109,11 +109,11 @@ func (s *SubjectAccessDelegation) ParseDeletionTime() error {
 }
 
 func (s *SubjectAccessDelegation) waitOnDeletion() {
-	if time.Now().After(*s.deletionTimeStamp) {
+	if time.Now().After(s.deletionTimeStamp) {
 		return
 	}
 
-	ticker := time.After(time.Until(*s.deletionTimeStamp))
+	ticker := time.After(time.Until(s.deletionTimeStamp))
 
 	select {
 	case <-ticker:

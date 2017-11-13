@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/timetrigger"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time_trigger"
 )
 
 const TimeKind = "Time"
@@ -18,7 +18,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 	for _, trigger := range sad.Triggers() {
 		switch trigger.Kind {
 		case TimeKind:
-			timeTrigger, err := timetrigger.New(sad, &trigger)
+			timeTrigger, err := time_trigger.New(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new time tigger: %v", err))
 			} else {
