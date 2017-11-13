@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,15 @@ func (d *User) getUserAccount() error {
 }
 
 func (d *User) ResolveDestination() error {
-	return d.getUserAccount()
+	if err := d.getUserAccount(); err != nil {
+		return err
+	}
+
+	if d.user == nil {
+		return errors.New("service account is nil")
+	}
+
+	return nil
 }
 
 func (d *User) Namespace() string {
