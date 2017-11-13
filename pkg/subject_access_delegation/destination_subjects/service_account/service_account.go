@@ -1,6 +1,7 @@
 package service_account
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,15 @@ func (d *ServiceAccount) getServiceAccount() error {
 }
 
 func (d *ServiceAccount) ResolveDestination() error {
-	return d.getServiceAccount()
+	if err := d.getServiceAccount(); err != nil {
+		return err
+	}
+
+	if d.serviceAccount == nil {
+		return errors.New("service account is nil")
+	}
+
+	return nil
 }
 
 func (d *ServiceAccount) Namespace() string {
