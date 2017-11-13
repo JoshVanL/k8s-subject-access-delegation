@@ -8,11 +8,13 @@ import (
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subjects/pod"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subjects/service_account"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subjects/user"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
 const PodKind = "Pod"
 const ServiceAccountKind = "ServiceAccount"
+const UserKind = "User"
 
 type DestinationSubjects struct {
 	log *logrus.Entry
@@ -35,6 +37,8 @@ func New(sad interfaces.SubjectAccessDelegation) (interfaces.DestinationSubjects
 			subjects = append(subjects, service_account.New(sad, subject.Name))
 		case PodKind:
 			subjects = append(subjects, pod.New(sad, subject.Name))
+		case UserKind:
+			subjects = append(subjects, user.New(sad, subject.Name))
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Accesss Deletgation does not support Destination Subject Kind '%s'", subject.Kind))
 		}

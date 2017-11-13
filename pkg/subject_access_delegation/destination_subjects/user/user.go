@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
@@ -22,10 +21,10 @@ type User struct {
 	user      *corev1.ServiceAccount
 }
 
-var _ interfaces.DestinationSubject = &ServiceAccount{}
+var _ interfaces.DestinationSubject = &User{}
 
-func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
-	return &ServiceAccount{
+func New(sad interfaces.SubjectAccessDelegation, name string) *User {
+	return &User{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
@@ -41,7 +40,7 @@ func (d *User) getUserAccount() error {
 	if err != nil {
 		return fmt.Errorf("failed to get service account '%s': %v", d.Name(), err)
 	}
-	d.serviceAccount = sa
+	d.user = sa
 
 	return nil
 }
