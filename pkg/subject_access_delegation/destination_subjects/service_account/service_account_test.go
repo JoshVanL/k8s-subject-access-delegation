@@ -70,6 +70,6 @@ func TestServiceAccount_ResolveDestination_Successful(t *testing.T) {
 	p.fakeServiceAccountInterface.EXPECT().Get(p.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(&corev1.ServiceAccount{}, nil)
 
 	if err := p.ResolveDestination(); err != nil {
-		t.Errorf("unexpected error: %v")
+		t.Errorf("unexpected error: %v", err)
 	}
 }

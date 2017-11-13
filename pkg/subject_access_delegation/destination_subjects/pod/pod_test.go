@@ -70,6 +70,6 @@ func TestPod_ResolveDestination_Successful(t *testing.T) {
 	p.fakePodInterface.EXPECT().Get(p.Pod.name, metav1.GetOptions{}).Times(1).Return(&corev1.Pod{}, nil)
 
 	if err := p.ResolveDestination(); err != nil {
-		t.Errorf("unexpected error: %v")
+		t.Errorf("unexpected error: %v", err)
 	}
 }
