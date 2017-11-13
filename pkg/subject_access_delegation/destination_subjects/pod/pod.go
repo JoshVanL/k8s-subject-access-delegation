@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -47,7 +48,15 @@ func (d *Pod) getPod() error {
 }
 
 func (d *Pod) ResolveDestination() error {
-	return d.getPod()
+	if err := d.getPod(); err != nil {
+		return err
+	}
+
+	if d.pod == nil {
+		return errors.New("pod is nil")
+	}
+
+	return nil
 }
 
 func (d *Pod) Namespace() string {
