@@ -27,15 +27,15 @@ var (
 
 	originSubjectRole = authzv1alpha1.OriginSubject{
 		Kind: "Role",
-		Name: "RoleRef",
+		Name: "RoleRef1",
 	}
 	originSubjectSA = authzv1alpha1.OriginSubject{
 		Kind: "ServiceAccount",
-		Name: "TestServiceAccount",
+		Name: "OriginServiceAccount",
 	}
 	originSubjectUser = authzv1alpha1.OriginSubject{
 		Kind: "User",
-		Name: "TestUser",
+		Name: "OriginUser",
 	}
 
 	destinationSubjects = []authzv1alpha1.DestinationSubject{
@@ -67,9 +67,53 @@ var (
 		},
 	}
 
-	roleRef = rbacv1.RoleRef{
+	roleRef1 = rbacv1.RoleRef{
 		Kind: "Role",
-		Name: "RoleRef",
+		Name: "RoleRef1",
+	}
+	roleRef2 = rbacv1.RoleRef{
+		Kind: "Role",
+		Name: "RoleRef2",
+	}
+	roleRef3 = rbacv1.RoleRef{
+		Kind: "Role",
+		Name: "RoleRef3",
+	}
+
+	subjects = []rbacv1.Subject{
+		rbacv1.Subject{
+			Kind: "Pod",
+			Name: "foo",
+		},
+		rbacv1.Subject{
+			Kind: "ServiceAccount",
+			Name: "OriginServiceAccount",
+		},
+		rbacv1.Subject{
+			Kind: "Pod",
+			Name: "OriginServiceAccount",
+		},
+		rbacv1.Subject{
+			Kind: "User",
+			Name: "OriginUser",
+		},
+	}
+
+	roleBindingsReturn = rbacv1.RoleBindingList{
+		Items: []rbacv1.RoleBinding{
+			rbacv1.RoleBinding{
+				RoleRef:  roleRef1,
+				Subjects: subjects,
+			},
+			rbacv1.RoleBinding{
+				RoleRef:  roleRef2,
+				Subjects: subjects,
+			},
+			rbacv1.RoleBinding{
+				RoleRef:  roleRef3,
+				Subjects: subjects,
+			},
+		},
 	}
 )
 
@@ -254,10 +298,10 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_Successful(t *testing.T) {
 	s.sad.Spec.DestinationSubjects = destinationSubjects
 
 	createBinding := &rbacv1.RoleBinding{}
-	createBinding.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef.Name)
+	createBinding.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef1.Name)
 	createBinding.Subjects = bindingSubjects
 	createBinding.Namespace = s.sad.Namespace
-	createBinding.RoleRef = roleRef
+	createBinding.RoleRef = roleRef1
 
 	//timestamp := metav1.Time{
 	//	Time: time.Now(),
@@ -270,6 +314,104 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_Successful(t *testing.T) {
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).Times(repeat).Return(nil, nil)
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding.Name, gomock.Any()).Times(repeat).Return(nil)
+
+	closed, err := s.Delegate()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if closed {
+		t.Error("SAD delegation returned closed, expected false")
+	}
+}
+
+func TestSAD_Delegate_Nill_Repeat_Time_OriginSA_Successful(t *testing.T) {
+	s := newFakeSAD(t)
+	defer s.ctrl.Finish()
+
+	repeat := 3
+	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
+	s.sad.Spec.DeletionTime = "1s"
+	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectSA
+	s.sad.Spec.DestinationSubjects = destinationSubjects
+
+	createBinding1 := &rbacv1.RoleBinding{}
+	createBinding1.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef1.Name)
+	createBinding1.Subjects = bindingSubjects
+	createBinding1.Namespace = s.sad.Namespace
+	createBinding1.RoleRef = roleRef1
+	createBinding2 := &rbacv1.RoleBinding{}
+	createBinding2.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef2.Name)
+	createBinding2.Subjects = bindingSubjects
+	createBinding2.Namespace = s.sad.Namespace
+	createBinding2.RoleRef = roleRef2
+	createBinding3 := &rbacv1.RoleBinding{}
+	createBinding3.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef3.Name)
+	createBinding3.Subjects = bindingSubjects
+	createBinding3.Namespace = s.sad.Namespace
+	createBinding3.RoleRef = roleRef3
+
+	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
+	s.fakeSAInterface.EXPECT().Get(originSubjectSA.Name, gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
+
+	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).Times(repeat).Return(returnPod(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding1.Name, gomock.Any()).Times(repeat).Return(nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding2).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding2.Name, gomock.Any()).Times(repeat).Return(nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding3).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding3.Name, gomock.Any()).Times(repeat).Return(nil)
+
+	closed, err := s.Delegate()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if closed {
+		t.Error("SAD delegation returned closed, expected false")
+	}
+}
+
+func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
+	s := newFakeSAD(t)
+	defer s.ctrl.Finish()
+
+	repeat := 3
+	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
+	s.sad.Spec.DeletionTime = "1s"
+	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectUser
+	s.sad.Spec.DestinationSubjects = destinationSubjects
+
+	createBinding1 := &rbacv1.RoleBinding{}
+	createBinding1.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef1.Name)
+	createBinding1.Subjects = bindingSubjects
+	createBinding1.Namespace = s.sad.Namespace
+	createBinding1.RoleRef = roleRef1
+	createBinding2 := &rbacv1.RoleBinding{}
+	createBinding2.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef2.Name)
+	createBinding2.Subjects = bindingSubjects
+	createBinding2.Namespace = s.sad.Namespace
+	createBinding2.RoleRef = roleRef2
+	createBinding3 := &rbacv1.RoleBinding{}
+	createBinding3.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef3.Name)
+	createBinding3.Subjects = bindingSubjects
+	createBinding3.Namespace = s.sad.Namespace
+	createBinding3.RoleRef = roleRef3
+
+	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
+	s.fakeSAInterface.EXPECT().Get(originSubjectUser.Name, gomock.Any()).Times(repeat).Return(returnUser(), nil)
+
+	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).Times(repeat).Return(returnPod(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnUser(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding1.Name, gomock.Any()).Times(repeat).Return(nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding2).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding2.Name, gomock.Any()).Times(repeat).Return(nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding3).Times(repeat).Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding3.Name, gomock.Any()).Times(repeat).Return(nil)
 
 	closed, err := s.Delegate()
 	if err != nil {
