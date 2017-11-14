@@ -1,6 +1,7 @@
 package destination_subjects
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
@@ -29,6 +30,10 @@ var _ interfaces.DestinationSubjects = &DestinationSubjects{}
 func New(sad interfaces.SubjectAccessDelegation) (interfaces.DestinationSubjects, error) {
 	var result *multierror.Error
 	var subjects []interfaces.DestinationSubject
+
+	if len(sad.DestinationSubjects()) == 0 {
+		return nil, errors.New("no destinaton subjects given")
+	}
 
 	for _, subject := range sad.DestinationSubjects() {
 

@@ -18,6 +18,9 @@ type SubjectAccessDelegation interface {
 	Triggers() []authzv1alpha1.EventTrigger
 	OriginName() string
 	OriginKind() string
+	Delegate() (closed bool, err error)
+	DeleteRoleBindings() error
+	Delete() error
 }
 
 type OriginSubject interface {
