@@ -3,7 +3,7 @@ package subject_access_delegation
 import (
 	"fmt"
 	"testing"
-	//"time"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
@@ -141,6 +141,7 @@ func newFakeSAD(t *testing.T) *fakeSubjectAccessDelegation {
 
 	s.sad.Name = "sadName"
 	s.sad.Namespace = "sadNamespace"
+	s.stopCh = make(chan struct{})
 
 	s.fakeClient = mocks.NewMockInterface(s.ctrl)
 	s.fakeRbac = mocks.NewMockRbacV1Interface(s.ctrl)
@@ -330,7 +331,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginSA_Successful(t *testing.T) {
 
 	repeat := 3
 	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
-	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1, timeTrigger2}
 	s.sad.Spec.DeletionTime = "1s"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectSA
 	s.sad.Spec.DestinationSubjects = destinationSubjects
@@ -379,7 +380,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 
 	repeat := 3
 	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
-	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1, timeTrigger2}
 	s.sad.Spec.DeletionTime = "1s"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectUser
 	s.sad.Spec.DestinationSubjects = destinationSubjects
@@ -419,5 +420,45 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	}
 	if closed {
 		t.Error("SAD delegation returned closed, expected false")
+	}
+}
+
+func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForeClose(t *testing.T) {
+	s := newFakeSAD(t)
+	defer s.ctrl.Finish()
+
+	repeat := 3
+	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1, timeTrigger2}
+	s.sad.Spec.DeletionTime = "1s"
+	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectRole
+	s.sad.Spec.DestinationSubjects = destinationSubjects
+
+	createBinding := &rbacv1.RoleBinding{}
+	createBinding.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef1.Name)
+	createBinding.Subjects = bindingSubjects
+	createBinding.Namespace = s.sad.Namespace
+	createBinding.RoleRef = roleRef1
+
+	s.fakeRoleInterface.EXPECT().Get(s.sad.Spec.OriginSubject.Name, metav1.GetOptions{}).AnyTimes().Return(&rbacv1.Role{}, nil)
+	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).AnyTimes().Return(returnPod(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).AnyTimes().Return(returnServiceAccount(), nil)
+	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).AnyTimes().Return(returnUser(), nil)
+	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).AnyTimes().Return(nil, nil)
+	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding.Name, gomock.Any()).AnyTimes().Return(nil)
+
+	go func(s *fakeSubjectAccessDelegation, t *testing.T) {
+		time.Sleep(time.Second * 3)
+		if err := s.Delete(); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	}(s, t)
+
+	closed, err := s.Delegate()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if !closed {
+		t.Error("SAD delegation returned not closed, expected true")
 	}
 }
