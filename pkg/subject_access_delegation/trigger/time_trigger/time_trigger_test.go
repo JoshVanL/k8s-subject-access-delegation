@@ -33,11 +33,7 @@ func TestTimeTrigger_Completed(t *testing.T) {
 	g := newFakeTimeTrigger(t)
 	defer g.ctrl.Finish()
 
-	completed, err := g.Completed()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if completed {
+	if g.Completed() {
 		t.Error("expected time trigger to not be completed, it is")
 	}
 }
@@ -56,11 +52,8 @@ func TestTimeTrigger_Successful(t *testing.T) {
 	if forcedClosed {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
-	completed, err := g.Completed()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if !completed {
+
+	if !g.Completed() {
 		t.Error("expected time trigger to be completed, it isn't")
 	}
 }
@@ -87,11 +80,7 @@ func TestTimeTrigger_ForceClosed(t *testing.T) {
 		t.Error("expected time trigger to be force closed, it wasn't")
 	}
 
-	completed, err := g.Completed()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if completed {
+	if g.Completed() {
 		t.Error("expected time trigger to not be completed, it is")
 	}
 }
@@ -111,11 +100,7 @@ func TestTimeTrigger_DoubleActivate(t *testing.T) {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
 
-	completed, err := g.Completed()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if !completed {
+	if !g.Completed() {
 		t.Error("expected time trigger to be completed, it isn't")
 	}
 
@@ -128,11 +113,7 @@ func TestTimeTrigger_DoubleActivate(t *testing.T) {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
 
-	completed, err = g.Completed()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if !completed {
+	if !g.Completed() {
 		t.Error("expected time trigger to be completed, it isn't")
 	}
 

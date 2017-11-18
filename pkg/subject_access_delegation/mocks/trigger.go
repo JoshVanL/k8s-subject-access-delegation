@@ -42,6 +42,18 @@ func (mr *MockTriggerMockRecorder) Activate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockTrigger)(nil).Activate))
 }
 
+// Completed mocks base method
+func (m *MockTrigger) Completed() bool {
+	ret := m.ctrl.Call(m, "Completed")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Completed indicates an expected call of Completed
+func (mr *MockTriggerMockRecorder) Completed() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Completed", reflect.TypeOf((*MockTrigger)(nil).Completed))
+}
+
 // Delete mocks base method
 func (m *MockTrigger) Delete() error {
 	ret := m.ctrl.Call(m, "Delete")
@@ -54,17 +66,16 @@ func (mr *MockTriggerMockRecorder) Delete() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockTrigger)(nil).Delete))
 }
 
-// Ready mocks base method
-func (m *MockTrigger) Ready() (bool, error) {
-	ret := m.ctrl.Call(m, "Ready")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+// Replicas mocks base method
+func (m *MockTrigger) Replicas() int {
+	ret := m.ctrl.Call(m, "Replicas")
+	ret0, _ := ret[0].(int)
+	return ret0
 }
 
-// Ready indicates an expected call of Ready
-func (mr *MockTriggerMockRecorder) Ready() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ready", reflect.TypeOf((*MockTrigger)(nil).Ready))
+// Replicas indicates an expected call of Replicas
+func (mr *MockTriggerMockRecorder) Replicas() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Replicas", reflect.TypeOf((*MockTrigger)(nil).Replicas))
 }
 
 // WaitOn mocks base method

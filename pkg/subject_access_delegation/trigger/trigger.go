@@ -6,10 +6,12 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod_trigger"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time_trigger"
 )
 
 const TimeKind = "Time"
+const AddPodKind = "AddPod"
 
 func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 	var triggers []interfaces.Trigger
@@ -21,9 +23,17 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			timeTrigger, err := time_trigger.New(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new time tigger: %v", err))
-			} else {
-				triggers = append(triggers, timeTrigger)
+				break
 			}
+			triggers = append(triggers, timeTrigger)
+
+		case AddPodKind:
+			addPodTrigger, err := pod_trigger.New(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add Pod tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, addPodTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))

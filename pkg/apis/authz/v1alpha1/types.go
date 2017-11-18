@@ -28,8 +28,9 @@ type DestinationSubject struct {
 }
 
 type EventTrigger struct {
-	Kind  string `json:"kind"`
-	Value string `json:"value"`
+	Kind     string `json:"kind"`
+	Value    string `json:"value"`
+	Replicas int    `json:"replicas"`
 }
 
 type SubjectAccessDelegationSpec struct {

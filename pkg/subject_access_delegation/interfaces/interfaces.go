@@ -3,6 +3,7 @@ package interfaces
 import (
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
@@ -15,6 +16,7 @@ type SubjectAccessDelegation interface {
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
 	DestinationSubjects() []authzv1alpha1.DestinationSubject
+	KubeInformerFactory() kubeinformers.SharedInformerFactory
 	Triggers() []authzv1alpha1.EventTrigger
 	OriginName() string
 	OriginKind() string
@@ -41,7 +43,8 @@ type DestinationSubjects interface {
 
 type Trigger interface {
 	Activate()
-	Completed() (bool, error)
+	Completed() bool
 	WaitOn() (forcedClosed bool, err error)
 	Delete() error
+	Replicas() int
 }

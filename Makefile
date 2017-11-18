@@ -17,9 +17,9 @@ help:
 	# verify    - verifies generated files & scripts
 	# test      - runs all tests
 
-all: verify test build
+all: verify generate test build
 
-build: generate go_build
+build: go_build
 
 generate:
 	./hack/update-codegen.sh

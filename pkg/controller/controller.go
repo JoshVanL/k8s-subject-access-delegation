@@ -43,8 +43,9 @@ type Controller struct {
 	kubeclientset kubernetes.Interface
 	sadclientset  clientset.Interface
 
-	sadsLister listers.SubjectAccessDelegationLister
-	sadsSynced cache.InformerSynced
+	sadsLister          listers.SubjectAccessDelegationLister
+	sadsSynced          cache.InformerSynced
+	kubeInformerFactory kubeinformers.SharedInformerFactory
 
 	workqueue workqueue.RateLimitingInterface
 
@@ -68,12 +69,13 @@ func NewController(
 	sadscheme.AddToScheme(scheme.Scheme)
 
 	controller := &Controller{
-		kubeclientset: kubeclientset,
-		sadclientset:  sadclientset,
-		sadsLister:    sadInformer.Lister(),
-		sadsSynced:    sadInformer.Informer().HasSynced,
-		workqueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
-		log:           log,
+		kubeclientset:       kubeclientset,
+		kubeInformerFactory: kubeInformerFactory,
+		sadclientset:        sadclientset,
+		sadsLister:          sadInformer.Lister(),
+		sadsSynced:          sadInformer.Informer().HasSynced,
+		workqueue:           workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
+		log:                 log,
 	}
 
 	log.Info("Setting up event handlers")
@@ -187,7 +189,7 @@ func (c *Controller) syncHandler(key string) error {
 func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegation) error {
 	c.log.Infof("New Subject Access Delegation '%s'", sad.Name)
 
-	delegation := subject_access_delegation.New(sad, c.kubeclientset, c.log)
+	delegation := subject_access_delegation.New(sad, c.log, c.kubeInformerFactory, c.kubeclientset)
 	if err := c.appendDelegation(delegation, sad); err != nil {
 		return err
 	}

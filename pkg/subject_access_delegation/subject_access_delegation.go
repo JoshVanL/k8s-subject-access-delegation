@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
@@ -21,8 +22,9 @@ import (
 type SubjectAccessDelegation struct {
 	log *logrus.Entry
 
-	sad    *authzv1alpha1.SubjectAccessDelegation
-	client kubernetes.Interface
+	sad                 *authzv1alpha1.SubjectAccessDelegation
+	kubeInformerFactory kubeinformers.SharedInformerFactory
+	client              kubernetes.Interface
 
 	originSubject       interfaces.OriginSubject
 	destinationSubjects interfaces.DestinationSubjects
@@ -32,12 +34,13 @@ type SubjectAccessDelegation struct {
 	stopCh              chan struct{}
 }
 
-func New(sad *authzv1alpha1.SubjectAccessDelegation, client kubernetes.Interface, log *logrus.Entry) *SubjectAccessDelegation {
+func New(sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface) *SubjectAccessDelegation {
 	return &SubjectAccessDelegation{
-		log:    log,
-		sad:    sad,
-		client: client,
-		stopCh: make(chan struct{}),
+		log:                 log,
+		client:              client,
+		kubeInformerFactory: kubeInformerFactory,
+		sad:                 sad,
+		stopCh:              make(chan struct{}),
 	}
 }
 
@@ -221,11 +224,7 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 
 		s.log.Debugf("All triggers have been satisfied, checking still true")
 
-		ready, err = s.checkTriggers()
-		if err != nil {
-			return false, fmt.Errorf("error waiting on triggers to fire: %v", err)
-		}
-
+		ready = s.checkTriggers()
 		if !ready {
 			s.log.Debug("Not all triggers ready at the same time, re-waiting")
 		}
@@ -250,19 +249,15 @@ func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool, err error) {
 	return false, nil
 }
 
-func (s *SubjectAccessDelegation) checkTriggers() (ready bool, err error) {
+func (s *SubjectAccessDelegation) checkTriggers() (ready bool) {
 	for _, trigger := range s.triggers {
-		ready, err := trigger.Completed()
-		if err != nil {
-			return false, fmt.Errorf("error checking trigger status: %v", err)
-		}
-
+		ready := trigger.Completed()
 		if !ready {
-			return false, nil
+			return false
 		}
 	}
 
-	return true, nil
+	return true
 }
 
 func (s *SubjectAccessDelegation) BuildTriggers() error {
@@ -375,4 +370,8 @@ func (s *SubjectAccessDelegation) Triggers() []authzv1alpha1.EventTrigger {
 
 func (s *SubjectAccessDelegation) Repeat() int {
 	return s.sad.Spec.Repeat
+}
+
+func (s *SubjectAccessDelegation) KubeInformerFactory() kubeinformers.SharedInformerFactory {
+	return s.kubeInformerFactory
 }

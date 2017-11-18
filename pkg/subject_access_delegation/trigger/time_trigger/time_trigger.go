@@ -16,6 +16,7 @@ type TimeTrigger struct {
 
 	sad       interfaces.SubjectAccessDelegation
 	timestamp time.Time
+	replicas  int
 
 	StopCh    chan struct{}
 	tickerCh  <-chan time.Time
@@ -34,9 +35,9 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 	sad.Log().Debugf("%+v", timestamp)
 
 	return &TimeTrigger{
-		log: sad.Log(),
-
+		log:       sad.Log(),
 		sad:       sad,
+		replicas:  trigger.Replicas,
 		StopCh:    make(chan struct{}),
 		timestamp: timestamp,
 		completed: false,
@@ -70,8 +71,8 @@ func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (t *TimeTrigger) Completed() (completed bool, err error) {
-	return t.completed, nil
+func (t *TimeTrigger) Completed() bool {
+	return t.completed
 }
 
 func (t *TimeTrigger) Delete() error {
@@ -81,4 +82,8 @@ func (t *TimeTrigger) Delete() error {
 
 func (t *TimeTrigger) TickTock() {
 	t.tickerCh = time.After(time.Until(t.timestamp))
+}
+
+func (t *TimeTrigger) Replicas() int {
+	return t.replicas
 }
