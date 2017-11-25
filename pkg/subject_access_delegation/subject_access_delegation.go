@@ -1,6 +1,7 @@
 package subject_access_delegation
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -180,7 +181,7 @@ func (s *SubjectAccessDelegation) buildRoleBindings() error {
 		return fmt.Errorf("failed to resolve Role References: %v", err)
 	}
 
-	for _, destinationSubject := range s.destinationSubjects {
+	for _, destinationSubject := range s.DestinationSubjects() {
 		subjects = append(subjects, rbacv1.Subject{Name: destinationSubject.Name(), Kind: destinationSubject.Kind()})
 	}
 
@@ -288,6 +289,10 @@ func (s *SubjectAccessDelegation) GetSubjects() error {
 		s.destinationSubjects = destinationSubjects
 	}
 
+	if err := s.ResolveDestinations(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
 	return result.ErrorOrNil()
 }
 
@@ -308,22 +313,22 @@ func (s *SubjectAccessDelegation) getDestinationSubjects() ([]interfaces.Destina
 	var result *multierror.Error
 	var destinationSubjects []interfaces.DestinationSubject
 
+	if len(s.sad.Spec.DestinationSubjects) == 0 {
+		return nil, errors.New("no destination subjects specified")
+	}
+
 	for _, destinationSubject := range s.sad.Spec.DestinationSubjects {
 		subject, err := destination_subject.New(s, destinationSubject.Name, destinationSubject.Kind)
 
 		if err != nil {
 			result = multierror.Append(result, err)
 		} else {
-			destinationSubjects = append(s.destinationSubjects, subject)
+			destinationSubjects = append(destinationSubjects, subject)
 		}
 	}
 
 	if result != nil {
 		return nil, result.ErrorOrNil()
-	}
-
-	if err := s.ResolveDestinations(); err != nil {
-		result = multierror.Append(result, err)
 	}
 
 	return destinationSubjects, result.ErrorOrNil()
@@ -339,10 +344,6 @@ func (s *SubjectAccessDelegation) ResolveDestinations() error {
 	}
 
 	return result.ErrorOrNil()
-}
-
-func (s *SubjectAccessDelegation) Subjects() []interfaces.DestinationSubject {
-	return s.destinationSubjects
 }
 
 func (s *SubjectAccessDelegation) Delete() error {

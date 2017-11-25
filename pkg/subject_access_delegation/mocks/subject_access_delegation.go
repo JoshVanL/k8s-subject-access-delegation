@@ -7,6 +7,7 @@ package mocks
 import (
 	gomock "github.com/golang/mock/gomock"
 	v1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
+	. "github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 	logrus "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/rbac/v1"
 	informers "k8s.io/client-go/informers"
