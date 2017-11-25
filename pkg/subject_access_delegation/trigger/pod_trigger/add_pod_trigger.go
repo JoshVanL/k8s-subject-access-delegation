@@ -3,8 +3,8 @@ package pod_trigger
 //TODO: Have one parent listener for each research type e.g. one pod, deployment tigger listener that sends info to all relevant trigger children -- reduces api overhead
 
 import (
-	//"fmt"
-	//"reflect"
+	"fmt"
+	"reflect"
 	//"time"
 
 	"github.com/sirupsen/logrus"
@@ -47,24 +47,31 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 	}
 
 	podTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    podTrigger.addFunc,
-		UpdateFunc: nil,
-		//UpdateFunc: func(old, new interface{}) {
-		//	if !reflect.DeepEqual(old, new) {
-		//		podTrigger.updateFunc(new)
-		//	}
-		//},
-		DeleteFunc: nil,
+		//AddFunc: podTrigger.addFunc,
+		//UpdateFunc: nil,
+		UpdateFunc: func(old, new interface{}) {
+			if !reflect.DeepEqual(old, new) {
+				podTrigger.addFunc(new)
+			}
+		},
+		//DeleteFunc: nil,
 	})
+	podTrigger.informer.Informer().Run(podTrigger.stopCh)
+
+	fmt.Printf("%v", podTrigger.podName)
 
 	return podTrigger, nil
 }
 
 func (p *AddPodTrigger) addFunc(obj interface{}) {
+
+	fmt.Printf("HERE")
+
 	pod, err := utils.GetPodObject(p.informer.Lister(), obj)
 	if err != nil {
 		p.log.Errorf("failed to get added pod object: %v", err)
 	}
+	fmt.Printf("\n%v\n", pod)
 
 	if pod.Name == p.podName {
 		p.log.Infof("A NEW POD WAS ADDED!!! HERE ########")
@@ -94,8 +101,6 @@ func (p *AddPodTrigger) WaitOn() (forceClosed bool, err error) {
 	case <-p.completedCh:
 		return false, nil
 	}
-
-	return false, nil
 }
 
 //func (p *AddPodTrigger) updateFunc(obj interface{}) {

@@ -15,4 +15,4 @@ spec:
     name: test-sa
   triggers:
   - kind: AddPod
-    value: 1s
+    value: nginx
