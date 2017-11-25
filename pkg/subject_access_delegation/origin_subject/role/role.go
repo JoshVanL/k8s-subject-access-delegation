@@ -24,20 +24,22 @@ type Role struct {
 
 var _ interfaces.OriginSubject = &Role{}
 
-func New(sad interfaces.SubjectAccessDelegation) *Role {
+const roleKind = "Role"
+
+func New(sad interfaces.SubjectAccessDelegation, name string) *Role {
 	return &Role{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
 		namespace: sad.Namespace(),
-		name:      sad.OriginName(),
+		name:      name,
 	}
 }
 
 func (o *Role) RoleRefs() ([]*rbacv1.RoleRef, error) {
 	return []*rbacv1.RoleRef{
 		&rbacv1.RoleRef{
-			Kind: "Role",
+			Kind: roleKind,
 			Name: o.Name(),
 		},
 	}, nil
@@ -69,4 +71,8 @@ func (o *Role) Namespace() string {
 
 func (o *Role) Name() string {
 	return o.name
+}
+
+func (o *Role) Kind() string {
+	return roleKind
 }

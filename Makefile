@@ -20,8 +20,7 @@ all: verify generate test build
 
 build: go_build
 
-generate:
-	./hack/update-codegen.sh
+generate: go_codegen go_mock_subject_access_delegation
 
 verify: go_fmt go_vet go_dep
 
@@ -43,6 +42,12 @@ go_dep:
 test:
 	go test $$(go list ./pkg/... ./cmd/...)
 
+go_codegen:
+	./hack/update-codegen.sh
+
 go_build:
 	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  .
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 .
+
+go_mock_subject_access_delegation:
+	mockgen -package mocks -source=pkg/subject_access_delegation/interfaces/interfaces.go > pkg/subject_access_delegation/mocks/subject_access_delegation.go

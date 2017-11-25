@@ -25,13 +25,13 @@ type User struct {
 
 var _ interfaces.OriginSubject = &User{}
 
-func New(sad interfaces.SubjectAccessDelegation) *User {
+func New(sad interfaces.SubjectAccessDelegation, name string) *User {
 	return &User{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
 		namespace: sad.Namespace(),
-		name:      sad.OriginName(),
+		name:      name,
 	}
 }
 
@@ -101,4 +101,8 @@ func (o *User) Namespace() string {
 
 func (o *User) Name() string {
 	return o.name
+}
+
+func (o *User) Kind() string {
+	return rbacv1.UserKind
 }

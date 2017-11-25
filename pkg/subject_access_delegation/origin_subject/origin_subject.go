@@ -13,22 +13,22 @@ import (
 
 const RoleKind = "Role"
 
-func New(sad interfaces.SubjectAccessDelegation) (interfaces.OriginSubject, error) {
+func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.OriginSubject, error) {
 	var originSubject interfaces.OriginSubject
 
-	switch sad.OriginKind() {
+	switch kind {
 	case RoleKind:
-		originSubject = role.New(sad)
+		originSubject = role.New(sad, name)
 		return originSubject, nil
 
 	case rbacv1.ServiceAccountKind:
-		originSubject = service_account.New(sad)
+		originSubject = service_account.New(sad, name)
 		return originSubject, nil
 
 	case rbacv1.UserKind:
-		originSubject = user.New(sad)
+		originSubject = user.New(sad, name)
 		return originSubject, nil
 	}
 
-	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", sad.OriginKind())
+	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", kind)
 }

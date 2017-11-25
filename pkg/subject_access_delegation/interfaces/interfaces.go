@@ -15,30 +15,27 @@ type SubjectAccessDelegation interface {
 	Kind() string
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
-	DestinationSubjects() []authzv1alpha1.DestinationSubject
 	KubeInformerFactory() kubeinformers.SharedInformerFactory
 	Triggers() []authzv1alpha1.EventTrigger
-	OriginName() string
-	OriginKind() string
 	Delegate() (closed bool, err error)
 	DeleteRoleBindings() error
 	Delete() error
+	OriginSubject() OriginSubject
+	DestinationSubjects() []DestinationSubject
+	ResolveDestinations() error
 }
 
 type OriginSubject interface {
 	ResolveOrigin() error
 	RoleRefs() ([]*rbacv1.RoleRef, error)
+	Name() string
+	Kind() string
 }
 
 type DestinationSubject interface {
 	ResolveDestination() error
 	Name() string
 	Kind() string
-}
-
-type DestinationSubjects interface {
-	ResolveDestinations() error
-	Subjects() []DestinationSubject
 }
 
 type Trigger interface {

@@ -13,6 +13,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
+const serviceAccountKind = "ServiceAccount"
+
 type ServiceAccount struct {
 	log    *logrus.Entry
 	client kubernetes.Interface
@@ -25,13 +27,13 @@ type ServiceAccount struct {
 
 var _ interfaces.OriginSubject = &ServiceAccount{}
 
-func New(sad interfaces.SubjectAccessDelegation) *ServiceAccount {
+func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
 	return &ServiceAccount{
 		log:       sad.Log(),
 		client:    sad.Client(),
 		sad:       sad,
 		namespace: sad.Namespace(),
-		name:      sad.OriginName(),
+		name:      name,
 	}
 }
 
@@ -64,7 +66,7 @@ func (o *ServiceAccount) getRoleBindings() (roleBindings []rbacv1.RoleBinding, e
 
 	for _, binding := range bindingsList.Items {
 		for _, subject := range binding.Subjects {
-			if subject.Kind == "ServiceAccount" && subject.Name == o.Name() {
+			if subject.Kind == serviceAccountKind && subject.Name == o.Name() {
 				roleBindings = append(roleBindings, binding)
 				continue
 			}
@@ -101,4 +103,8 @@ func (o *ServiceAccount) Namespace() string {
 
 func (o *ServiceAccount) Name() string {
 	return o.name
+}
+
+func (o *ServiceAccount) Kind() string {
+	return serviceAccountKind
 }
