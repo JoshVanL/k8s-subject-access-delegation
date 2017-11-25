@@ -20,7 +20,7 @@ help:
 	# verify    - verifies generated files & scripts
 	# test      - runs all tests
 
-all: verify generate test build
+all: generate verify test build
 
 build: go_build
 
@@ -84,14 +84,14 @@ go_mock:
 	mockgen -destination=pkg/subject_access_delegation/mocks/kubernetes.go -package=mocks -source=vendor/k8s.io/client-go/kubernetes/clientset.go Interface
 	#mockgen doesn't support these embedded interfaces
 	mockgen $(CLIENTGoCore) CoreV1Interface > $(MOCKDIR)/core_v1.go
-	mockgen $(CLIENTGoCore) ServiceAccountInterface  > $(MOCKDIR)/service_account_v1.go
-	mockgen $(CLIENTGoCore) PodInterface  > $(MOCKDIR)/pod_v1.go
-	mockgen $(CLIENTGoRbac) RoleBindingInterface  > $(MOCKDIR)/rolebinding_v1.go
-	mockgen $(CLIENTGoRbac) RoleInterface  > $(MOCKDIR)/role_v1.go
-	mockgen $(CLIENTGoRbac) RbacV1Interface  > $(MOCKDIR)/rbac_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/core_v1.go
+	mockgen $(CLIENTGoCore) ServiceAccountInterface  > $(MOCKDIR)/service_account_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/service_account_v1.go
+	mockgen $(CLIENTGoCore) PodInterface  > $(MOCKDIR)/pod_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/pod_v1.go
+	mockgen $(CLIENTGoRbac) RoleBindingInterface  > $(MOCKDIR)/rolebinding_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/rolebinding_v1.go
+	mockgen $(CLIENTGoRbac) RoleInterface  > $(MOCKDIR)/role_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/role_v1.go
+	mockgen $(CLIENTGoRbac) RbacV1Interface  > $(MOCKDIR)/rbac_v1.go
 	sed -i 's/mock_v1/mocks/g' $(MOCKDIR)/rbac_v1.go
