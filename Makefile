@@ -24,7 +24,7 @@ all: verify generate test build
 
 build: go_build
 
-generate: go_codegen go_mock
+generate: go_build_generators go_codegen go_mock
 
 verify: go_fmt go_vet go_dep
 
@@ -47,11 +47,36 @@ test:
 	go test $$(go list ./pkg/... ./cmd/...)
 
 go_codegen:
-	./hack/update-codegen.sh
+	$(BINDIR)/deepcopy-gen \
+		--v 1 --logtostderr \
+		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
+		--output-file-base zz_generated.deepcopy
+	${BINDIR}/client-gen \
+        --input-base "$(PATH_NAME)/pkg/apis/" \
+        --input "authz/v1alpha1" \
+        --clientset-path "$(PATH_NAME)/pkg" \
+        --clientset-name "client"
+	${BINDIR}/informer-gen \
+		--input-dirs "$(PATH_NAME)/pkg/apis/authz" \
+		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
+        --versioned-clientset-package "github.com/jetstack/tarmak/pkg/wing/client" \
+        --listers-package "$(PATH_NAME)/pkg/client/listers" \
+		--output-package "$(PATH_NAME)/pkg/client/informers"
+	$(BINDIR)/lister-gen \
+		--v 1 --logtostderr \
+		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
+		--output-file-base zz_generated.lister
 
 go_build:
 	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  .
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 .
+
+go_build_generators:
+	mkdir -p $(BINDIR)
+	go build -o $(BINDIR)/deepcopy-gen ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
+	go build -o $(BINDIR)/client-gen ./vendor/k8s.io/code-generator/cmd/client-gen
+	go build -o $(BINDIR)/informer-gen ./vendor/k8s.io/code-generator/cmd/informer-gen
+	go build -o $(BINDIR)/lister-gen ./vendor/k8s.io/code-generator/cmd/lister-gen
 
 go_mock:
 	mkdir -p $(MOCKDIR)
