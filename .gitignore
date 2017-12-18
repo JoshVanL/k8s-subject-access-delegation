@@ -1,5 +1,5 @@
 bin/
-pkg/subject_access_delegation/mocks
+pkg/subject_access_delegation/mocks/*
 .get_deps
 .generate_exes
 k8s-subject-access-delegation
