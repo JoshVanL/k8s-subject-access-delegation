@@ -63,11 +63,11 @@ func (t *TimeTrigger) WaitOn() (forceClosed bool) {
 
 func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	select {
+	case <-t.StopCh:
+		return true
 	case <-t.tickerCh:
 		t.completed = true
 		return false
-	case <-t.StopCh:
-		return true
 	}
 }
 

@@ -18,11 +18,11 @@ import (
 var (
 	timeTrigger1 = authzv1alpha1.EventTrigger{
 		Kind:  "Time",
-		Value: "1s",
+		Value: "4n",
 	}
 	timeTrigger2 = authzv1alpha1.EventTrigger{
 		Kind:  "Time",
-		Value: "1s",
+		Value: "4n",
 	}
 
 	originSubjectRole = authzv1alpha1.OriginSubject{
@@ -138,6 +138,8 @@ func newFakeSAD(t *testing.T) *fakeSubjectAccessDelegation {
 			log: logrus.NewEntry(logrus.New()),
 		},
 	}
+
+	s.log.Level = logrus.DebugLevel
 
 	s.sad.Name = "sadName"
 	s.sad.Namespace = "sadNamespace"
@@ -268,7 +270,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_Origin(t *testing.T) {
 	s.SubjectAccessDelegation.sad.Spec.Repeat = 3
 
 	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
-	s.sad.Spec.DeletionTime = "1s"
+	s.sad.Spec.DeletionTime = "4n"
 
 	originSubject := authzv1alpha1.OriginSubject{
 		Kind: "Role",
@@ -294,7 +296,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_Successful(t *testing.T) {
 	repeat := 3
 	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
 	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1}
-	s.sad.Spec.DeletionTime = "1s"
+	s.sad.Spec.DeletionTime = "4n"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectRole
 	s.sad.Spec.DestinationSubjects = destinationSubjects
 
@@ -332,7 +334,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginSA_Successful(t *testing.T) {
 	repeat := 3
 	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
 	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1, timeTrigger2}
-	s.sad.Spec.DeletionTime = "1s"
+	s.sad.Spec.DeletionTime = "4n"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectSA
 	s.sad.Spec.DestinationSubjects = destinationSubjects
 
@@ -381,7 +383,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	repeat := 3
 	s.SubjectAccessDelegation.sad.Spec.Repeat = repeat
 	s.SubjectAccessDelegation.sad.Spec.EventTriggers = []authzv1alpha1.EventTrigger{timeTrigger1, timeTrigger2}
-	s.sad.Spec.DeletionTime = "1s"
+	s.sad.Spec.DeletionTime = "4n"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectUser
 	s.sad.Spec.DestinationSubjects = destinationSubjects
 
@@ -423,7 +425,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	}
 }
 
-func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForeClose(t *testing.T) {
+func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForceClose(t *testing.T) {
 	s := newFakeSAD(t)
 	defer s.ctrl.Finish()
 
@@ -433,6 +435,8 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForeClose(t *testing.T) {
 	s.sad.Spec.DeletionTime = "1s"
 	s.SubjectAccessDelegation.sad.Spec.OriginSubject = originSubjectRole
 	s.sad.Spec.DestinationSubjects = destinationSubjects
+
+	s.SubjectAccessDelegation.sad.Spec.EventTriggers[0].Value = "1s"
 
 	createBinding := &rbacv1.RoleBinding{}
 	createBinding.Name = fmt.Sprintf("%s-%s-%s", s.sad.Name, s.sad.Namespace, roleRef1.Name)
@@ -448,7 +452,7 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForeClose(t *testing.T) {
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding.Name, gomock.Any()).AnyTimes().Return(nil)
 
 	go func(s *fakeSubjectAccessDelegation, t *testing.T) {
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Millisecond * 30)
 		if err := s.Delete(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}

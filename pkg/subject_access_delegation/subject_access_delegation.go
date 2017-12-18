@@ -206,48 +206,40 @@ func (s *SubjectAccessDelegation) buildRoleBindings() error {
 }
 
 func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
-	s.log.Debugf("Activating Triggers")
+	s.log.Debug("Activating Triggers")
 	for _, trigger := range s.triggers {
 		trigger.Activate()
 	}
-	s.log.Debugf("Triggers Activated")
+	s.log.Info("Triggers Activated")
 
 	ready := false
 
 	for !ready {
-		closed, err := s.waitOnTriggers()
-		if err != nil {
-			return false, fmt.Errorf("error waiting on triggers to fire: %v", err)
-		}
-		if closed {
+		if s.waitOnTriggers() {
 			return true, nil
 		}
 
-		s.log.Debugf("All triggers have been satisfied, checking still true")
+		s.log.Info("All triggers have been satisfied, checking still true")
 
 		ready = s.checkTriggers()
 		if !ready {
-			s.log.Debug("Not all triggers ready at the same time, re-waiting")
+			s.log.Info("Not all triggers ready at the same time, re-waiting")
 		}
 	}
 
-	s.log.Debug("All triggers ready")
+	s.log.Info("All triggers ready")
 
 	return false, nil
 }
 
-func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool, err error) {
+func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool) {
 	for _, trigger := range s.triggers {
-		//closed, err := trigger.WaitOn()
-		//if err != nil {
-		//	return false, fmt.Errorf("error waiting on trigger to fire: %v", err)
-		//}
 		if trigger.WaitOn() {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 func (s *SubjectAccessDelegation) checkTriggers() (ready bool) {

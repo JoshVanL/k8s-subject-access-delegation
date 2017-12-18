@@ -1,5 +1,7 @@
 package utils
 
+//TODO make this better
+
 import (
 	"fmt"
 	"math"

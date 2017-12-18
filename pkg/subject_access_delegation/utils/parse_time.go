@@ -40,6 +40,12 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
+		nanoseconds, err := match(arg, "^[0-9]+(.[0-9]+|)n$")
+		if err == nil {
+			total = total.Add(time.Nanosecond * time.Duration(nanoseconds))
+			continue
+		}
+
 		seconds, err := match(arg, "^[0-9]+(.[0-9]+|)s$")
 		if err == nil {
 			total = total.Add(time.Second * time.Duration(seconds))
