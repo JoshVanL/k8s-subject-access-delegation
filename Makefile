@@ -56,10 +56,15 @@ go_codegen:
         --input "authz/v1alpha1" \
         --clientset-path "$(PATH_NAME)/pkg" \
         --clientset-name "client"
+	${BINDIR}/client-gen \
+        --input-base "$(PATH_NAME)/pkg/apis/" \
+        --input "authz/v1alpha1" \
+        --clientset-path "$(PATH_NAME)/pkg/client/clientset" \
+        --clientset-name "versioned"
 	${BINDIR}/informer-gen \
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz" \
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
-        --versioned-clientset-package "github.com/jetstack/tarmak/pkg/wing/client" \
+        --versioned-clientset-package "$(PATH_NAME)/pkg/client/clientset/versioned" \
         --listers-package "$(PATH_NAME)/pkg/client/listers" \
 		--output-package "$(PATH_NAME)/pkg/client/informers"
 	$(BINDIR)/lister-gen \
