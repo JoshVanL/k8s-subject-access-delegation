@@ -1,11 +1,8 @@
 package pod_trigger
 
-//TODO: Have one parent listener for each research type e.g. one pod, deployment tigger listener that sends info to all relevant trigger children -- reduces api overhead
-
 import (
 	"fmt"
-	"reflect"
-	//"time"
+	//"reflect"
 
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
@@ -16,7 +13,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type AddPodTrigger struct {
+type DelPodTrigger struct {
 	log *logrus.Entry
 
 	sad      interfaces.SubjectAccessDelegation
@@ -31,10 +28,10 @@ type AddPodTrigger struct {
 	informer  informer.PodInformer
 }
 
-var _ interfaces.Trigger = &AddPodTrigger{}
+var _ interfaces.Trigger = &DelPodTrigger{}
 
-func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *AddPodTrigger, err error) {
-	podTrigger = &AddPodTrigger{
+func NewDelPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *DelPodTrigger, err error) {
+	podTrigger = &DelPodTrigger{
 		log:         sad.Log(),
 		sad:         sad,
 		podName:     trigger.Value,
@@ -49,12 +46,14 @@ func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 	podTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		//AddFunc: podTrigger.addFunc,
 		//UpdateFunc: nil,
-		UpdateFunc: func(old, new interface{}) {
-			if !reflect.DeepEqual(old, new) {
-				podTrigger.addFunc(new)
-			}
+		//UpdateFunc: func(old, new interface{}) {
+		//	if !reflect.DeepEqual(old, new) {
+		//		podTrigger.addFunc(new)
+		//	}
+		//},
+		DeleteFunc: func(obj interface{}) {
+			podTrigger.delFunc(obj)
 		},
-		//DeleteFunc: nil,
 	})
 
 	fmt.Printf("%v", podTrigger.podName)
@@ -62,11 +61,11 @@ func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 	return podTrigger, nil
 }
 
-func (p *AddPodTrigger) addFunc(obj interface{}) {
+func (p *DelPodTrigger) delFunc(obj interface{}) {
 
 	pod, err := utils.GetPodObject(p.informer.Lister(), obj)
 	if err != nil {
-		p.log.Errorf("failed to get added pod object: %v", err)
+		p.log.Errorf("failed to get deleted pod object: %v", err)
 		return
 	}
 	if pod == nil {
@@ -77,7 +76,7 @@ func (p *AddPodTrigger) addFunc(obj interface{}) {
 		return
 	}
 
-	p.log.Infof("A new pod '%s' has been added", pod.Name)
+	p.log.Infof("A pod '%s' has been deleted", pod.Name)
 	p.count++
 	if p.count >= p.replicas {
 		p.log.Infof("Required replicas was met")
@@ -86,19 +85,19 @@ func (p *AddPodTrigger) addFunc(obj interface{}) {
 	}
 }
 
-func (p *AddPodTrigger) WaitOn() (forceClosed bool) {
+func (p *DelPodTrigger) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
 	if p.watchChannels() {
-		p.log.Debug("Add Pod Trigger was force closed")
+		p.log.Debug("Del Pod Trigger was force closed")
 		return true
 	}
 
-	p.log.Debug("Add Pod Trigger completed")
+	p.log.Debug("Del Pod Trigger completed")
 	return false
 }
 
-func (p *AddPodTrigger) watchChannels() (forceClose bool) {
+func (p *DelPodTrigger) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true
@@ -115,21 +114,21 @@ func (p *AddPodTrigger) watchChannels() (forceClose bool) {
 //	p.log.Infof("deleteFunc")
 //}
 
-func (p *AddPodTrigger) Activate() {
-	p.log.Debug("Add Pod Trigger Activated")
+func (p *DelPodTrigger) Activate() {
+	p.log.Debug("Del Pod Trigger Activated")
 	p.informer.Informer().Run(p.stopCh)
 	return
 }
 
-func (p *AddPodTrigger) Completed() bool {
+func (p *DelPodTrigger) Completed() bool {
 	return p.completed
 }
 
-func (p *AddPodTrigger) Delete() error {
+func (p *DelPodTrigger) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *AddPodTrigger) Replicas() int {
+func (p *DelPodTrigger) Replicas() int {
 	return p.replicas
 }

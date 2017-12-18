@@ -238,11 +238,11 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 
 func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool, err error) {
 	for _, trigger := range s.triggers {
-		closed, err := trigger.WaitOn()
-		if err != nil {
-			return false, fmt.Errorf("error waiting on trigger to fire: %v", err)
-		}
-		if closed {
+		//closed, err := trigger.WaitOn()
+		//if err != nil {
+		//	return false, fmt.Errorf("error waiting on trigger to fire: %v", err)
+		//}
+		if trigger.WaitOn() {
 			return true, nil
 		}
 	}

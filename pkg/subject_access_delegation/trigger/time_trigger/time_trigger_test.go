@@ -45,11 +45,7 @@ func TestTimeTrigger_Successful(t *testing.T) {
 	g.TimeTrigger.timestamp = time.Now().Add(time.Second * 2)
 	g.Activate()
 
-	forcedClosed, err := g.WaitOn()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if forcedClosed {
+	if g.WaitOn() {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
 
@@ -72,11 +68,7 @@ func TestTimeTrigger_ForceClosed(t *testing.T) {
 		}
 	}(g, t)
 
-	forcedClosed, err := g.WaitOn()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if !forcedClosed {
+	if !g.WaitOn() {
 		t.Error("expected time trigger to be force closed, it wasn't")
 	}
 
@@ -92,11 +84,7 @@ func TestTimeTrigger_DoubleActivate(t *testing.T) {
 	g.timestamp = time.Now().Add(time.Second)
 	g.Activate()
 
-	forcedClosed, err := g.WaitOn()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if forcedClosed {
+	if g.WaitOn() {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
 
@@ -105,11 +93,7 @@ func TestTimeTrigger_DoubleActivate(t *testing.T) {
 	}
 
 	g.Activate()
-	forcedClosed, err = g.WaitOn()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if forcedClosed {
+	if g.WaitOn() {
 		t.Error("expected time trigger to not be force closed, it was")
 	}
 

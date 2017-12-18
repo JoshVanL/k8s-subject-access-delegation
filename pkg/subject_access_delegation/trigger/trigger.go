@@ -12,6 +12,7 @@ import (
 
 const TimeKind = "Time"
 const AddPodKind = "AddPod"
+const DelPodKind = "DelPod"
 
 func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 	var triggers []interfaces.Trigger
@@ -22,18 +23,26 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 		case TimeKind:
 			timeTrigger, err := time_trigger.New(sad, &trigger)
 			if err != nil {
-				result = multierror.Append(result, fmt.Errorf("failed to add new time tigger: %v", err))
+				result = multierror.Append(result, fmt.Errorf("failed to add new Time Tigger: %v", err))
 				break
 			}
 			triggers = append(triggers, timeTrigger)
 
 		case AddPodKind:
-			addPodTrigger, err := pod_trigger.New(sad, &trigger)
+			addPodTrigger, err := pod_trigger.NewAddPodTrigger(sad, &trigger)
 			if err != nil {
-				result = multierror.Append(result, fmt.Errorf("failed to add new Add Pod tigger: %v", err))
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add Pod Tigger: %v", err))
 				break
 			}
 			triggers = append(triggers, addPodTrigger)
+
+		case DelPodKind:
+			delPodTrigger, err := pod_trigger.NewDelPodTrigger(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Del Pod Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, delPodTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))

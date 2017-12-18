@@ -49,16 +49,16 @@ func (t *TimeTrigger) Activate() {
 	t.TickTock()
 }
 
-func (t *TimeTrigger) WaitOn() (forceClosed bool, err error) {
+func (t *TimeTrigger) WaitOn() (forceClosed bool) {
 	t.log.Debug("Trigger waiting")
 
 	if t.watchChannels() {
 		t.log.Debug("Time Trigger was force closed")
-		return true, nil
+		return true
 	}
 
 	t.log.Debug("Time Trigger time expired")
-	return false, nil
+	return false
 }
 
 func (t *TimeTrigger) watchChannels() (forceClose bool) {
