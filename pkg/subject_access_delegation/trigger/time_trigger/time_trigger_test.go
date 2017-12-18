@@ -1,5 +1,7 @@
 package time_trigger
 
+//TODO: Get rid of the long wait times
+
 import (
 	"testing"
 	"time"
@@ -42,7 +44,7 @@ func TestTimeTrigger_Successful(t *testing.T) {
 	g := newFakeTimeTrigger(t)
 	defer g.ctrl.Finish()
 
-	g.TimeTrigger.timestamp = time.Now().Add(time.Second * 2)
+	g.TimeTrigger.timestamp = time.Now().Add(time.Millisecond)
 	g.Activate()
 
 	if g.WaitOn() {
@@ -58,11 +60,10 @@ func TestTimeTrigger_ForceClosed(t *testing.T) {
 	g := newFakeTimeTrigger(t)
 	defer g.ctrl.Finish()
 
-	g.timestamp = time.Now().Add(time.Second * 5)
+	g.timestamp = time.Now().Add(time.Second)
 	g.Activate()
 
 	go func(g *fakeTimeTrigger, t *testing.T) {
-		time.Sleep(time.Second)
 		if err := g.Delete(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -81,7 +82,7 @@ func TestTimeTrigger_DoubleActivate(t *testing.T) {
 	g := newFakeTimeTrigger(t)
 	defer g.ctrl.Finish()
 
-	g.timestamp = time.Now().Add(time.Second)
+	g.timestamp = time.Now().Add(time.Nanosecond)
 	g.Activate()
 
 	if g.WaitOn() {
