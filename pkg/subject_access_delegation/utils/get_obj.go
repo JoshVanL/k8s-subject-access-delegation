@@ -26,17 +26,17 @@ func GetPodObject(lister lister.PodLister, obj interface{}) (pod *corev1.Pod, er
 	//c.log.Infof("Processing object: %s", object.GetName())
 	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
 		if ownerRef.Kind != "Pod" {
-			return
+			return nil, fmt.Errorf("object not of 'Pod' type")
 		}
 
 		pod, err := lister.Pods(object.GetNamespace()).Get(ownerRef.Name)
 		if err != nil {
 			//c.log.Infof("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
-			return nil, nil
+			return nil, err
 		}
 
 		return pod, nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("ownerRef of object was nil")
 }

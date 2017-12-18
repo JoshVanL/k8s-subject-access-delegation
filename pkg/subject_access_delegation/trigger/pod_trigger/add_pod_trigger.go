@@ -56,7 +56,6 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 		},
 		//DeleteFunc: nil,
 	})
-	podTrigger.informer.Informer().Run(podTrigger.stopCh)
 
 	fmt.Printf("%v", podTrigger.podName)
 
@@ -65,20 +64,22 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 
 func (p *AddPodTrigger) addFunc(obj interface{}) {
 
-	fmt.Printf("HERE")
-
 	pod, err := utils.GetPodObject(p.informer.Lister(), obj)
 	if err != nil {
 		p.log.Errorf("failed to get added pod object: %v", err)
+		return
 	}
-	fmt.Printf("\n%v\n", pod)
-
-	if pod.Name == p.podName {
-		p.log.Infof("A NEW POD WAS ADDED!!! HERE ########")
+	if pod == nil {
+		p.log.Error("failed to get pod, received nil object")
 	}
 
+	if pod.Name != p.podName {
+		return
+	}
+
+	p.log.Infof("A new pod '%s' has been added", pod.Name)
 	p.count++
-	if p.replicas <= p.count {
+	if p.count >= p.replicas {
 		p.log.Infof("Required replicas was met")
 		p.completed = true
 		close(p.completedCh)
@@ -86,15 +87,17 @@ func (p *AddPodTrigger) addFunc(obj interface{}) {
 }
 
 func (p *AddPodTrigger) WaitOn() (forceClosed bool, err error) {
-	//t.log.Debug("Trigger waiting")
+	p.log.Debug("Trigger waiting")
 
-	//if t.watchChannels() {
-	//	t.log.Debug("Time Trigger was force closed")
-	//	return true, nil
-	//}
+	if p.watchChannels() {
+		p.log.Debug("Add Pod Trigger was force closed")
+		return true, nil
+	}
 
-	//t.log.Debug("Time Trigger time expired")
+	t.log.Debug("Add Pod Trigger completed")
+}
 
+func (p *AddPodTrigger) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true, nil
@@ -112,6 +115,8 @@ func (p *AddPodTrigger) WaitOn() (forceClosed bool, err error) {
 //}
 
 func (p *AddPodTrigger) Activate() {
+	p.log.Debug("Add Pod Trigger Activated")
+	podTrigger.informer.Informer().Run(podTrigger.stopCh)
 	return
 }
 

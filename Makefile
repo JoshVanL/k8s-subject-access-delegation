@@ -20,7 +20,7 @@ help:
 	# verify    - verifies generated files & scripts
 	# test      - runs all tests
 
-all: generate verify test build
+all: verify test build
 
 build: go_build
 
