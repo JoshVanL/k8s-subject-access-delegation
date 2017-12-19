@@ -95,9 +95,7 @@ func (p *DelPodTrigger) watchChannels() (forceClose bool) {
 func (p *DelPodTrigger) Activate() {
 	p.log.Debug("Del Pod Trigger Activated")
 
-	var infStopCh chan struct{}
-
-	go p.informer.Informer().Run(infStopCh)
+	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }
