@@ -40,10 +40,13 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
-		err := matchStr(strings.ToLower(arg), "^forever$")
-		if err == nil {
+		if err := matchStr(strings.ToLower(arg), "^forever$"); err == nil {
 			total = time.Unix(1<<63-62135596801, 999999999)
 			break
+		}
+
+		if err := matchStr(strings.ToLower(arg), "^now$"); err == nil {
+			continue
 		}
 
 		nanoseconds, err := matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
