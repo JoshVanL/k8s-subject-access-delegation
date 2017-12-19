@@ -3,10 +3,6 @@ package pod_trigger
 //TODO: Have one parent listener for each research type e.g. one pod, deployment tigger listener that sends info to all relevant trigger children -- reduces api overhead
 
 import (
-	"fmt"
-	"reflect"
-	//"time"
-
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -47,17 +43,9 @@ func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 	}
 
 	podTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		//AddFunc: podTrigger.addFunc,
-		//UpdateFunc: nil,
-		UpdateFunc: func(old, new interface{}) {
-			if !reflect.DeepEqual(old, new) {
-				podTrigger.addFunc(new)
-			}
-		},
-		//DeleteFunc: nil,
+		//TODO: Fix this
+		AddFunc: podTrigger.addFunc,
 	})
-
-	fmt.Printf("%v", podTrigger.podName)
 
 	return podTrigger, nil
 }
@@ -107,17 +95,13 @@ func (p *AddPodTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-//func (p *AddPodTrigger) updateFunc(obj interface{}) {
-//	p.log.Infof("updateFunc")
-//}
-
-//func (p *AddPodTrigger) deleteFunc(obj interface{}) {
-//	p.log.Infof("deleteFunc")
-//}
-
 func (p *AddPodTrigger) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
-	p.informer.Informer().Run(p.stopCh)
+
+	var infStopCh chan struct{}
+
+	go p.informer.Informer().Run(infStopCh)
+
 	return
 }
 

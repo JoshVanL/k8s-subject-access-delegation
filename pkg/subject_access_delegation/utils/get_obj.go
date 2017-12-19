@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func GetPodObject(lister lister.PodLister, obj interface{}) (pod *corev1.Pod, err error) {
+func GetPodObject(poLister lister.PodLister, obj interface{}) (pod *corev1.Pod, err error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
@@ -21,22 +21,11 @@ func GetPodObject(lister lister.PodLister, obj interface{}) (pod *corev1.Pod, er
 		if !ok {
 			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
 		}
-		//c.log.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
-	}
-	//c.log.Infof("Processing object: %s", object.GetName())
-	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-		if ownerRef.Kind != "Pod" {
-			return nil, fmt.Errorf("object not of 'Pod' type")
-		}
-
-		pod, err := lister.Pods(object.GetNamespace()).Get(ownerRef.Name)
-		if err != nil {
-			//c.log.Infof("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
-			return nil, err
-		}
-
-		return pod, nil
 	}
 
-	return nil, fmt.Errorf("ownerRef of object was nil")
+	if pod, ok = object.(*corev1.Pod); !ok {
+		return nil, fmt.Errorf("failed to covert object to Pod type")
+	}
+
+	return pod, nil
 }

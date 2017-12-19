@@ -210,6 +210,7 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	for _, trigger := range s.triggers {
 		trigger.Activate()
 	}
+
 	s.log.Info("Triggers Activated")
 
 	ready := false
