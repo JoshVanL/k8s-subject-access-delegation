@@ -40,31 +40,37 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
-		nanoseconds, err := match(arg, "^[0-9]+(.[0-9]+|)n$")
+		err := matchStr(strings.ToLower(arg), "^forever$")
+		if err == nil {
+			total = time.Unix(1<<63-62135596801, 999999999)
+			break
+		}
+
+		nanoseconds, err := matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
 		if err == nil {
 			total = total.Add(time.Nanosecond * time.Duration(nanoseconds))
 			continue
 		}
 
-		seconds, err := match(arg, "^[0-9]+(.[0-9]+|)s$")
+		seconds, err := matchNum(arg, "^[0-9]+(.[0-9]+|)s$")
 		if err == nil {
 			total = total.Add(time.Second * time.Duration(seconds))
 			continue
 		}
 
-		minutes, err := match(arg, "^[0-9]+(.[0-9]+|)m$")
+		minutes, err := matchNum(arg, "^[0-9]+(.[0-9]+|)m$")
 		if err == nil {
 			total = total.Add(time.Minute * time.Duration(minutes))
 			continue
 		}
 
-		hours, err := match(arg, "^[0-9]+(.[0-9]+|)h$")
+		hours, err := matchNum(arg, "^[0-9]+(.[0-9]+|)h$")
 		if err == nil {
 			total = total.Add(time.Hour * time.Duration(hours))
 			continue
 		}
 
-		days, err := match(arg, "^[0-9]+(.[0-9]+|)d$")
+		days, err := matchNum(arg, "^[0-9]+(.[0-9]+|)d$")
 		if err == nil {
 			total = total.Add(time.Hour * time.Duration(days*24))
 			continue
@@ -76,7 +82,7 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 	return total, result.ErrorOrNil()
 }
 
-func match(str, regex string) (num float64, err error) {
+func matchNum(str, regex string) (num float64, err error) {
 	r := regexp.MustCompile(regex)
 	match := r.FindStringSubmatch(str)
 	if len(match) > 0 {
@@ -89,6 +95,16 @@ func match(str, regex string) (num float64, err error) {
 	}
 
 	return -1, fmt.Errorf("'%s' didn't match regex '%s'", str, regex)
+}
+
+func matchStr(str, regex string) error {
+	r := regexp.MustCompile(regex)
+	match := r.FindStringSubmatch(str)
+	if len(match) != 1 {
+		return fmt.Errorf("'%s' didn't match regex '%s'", str, regex)
+	}
+
+	return nil
 }
 
 func getNum(str string) (num float64, err error) {

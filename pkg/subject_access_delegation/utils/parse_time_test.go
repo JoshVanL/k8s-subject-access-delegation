@@ -24,6 +24,12 @@ func Test_ParseTime_Human_Read_NoError(t *testing.T) {
 	corrTime = time.Now().Add(sec)
 	test_stamp(stamp, corrTime, t)
 
+	corrTime = time.Unix(1<<63-62135596801, 999999999)
+	test_stamp("FOREVER", corrTime, t)
+	test_stamp("Forever", corrTime, t)
+	test_stamp("forever", corrTime, t)
+	test_stamp("FoReVeR", corrTime, t)
+
 	stamp, day = gen_day(gen)
 	corrTime = time.Now().Add(day)
 	test_stamp(stamp, corrTime, t)
@@ -232,7 +238,10 @@ func Test_ParseTime_Human_Read_Error(t *testing.T) {
 	test_error_stamp("1000000mh", t)
 	test_error_stamp("100s500", t)
 	test_error_stamp("###100j", t)
-	test_error_stamp("#1000", t)
+	test_error_stamp("Forever!", t)
+	test_error_stamp("Foorever", t)
+	test_error_stamp("forever?", t)
+	test_error_stamp("?forever", t)
 }
 
 func gen_day(gen *rand.Rand) (stamp string, duration time.Duration) {
@@ -265,8 +274,8 @@ func test_stamp(stamp string, corrTime time.Time, t *testing.T) {
 		return
 	}
 
-	// 5x10^-5 Seconds, reasonable error time for computation
-	if math.Abs(float64(result.Sub(corrTime).Nanoseconds())) > (0.00005 * float64(time.Duration(time.Second))) {
+	// 5x10^-3 Seconds, reasonable error time for computation
+	if math.Abs(float64(result.Sub(corrTime).Nanoseconds())) > (0.005 * float64(time.Duration(time.Second))) {
 		t.Errorf("time didn't match expected. exp=%+v got=%+v diff=%+v", corrTime, result, corrTime.Sub(result))
 	}
 
