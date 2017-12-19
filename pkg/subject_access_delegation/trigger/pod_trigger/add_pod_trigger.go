@@ -52,7 +52,7 @@ func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 
 func (p *AddPodTrigger) addFunc(obj interface{}) {
 
-	pod, err := utils.GetPodObject(p.informer.Lister(), obj)
+	pod, err := utils.GetPodObject(obj)
 	if err != nil {
 		p.log.Errorf("failed to get added pod object: %v", err)
 		return

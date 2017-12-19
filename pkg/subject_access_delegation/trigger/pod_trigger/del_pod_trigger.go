@@ -49,7 +49,7 @@ func NewDelPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 
 func (p *DelPodTrigger) delFunc(obj interface{}) {
 
-	pod, err := utils.GetPodObject(p.informer.Lister(), obj)
+	pod, err := utils.GetPodObject(obj)
 	if err != nil {
 		p.log.Errorf("failed to get deleted pod object: %v", err)
 		return

@@ -6,11 +6,14 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node_trigger"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod_trigger"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time_trigger"
 )
 
 const TimeKind = "Time"
+const AddNodeKind = "AddNode"
+const DelNodeKind = "DelNode"
 const AddPodKind = "AddPod"
 const DelPodKind = "DelPod"
 
@@ -27,6 +30,22 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 				break
 			}
 			triggers = append(triggers, timeTrigger)
+
+		case AddNodeKind:
+			addNodeTrigger, err := node_trigger.NewAddNodeTrigger(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add Node Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, addNodeTrigger)
+
+		case DelNodeKind:
+			delNodeTrigger, err := node_trigger.NewDelNodeTrigger(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Del Node Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, delNodeTrigger)
 
 		case AddPodKind:
 			addPodTrigger, err := pod_trigger.NewAddPodTrigger(sad, &trigger)
