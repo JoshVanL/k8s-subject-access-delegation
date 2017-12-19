@@ -49,3 +49,24 @@ func GetNodeObject(obj interface{}) (node *corev1.Node, err error) {
 
 	return node, nil
 }
+
+func GetServiceObject(obj interface{}) (service *corev1.Service, err error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, fmt.Errorf("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
+		}
+	}
+
+	if service, ok = object.(*corev1.Service); !ok {
+		return nil, fmt.Errorf("failed to covert object to Pod type")
+	}
+
+	return service, nil
+}
