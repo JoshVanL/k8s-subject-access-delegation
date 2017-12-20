@@ -7,8 +7,14 @@ required = [
   "k8s.io/code-generator/cmd/defaulter-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/code-generator/cmd/lister-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+  "github.com/golang/dep",
+  "github.com/go-yaml/yaml"
 ]
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/golang/mock"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
