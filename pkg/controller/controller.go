@@ -21,6 +21,7 @@ import (
 	sadscheme "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned/scheme"
 	informers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions"
 	listers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/listers/authz/v1alpha1"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/ntp_client"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
 )
 
@@ -51,11 +52,16 @@ type Controller struct {
 
 	apiserverURL string
 	log          *logrus.Entry
+	ntpClient    *ntp_client.NTPClient
+	timeOffset   time.Duration
 
 	delegations map[string]*subject_access_delegation.SubjectAccessDelegation
 }
 
-var stopCh = make(chan struct{})
+var (
+	stopCh = make(chan struct{})
+	hosts  = []string{"0.uk.pool.ntp.org", "1.uk.pool.ntp.org", "2.uk.pool.ntp.org", "3.uk.pool.ntp.org"}
+)
 
 func NewController(
 	kubeclientset kubernetes.Interface,
@@ -76,6 +82,7 @@ func NewController(
 		sadsSynced:          sadInformer.Informer().HasSynced,
 		workqueue:           workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
 		log:                 log,
+		ntpClient:           ntp_client.NewNTPClient(hosts),
 	}
 
 	log.Info("Setting up event handlers")
@@ -99,6 +106,11 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer c.workqueue.ShutDown()
 
 	c.log.Info("Starting SAD controller")
+
+	c.log.Info("Getting current time form NTP server(s)")
+	if err := c.getOffSet(); err != nil {
+		return fmt.Errorf("failed to set accurate time for controller: %v", err)
+	}
 
 	c.log.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.sadsSynced); !ok {
@@ -152,6 +164,16 @@ func (c *Controller) processNextWorkItem() bool {
 	}
 
 	return true
+}
+
+func (c *Controller) getOffSet() (err error) {
+	if c.timeOffset, err = c.ntpClient.GetOffset(); err != nil {
+		return err
+	}
+
+	c.log.Infof("current time: %s", time.Now().Add(c.timeOffset).String())
+
+	return nil
 }
 
 func (c *Controller) syncHandler(key string) error {
