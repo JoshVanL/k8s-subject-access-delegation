@@ -32,16 +32,19 @@ type SubjectAccessDelegation struct {
 	triggers            []interfaces.Trigger
 	roleBindings        []*rbacv1.RoleBinding
 	deletionTimeStamp   time.Time
-	stopCh              chan struct{}
+
+	stopCh      chan struct{}
+	clockOffset time.Duration
 }
 
-func New(sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface) *SubjectAccessDelegation {
+func New(sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface, clockOffset time.Duration) *SubjectAccessDelegation {
 	return &SubjectAccessDelegation{
 		log:                 log,
 		client:              client,
 		kubeInformerFactory: kubeInformerFactory,
 		sad:                 sad,
 		stopCh:              make(chan struct{}),
+		clockOffset:         clockOffset,
 	}
 }
 
@@ -113,11 +116,11 @@ func (s *SubjectAccessDelegation) ParseDeletionTime() error {
 }
 
 func (s *SubjectAccessDelegation) waitOnDeletion() {
-	if time.Now().After(s.deletionTimeStamp) {
+	if s.RealNow().After(s.deletionTimeStamp) {
 		return
 	}
 
-	ticker := time.After(time.Until(s.deletionTimeStamp))
+	ticker := time.After(time.Until(s.RealTime(s.deletionTimeStamp)))
 
 	select {
 	case <-ticker:
@@ -352,6 +355,14 @@ func (s *SubjectAccessDelegation) Delete() error {
 	close(s.stopCh)
 
 	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) RealTime(time time.Time) time.Time {
+	return time.Add(s.clockOffset)
+}
+
+func (s *SubjectAccessDelegation) RealNow() time.Time {
+	return time.Now().Add(s.clockOffset)
 }
 
 func (s *SubjectAccessDelegation) Log() *logrus.Entry {
