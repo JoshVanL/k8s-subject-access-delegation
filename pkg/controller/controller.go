@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -85,7 +87,8 @@ func NewController(
 		ntpClient:           ntp_client.NewNTPClient(hosts),
 	}
 
-	log.Info("Setting up event handlers")
+	//log.Info("Setting up event handlers")
+	log.Infof("Creating new SAD Controller")
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSad,
 		UpdateFunc: func(old, new interface{}) {
@@ -185,7 +188,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	sad, err := c.sadsLister.SubjectAccessDelegations(namespace).Get(name)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			runtime.HandleError(fmt.Errorf("sad '%s' in work queue no longer exists", key))
 			return nil
 		}
@@ -336,6 +339,42 @@ func (c *Controller) appendDelegation(delegation *subject_access_delegation.Subj
 	}
 
 	c.delegations[sad.Name] = delegation
+
+	return nil
+}
+
+func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
+	crd := &apiextv1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "subjectaccessdelegations.authz.k8s.io",
+		},
+		Spec: apiextv1beta1.CustomResourceDefinitionSpec{
+			Group:   "authz.k8s.io",
+			Version: "v1alpha1",
+			Names: apiextv1beta1.CustomResourceDefinitionNames{
+				Plural:     "subjectaccessdelegations",
+				Singular:   "subjectaccessdelegation",
+				Kind:       "SubjectAccessDelegation",
+				ShortNames: []string{"sad"},
+			},
+			Scope: "Namespaced",
+		},
+	}
+
+	crd.APIVersion = "apiextensions.k8s.io/v1beta1"
+	crd.Kind = "CustomResourceDefinition"
+
+	_, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			c.log.Info("SAD Custom Resource Definition Already Exists")
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	c.log.Info("SAD	Custom Resource Definition Created")
 
 	return nil
 }

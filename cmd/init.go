@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -51,6 +52,11 @@ var RootCmd = &cobra.Command{
 			log.Fatalf("error building kubernetes clientset: %v", err)
 		}
 
+		apiextClientSet, err := apiextcs.NewForConfig(cfg)
+		if err != nil {
+			log.Fatalf("error building api extention clientset: %v", err)
+		}
+
 		exampleClient, err := clientset.NewForConfig(cfg)
 		if err != nil {
 			log.Fatalf("error building example clientset: %v", err)
@@ -59,6 +65,10 @@ var RootCmd = &cobra.Command{
 		kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 		exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, log)
+
+		if err := controller.EnsureCRD(apiextClientSet); err != nil {
+			log.Fatalf("failed to ensure custom resource definition: %v", err)
+		}
 
 		stopCh := signals.SetupSignalHandler()
 
