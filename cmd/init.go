@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,6 +24,8 @@ import (
 
 const FlagApiServerURL = "api-url"
 const FlagKubeConfig = "kube-config"
+const FlagWorkers = "worker-threads"
+const FlagLogLevel = "log-level"
 
 var RootCmd = &cobra.Command{
 	Use:   "subject-access-delegation",
@@ -31,20 +34,32 @@ var RootCmd = &cobra.Command{
 		log := LogLevel(cmd)
 
 		var masterURL string
+		var result *multierror.Error
+
+		workerThreads, err := cmd.PersistentFlags().GetInt(FlagWorkers)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("unable to parse number of worker threads flag: %v", err))
+		} else if workerThreads > 10 || workerThreads < 1 {
+			result = multierror.Append(result, fmt.Errorf("number of worker threads must be between 1 and 10: %d", workerThreads))
+		}
 
 		kubeconfig, err := cmd.PersistentFlags().GetString(FlagKubeConfig)
 		if err != nil {
-			log.Fatal(err)
+			result = multierror.Append(result, fmt.Errorf("unable to parse kube config flag: %v", err))
 		}
 
 		kubeconfig, err = homedir.Expand(kubeconfig)
 		if err != nil {
-			log.Fatalf("unable to expand config directory ('%s'): %v", kubeconfig, err)
+			result = multierror.Append(result, fmt.Errorf("unable to expand config directory ('%s'): %v", kubeconfig, err))
 		}
 
 		cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
 		if err != nil {
-			log.Fatalf("error building kubeconfig: %v", err)
+			result = multierror.Append(result, fmt.Errorf("error building kubeconfig: %v", err))
+		}
+
+		if result != nil {
+			log.Fatal(result.ErrorOrNil())
 		}
 
 		kubeClient, err := kubernetes.NewForConfig(cfg)
@@ -75,7 +90,7 @@ var RootCmd = &cobra.Command{
 		go kubeInformerFactory.Start(stopCh)
 		go exampleInformerFactory.Start(stopCh)
 
-		if err = controller.Run(2, stopCh); err != nil {
+		if err = controller.Run(workerThreads, stopCh); err != nil {
 			log.Fatalf("error running controller: %s", err.Error())
 		}
 
@@ -83,10 +98,10 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.PersistentFlags().Int("log-level", 1, "Set the log level of output. 0-Fatal 1-Info 2-Debug")
-	RootCmd.Flag("log-level").Shorthand = "l"
+	RootCmd.PersistentFlags().IntP(FlagLogLevel, "l", 1, "Set the log level of output. 0-Fatal 1-Info 2-Debug")
 	RootCmd.PersistentFlags().StringP(FlagApiServerURL, "u", "http://127.0.0.1:8001", "Set URL of Kubernetes API")
 	RootCmd.PersistentFlags().StringP(FlagKubeConfig, "c", "~/.kube/config", "Path to kube config")
+	RootCmd.PersistentFlags().IntP(FlagWorkers, "w", 2, "Number of worker threads for controller")
 }
 
 func Execute() {
