@@ -79,9 +79,12 @@ func (n *NTPClient) GetOffset() (offset time.Duration, err error) {
 		}
 	}
 
-	//now = time.Now().Add(n.averageOffSet(offsets))
+	offset, err = n.averageOffSet(offsets)
+	if err != nil {
+		result = multierror.Append(result, err)
+	}
 
-	return n.averageOffSet(offsets), result.ErrorOrNil()
+	return offset, result.ErrorOrNil()
 }
 
 func NewPairPacket(host string) *PairPacketNTP {
@@ -224,12 +227,16 @@ func (p *PairPacketNTP) verifyResponsePacket() error {
 	return result.ErrorOrNil()
 }
 
-func (n *NTPClient) averageOffSet(offsets []time.Duration) time.Duration {
+func (n *NTPClient) averageOffSet(offsets []time.Duration) (offset time.Duration, err error) {
 	var avg int64
+
+	if len(offsets) == 0 {
+		return time.Duration(0), errors.New("no offsets to average - check internet connection?")
+	}
 
 	for _, offset := range offsets {
 		avg += offset.Nanoseconds()
 	}
 
-	return time.Duration(avg / int64(len(offsets)))
+	return time.Duration(avg / int64(len(offsets))), nil
 }

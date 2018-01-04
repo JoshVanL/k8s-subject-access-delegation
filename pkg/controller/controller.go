@@ -55,7 +55,7 @@ type Controller struct {
 	apiserverURL string
 	log          *logrus.Entry
 	ntpClient    *ntp_client.NTPClient
-	timeOffset   time.Duration
+	clockOffset  time.Duration
 
 	delegations map[string]*subject_access_delegation.SubjectAccessDelegation
 }
@@ -71,6 +71,8 @@ func NewController(
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	sadInformerFactory informers.SharedInformerFactory,
 	log *logrus.Entry) *Controller {
+
+	log.Infof("Initialising Subject Access Delegation Controller...")
 
 	sadInformer := sadInformerFactory.Authz().V1alpha1().SubjectAccessDelegations()
 
@@ -88,7 +90,6 @@ func NewController(
 	}
 
 	//log.Info("Setting up event handlers")
-	log.Infof("Creating new SAD Controller")
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSad,
 		UpdateFunc: func(old, new interface{}) {
@@ -108,26 +109,26 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
 
-	c.log.Info("Starting SAD controller")
-
-	c.log.Info("Getting current time form NTP server(s)")
+	c.log.Info("Getting current time form NTP server(s)...")
 	if err := c.getOffSet(); err != nil {
-		return fmt.Errorf("failed to set accurate time for controller: %v", err)
+		c.log.Errorf("failed to set accurate time for controller: %v", err)
+		c.log.Warn("Continuing without optimum clock accuracy")
 	}
+	c.log.Infof("Controller/system clock offset: %s", c.clockOffset.String())
 
-	c.log.Info("Waiting for informer caches to sync")
+	c.log.Info("Waiting for informer caches to sync...")
 	if ok := cache.WaitForCacheSync(stopCh, c.sadsSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	c.log.Info("Starting workers")
+	c.log.Info("Starting Workers...")
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
+	c.log.Info("Controller Ready.")
 
-	c.log.Info("Started workers")
 	<-stopCh
-	c.log.Info("Shutting down workers")
+	c.log.Info("Shutting down workers..")
 
 	return nil
 }
@@ -170,11 +171,11 @@ func (c *Controller) processNextWorkItem() bool {
 }
 
 func (c *Controller) getOffSet() (err error) {
-	if c.timeOffset, err = c.ntpClient.GetOffset(); err != nil {
+	if c.clockOffset, err = c.ntpClient.GetOffset(); err != nil {
 		return err
 	}
 
-	c.log.Infof("current time: %s", time.Now().Add(c.timeOffset).String())
+	c.log.Infof("current time: %s", time.Now().Add(c.clockOffset).String())
 
 	return nil
 }
@@ -344,6 +345,8 @@ func (c *Controller) appendDelegation(delegation *subject_access_delegation.Subj
 }
 
 func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
+	c.log.Info("Creating Subject Access Delegation Custom Resource Definition...")
+
 	crd := &apiextv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "subjectaccessdelegations.authz.k8s.io",
@@ -367,14 +370,36 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 	_, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			c.log.Info("SAD Custom Resource Definition Already Exists")
+			c.log.Info("Custom Resource Definition Already Exists.")
 			return nil
+
 		} else {
 			return err
 		}
 	}
 
-	c.log.Info("SAD	Custom Resource Definition Created")
+	// Ensure that the custom resource definition has been created before continuing
+	for trys := 0; trys < 3; trys++ {
 
-	return nil
+		crd, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("subjectaccessdelegations.authz.k8s.io", metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				c.log.Infof("Custom resource not yet found, retrying (%d/3)..", trys+1)
+			} else {
+				c.log.Warnf("error ensuring crd was created: %v", err)
+			}
+
+			continue
+		}
+
+		if crd != nil {
+			c.log.Infof("Custom Resource Definition Successfully Created.")
+			return nil
+		}
+
+		time.Sleep(time.Second)
+
+	}
+
+	return fmt.Errorf("unable to find SAD custom resource definition from Kubetnetes")
 }
