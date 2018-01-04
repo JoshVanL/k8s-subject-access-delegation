@@ -61,8 +61,7 @@ type Controller struct {
 }
 
 var (
-	stopCh = make(chan struct{})
-	hosts  = []string{"0.uk.pool.ntp.org", "1.uk.pool.ntp.org", "2.uk.pool.ntp.org", "3.uk.pool.ntp.org"}
+	hosts = []string{"0.uk.pool.ntp.org", "1.uk.pool.ntp.org", "2.uk.pool.ntp.org", "3.uk.pool.ntp.org"}
 )
 
 func NewController(
@@ -128,7 +127,6 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	c.log.Info("Controller Ready.")
 
 	<-stopCh
-	c.log.Info("Shutting down workers..")
 
 	return nil
 }

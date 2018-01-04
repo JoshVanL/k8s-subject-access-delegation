@@ -26,7 +26,7 @@ const FlagKubeConfig = "kube-config"
 
 var RootCmd = &cobra.Command{
 	Use:   "subject-access-delegation",
-	Short: "<< Subject Access Delegation via Role Bindings onto resources in Kubernetes using event and time based triggers",
+	Short: "- Subject Access Delegation via Role Bindings onto resources in Kubernetes using event and time based triggers",
 	Run: func(cmd *cobra.Command, args []string) {
 		log := LogLevel(cmd)
 
@@ -70,7 +70,7 @@ var RootCmd = &cobra.Command{
 			log.Fatalf("failed to ensure custom resource definition: %v", err)
 		}
 
-		stopCh := signals.SetupSignalHandler()
+		stopCh := signals.RunSignalHandler(log)
 
 		go kubeInformerFactory.Start(stopCh)
 		go exampleInformerFactory.Start(stopCh)
