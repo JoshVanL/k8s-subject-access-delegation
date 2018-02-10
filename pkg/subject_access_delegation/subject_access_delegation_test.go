@@ -40,10 +40,6 @@ var (
 
 	destinationSubjects = []authzv1alpha1.DestinationSubject{
 		authzv1alpha1.DestinationSubject{
-			Kind: "Pod",
-			Name: "TargetPod",
-		},
-		authzv1alpha1.DestinationSubject{
 			Kind: "ServiceAccount",
 			Name: "TargetServiceAccount",
 		},
@@ -53,10 +49,6 @@ var (
 		},
 	}
 	bindingSubjects = []rbacv1.Subject{
-		rbacv1.Subject{
-			Kind: "Pod",
-			Name: "TargetPod",
-		},
 		rbacv1.Subject{
 			Kind: "ServiceAccount",
 			Name: "TargetServiceAccount",
@@ -82,15 +74,11 @@ var (
 
 	subjects = []rbacv1.Subject{
 		rbacv1.Subject{
-			Kind: "Pod",
+			Kind: "ServiceAccount",
 			Name: "foo",
 		},
 		rbacv1.Subject{
 			Kind: "ServiceAccount",
-			Name: "OriginServiceAccount",
-		},
-		rbacv1.Subject{
-			Kind: "Pod",
 			Name: "OriginServiceAccount",
 		},
 		rbacv1.Subject{
@@ -126,7 +114,6 @@ type fakeSubjectAccessDelegation struct {
 	fakeRoleInterface  *mocks.MockRoleInterface
 	fakeRoleBindingsIn *mocks.MockRoleBindingInterface
 	fakeCore           *mocks.MockCoreV1Interface
-	fakePodInterface   *mocks.MockPodInterface
 	fakeSAInterface    *mocks.MockServiceAccountInterface
 }
 
@@ -149,7 +136,6 @@ func newFakeSAD(t *testing.T) *fakeSubjectAccessDelegation {
 	s.fakeRbac = mocks.NewMockRbacV1Interface(s.ctrl)
 	s.fakeRoleInterface = mocks.NewMockRoleInterface(s.ctrl)
 	s.fakeCore = mocks.NewMockCoreV1Interface(s.ctrl)
-	s.fakePodInterface = mocks.NewMockPodInterface(s.ctrl)
 	s.SubjectAccessDelegation.client = s.fakeClient
 	s.fakeSAInterface = mocks.NewMockServiceAccountInterface(s.ctrl)
 	s.fakeRoleBindingsIn = mocks.NewMockRoleBindingInterface(s.ctrl)
@@ -158,18 +144,9 @@ func newFakeSAD(t *testing.T) *fakeSubjectAccessDelegation {
 	s.fakeClient.EXPECT().Core().AnyTimes().Return(s.fakeCore)
 	s.fakeRbac.EXPECT().RoleBindings(s.sad.Namespace).AnyTimes().Return(s.fakeRoleBindingsIn)
 	s.fakeRbac.EXPECT().Roles(s.sad.Namespace).AnyTimes().Return(s.fakeRoleInterface)
-	s.fakeCore.EXPECT().Pods(s.sad.Namespace).AnyTimes().Return(s.fakePodInterface)
 	s.fakeCore.EXPECT().ServiceAccounts(s.sad.Namespace).AnyTimes().Return(s.fakeSAInterface)
 
 	return s
-}
-
-func returnPod() *corev1.Pod {
-	returnPod := &corev1.Pod{}
-	returnPod.Name = "TargetPod"
-	returnPod.Kind = "Pod"
-
-	return returnPod
 }
 
 func returnServiceAccount() *corev1.ServiceAccount {
@@ -312,7 +289,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_Successful(t *testing.T) {
 	//createBinding.CreationTimestamp = timestamp
 
 	s.fakeRoleInterface.EXPECT().Get(s.sad.Spec.OriginSubject.Name, metav1.GetOptions{}).Times(repeat).Return(&rbacv1.Role{}, nil)
-	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).Times(repeat).Return(returnPod(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).Times(repeat).Return(nil, nil)
@@ -357,7 +333,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginSA_Successful(t *testing.T) {
 	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
 	s.fakeSAInterface.EXPECT().Get(originSubjectSA.Name, gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
 
-	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).Times(repeat).Return(returnPod(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
@@ -406,7 +381,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
 	s.fakeSAInterface.EXPECT().Get(originSubjectUser.Name, gomock.Any()).Times(repeat).Return(returnUser(), nil)
 
-	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).Times(repeat).Return(returnPod(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
@@ -445,7 +419,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForceClose(t *testing.T) {
 	createBinding.RoleRef = roleRef1
 
 	s.fakeRoleInterface.EXPECT().Get(s.sad.Spec.OriginSubject.Name, metav1.GetOptions{}).AnyTimes().Return(&rbacv1.Role{}, nil)
-	s.fakePodInterface.EXPECT().Get("TargetPod", gomock.Any()).AnyTimes().Return(returnPod(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).AnyTimes().Return(returnServiceAccount(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).AnyTimes().Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).AnyTimes().Return(nil, nil)

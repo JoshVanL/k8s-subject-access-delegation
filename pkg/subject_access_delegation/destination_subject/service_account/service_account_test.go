@@ -47,7 +47,7 @@ func TestServiceAccount_ResolveDestination_Nil(t *testing.T) {
 	s.fakeServiceAccountInterface.EXPECT().Get(s.ServiceAccount.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
 
 	if err := s.ResolveDestination(); err == nil {
-		t.Errorf("expected error but got none - pod is nil")
+		t.Errorf("expected error but got none - service_account is nil")
 	}
 }
 

@@ -3,13 +3,11 @@ package destination_subject
 import (
 	"fmt"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/pod"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/service_account"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/user"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
-const PodKind = "Pod"
 const ServiceAccountKind = "ServiceAccount"
 const UserKind = "User"
 
@@ -19,9 +17,6 @@ func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.
 	switch kind {
 	case ServiceAccountKind:
 		destinationSubject = service_account.New(sad, name)
-		return destinationSubject, nil
-	case PodKind:
-		destinationSubject = pod.New(sad, name)
 		return destinationSubject, nil
 	case UserKind:
 		destinationSubject = user.New(sad, name)
