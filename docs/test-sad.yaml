@@ -2,10 +2,10 @@ apiVersion: authz.k8s.io/v1alpha1
 kind: SubjectAccessDelegation
 metadata:
   name: test-sad
+  namespace: default
 spec:
   duration: 30
   repeat: 3
-  namespace: default
   originSubject:
     kind: User
     name: user-a

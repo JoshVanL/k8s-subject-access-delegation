@@ -2,10 +2,10 @@ apiVersion: authz.k8s.io/v1alpha1
 kind: SubjectAccessDelegation
 metadata:
   name: test-sad
+  namespace: default
 spec:
   duration: 3
   repeat: 3
-  namespace: default
   originSubject:
     kind: Role
     name: pod-reader
@@ -17,10 +17,10 @@ apiVersion: authz.k8s.io/v1alpha1
 kind: SubjectAccessDelegation
 metadata:
   name: test-sad2
+  namespace: default
 spec:
   duration: 2
   repeat: 3
-  namespace: default
   originSubject:
     kind: Role
     name: pod-logs-reader

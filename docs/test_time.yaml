@@ -5,7 +5,6 @@ metadata:
   namespace: default
 spec:
   repeat: 3
-  namespace: default
   deletionTime: 3s
   originSubject:
     kind: Role
