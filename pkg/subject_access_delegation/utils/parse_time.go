@@ -32,6 +32,7 @@ func ParseTime(stamp string) (timestamp time.Time, err error) {
 
 func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 	var result *multierror.Error
+	var parseTime float64
 	total := time.Now()
 
 	for _, arg := range args {
@@ -49,33 +50,60 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
-		nanoseconds, err := matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
 		if err == nil {
-			total = total.Add(time.Nanosecond * time.Duration(nanoseconds))
+			total = total.Add(time.Nanosecond * time.Duration(parseTime))
 			continue
 		}
 
-		seconds, err := matchNum(arg, "^[0-9]+(.[0-9]+|)s$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)nanoseconds$")
 		if err == nil {
-			total = total.Add(time.Second * time.Duration(seconds))
+			total = total.Add(time.Nanosecond * time.Duration(parseTime))
 			continue
 		}
 
-		minutes, err := matchNum(arg, "^[0-9]+(.[0-9]+|)m$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)s$")
 		if err == nil {
-			total = total.Add(time.Minute * time.Duration(minutes))
+			total = total.Add(time.Second * time.Duration(parseTime))
+			continue
+		}
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)seconds$")
+		if err == nil {
+			total = total.Add(time.Second * time.Duration(parseTime))
 			continue
 		}
 
-		hours, err := matchNum(arg, "^[0-9]+(.[0-9]+|)h$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)m$")
 		if err == nil {
-			total = total.Add(time.Hour * time.Duration(hours))
+			total = total.Add(time.Minute * time.Duration(parseTime))
 			continue
 		}
 
-		days, err := matchNum(arg, "^[0-9]+(.[0-9]+|)d$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)minutes$")
 		if err == nil {
-			total = total.Add(time.Hour * time.Duration(days*24))
+			total = total.Add(time.Minute * time.Duration(parseTime))
+			continue
+		}
+
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)h$")
+		if err == nil {
+			total = total.Add(time.Hour * time.Duration(parseTime))
+			continue
+		}
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)hours$")
+		if err == nil {
+			total = total.Add(time.Hour * time.Duration(parseTime))
+			continue
+		}
+
+		parseTime, err := matchNum(arg, "^[0-9]+(.[0-9]+|)d$")
+		if err == nil {
+			total = total.Add(time.Hour * time.Duration(parseTime*24))
+			continue
+		}
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)days$")
+		if err == nil {
+			total = total.Add(time.Hour * time.Duration(parseTime*24))
 			continue
 		}
 

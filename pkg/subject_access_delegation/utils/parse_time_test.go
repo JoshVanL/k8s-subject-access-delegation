@@ -48,7 +48,7 @@ func Test_ParseTime_Human_Read_NoError(t *testing.T) {
 	corrTime = time.Now().Add(min)
 	test_stamp(stamp, corrTime, t)
 
-	stamp, sec = gen_min(gen)
+	stamp, sec = gen_sec(gen)
 	corrTime = time.Now().Add(sec)
 	test_stamp(stamp, corrTime, t)
 

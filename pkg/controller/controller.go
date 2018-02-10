@@ -108,12 +108,13 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
 
-	c.log.Info("Getting current time form NTP server(s)...")
+	c.log.Info("Getting current time fromm NTP server(s)...")
 	if err := c.getOffSet(); err != nil {
 		c.log.Errorf("failed to set accurate time for controller: %v", err)
 		c.log.Warn("Continuing without optimum clock accuracy")
 	}
 	c.log.Infof("Controller/system clock offset: %s", c.clockOffset.String())
+	c.log.Infof("Using current time: %s", time.Now().Add(c.clockOffset).String())
 
 	c.log.Info("Waiting for informer caches to sync...")
 	if ok := cache.WaitForCacheSync(stopCh, c.sadsSynced); !ok {
@@ -172,8 +173,6 @@ func (c *Controller) getOffSet() (err error) {
 	if c.clockOffset, err = c.ntpClient.GetOffset(); err != nil {
 		return err
 	}
-
-	c.log.Infof("current time: %s", time.Now().Add(c.clockOffset).String())
 
 	return nil
 }
