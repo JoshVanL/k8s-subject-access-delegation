@@ -26,6 +26,7 @@ const FlagApiServerURL = "api-url"
 const FlagKubeConfig = "kube-config"
 const FlagWorkers = "worker-threads"
 const FlagLogLevel = "log-level"
+const FlagNTPHosts = "ntp-hosts"
 
 var RootCmd = &cobra.Command{
 	Use:   "subject-access-delegation",
@@ -35,6 +36,11 @@ var RootCmd = &cobra.Command{
 
 		var masterURL string
 		var result *multierror.Error
+
+		hosts, err := cmd.Flags().GetStringSlice(FlagNTPHosts)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("unable to parse NTP host URLs flag: %v", err))
+		}
 
 		workerThreads, err := cmd.PersistentFlags().GetInt(FlagWorkers)
 		if err != nil {
@@ -79,7 +85,7 @@ var RootCmd = &cobra.Command{
 
 		kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 		exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, log)
+		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, hosts, log)
 
 		if err := controller.EnsureCRD(apiextClientSet); err != nil {
 			log.Fatalf("failed to ensure custom resource definition: %v", err)
@@ -102,6 +108,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP(FlagApiServerURL, "u", "http://127.0.0.1:8001", "Set URL of Kubernetes API")
 	RootCmd.PersistentFlags().StringP(FlagKubeConfig, "c", "~/.kube/config", "Path to kube config")
 	RootCmd.PersistentFlags().IntP(FlagWorkers, "w", 2, "Number of worker threads for controller")
+	RootCmd.PersistentFlags().StringSliceP(FlagNTPHosts, "n", []string{""}, "Optional list of host URLs of ntp servers to ensure correct time")
 }
 
 func Execute() {

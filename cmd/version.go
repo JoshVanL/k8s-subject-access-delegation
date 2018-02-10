@@ -16,10 +16,6 @@ var Version struct {
 
 var AppName string = "subject-access-delegation"
 
-func init() {
-	RootCmd.AddCommand(versionCmd)
-}
-
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: fmt.Sprintf("Version number of %s", AppName),
@@ -38,4 +34,8 @@ var versionCmd = &cobra.Command{
 
 		fmt.Println("")
 	},
+}
+
+func init() {
+	RootCmd.AddCommand(versionCmd)
 }

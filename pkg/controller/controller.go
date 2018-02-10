@@ -60,15 +60,12 @@ type Controller struct {
 	delegations map[string]*subject_access_delegation.SubjectAccessDelegation
 }
 
-var (
-	hosts = []string{"0.uk.pool.ntp.org", "1.uk.pool.ntp.org", "2.uk.pool.ntp.org", "3.uk.pool.ntp.org"}
-)
-
 func NewController(
 	kubeclientset kubernetes.Interface,
 	sadclientset clientset.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	sadInformerFactory informers.SharedInformerFactory,
+	hosts []string,
 	log *logrus.Entry) *Controller {
 
 	log.Infof("Initialising Subject Access Delegation Controller...")
@@ -108,12 +105,16 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
 
-	c.log.Info("Getting current time fromm NTP server(s)...")
-	if err := c.getOffSet(); err != nil {
-		c.log.Errorf("failed to set accurate time for controller: %v", err)
-		c.log.Warn("Continuing without optimum clock accuracy")
+	if c.ntpClient != nil {
+		if err := c.tryGetNtpTime(); err != nil {
+			c.log.Errorf("failed to set accurate time for controller: %v", err)
+			c.log.Warn("Continuing without optimum clock accuracy.")
+		}
+
+	} else {
+		c.log.Infof("No NTP URLS specified.")
 	}
-	c.log.Infof("Controller/system clock offset: %s", c.clockOffset.String())
+
 	c.log.Infof("Using current time: %s", time.Now().Add(c.clockOffset).String())
 
 	c.log.Info("Waiting for informer caches to sync...")
@@ -128,6 +129,16 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	c.log.Info("Controller Ready.")
 
 	<-stopCh
+
+	return nil
+}
+
+func (c *Controller) tryGetNtpTime() error {
+	c.log.Info("Getting current time fromm NTP server(s)...")
+	if err := c.getOffSet(); err != nil {
+		return err
+	}
+	c.log.Infof("Controller/system clock offset: %s", c.clockOffset.String())
 
 	return nil
 }

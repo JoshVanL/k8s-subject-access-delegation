@@ -55,8 +55,11 @@ var (
 )
 
 func NewNTPClient(hosts []string) *NTPClient {
-	ntpClient := new(NTPClient)
+	if len(hosts) == 0 {
+		return nil
+	}
 
+	ntpClient := new(NTPClient)
 	ntpClient.QueryOptions = NewQueryOptions()
 
 	for _, host := range hosts {

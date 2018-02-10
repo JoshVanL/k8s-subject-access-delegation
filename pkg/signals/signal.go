@@ -19,7 +19,7 @@ func RunSignalHandler(log *logrus.Entry) (stop <-chan struct{}) {
 
 	go func(log *logrus.Entry) {
 		<-ch
-		log.Warn("Controller received interrupt. Shutting down..")
+		log.Warn("Controller received interrupt. Shutting down...")
 		close(stopCh)
 		<-ch
 		log.Warn("Force Closed.")
