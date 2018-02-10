@@ -1,4 +1,4 @@
-package pod_trigger
+package pod
 
 //TODO: Have one parent listener for each research type e.g. one pod, deployment tigger listener that sends info to all relevant trigger children -- reduces api overhead
 
@@ -12,7 +12,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type AddPodTrigger struct {
+type AddPod struct {
 	log *logrus.Entry
 
 	sad      interfaces.SubjectAccessDelegation
@@ -27,10 +27,10 @@ type AddPodTrigger struct {
 	informer  informer.PodInformer
 }
 
-var _ interfaces.Trigger = &AddPodTrigger{}
+var _ interfaces.Trigger = &AddPod{}
 
-func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *AddPodTrigger, err error) {
-	podTrigger = &AddPodTrigger{
+func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *AddPod, err error) {
+	podTrigger = &AddPod{
 		log:         sad.Log(),
 		sad:         sad,
 		podName:     trigger.Value,
@@ -50,7 +50,7 @@ func NewAddPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 	return podTrigger, nil
 }
 
-func (p *AddPodTrigger) addFunc(obj interface{}) {
+func (p *AddPod) addFunc(obj interface{}) {
 
 	pod, err := utils.GetPodObject(obj)
 	if err != nil {
@@ -74,7 +74,7 @@ func (p *AddPodTrigger) addFunc(obj interface{}) {
 	}
 }
 
-func (p *AddPodTrigger) WaitOn() (forceClosed bool) {
+func (p *AddPod) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
 	if p.watchChannels() {
@@ -86,7 +86,7 @@ func (p *AddPodTrigger) WaitOn() (forceClosed bool) {
 	return false
 }
 
-func (p *AddPodTrigger) watchChannels() (forceClose bool) {
+func (p *AddPod) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true
@@ -95,7 +95,7 @@ func (p *AddPodTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (p *AddPodTrigger) Activate() {
+func (p *AddPod) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
 
 	go p.informer.Informer().Run(make(chan struct{}))
@@ -103,15 +103,15 @@ func (p *AddPodTrigger) Activate() {
 	return
 }
 
-func (p *AddPodTrigger) Completed() bool {
+func (p *AddPod) Completed() bool {
 	return p.completed
 }
 
-func (p *AddPodTrigger) Delete() error {
+func (p *AddPod) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *AddPodTrigger) Replicas() int {
+func (p *AddPod) Replicas() int {
 	return p.replicas
 }

@@ -1,4 +1,4 @@
-package service_trigger
+package service
 
 import (
 	"github.com/sirupsen/logrus"
@@ -10,7 +10,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type AddServiceTrigger struct {
+type AddService struct {
 	log *logrus.Entry
 
 	sad         interfaces.SubjectAccessDelegation
@@ -25,10 +25,10 @@ type AddServiceTrigger struct {
 	informer  informer.ServiceInformer
 }
 
-var _ interfaces.Trigger = &AddServiceTrigger{}
+var _ interfaces.Trigger = &AddService{}
 
-func NewAddServiceTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (serviceTrigger *AddServiceTrigger, err error) {
-	serviceTrigger = &AddServiceTrigger{
+func NewAddService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (serviceTrigger *AddService, err error) {
+	serviceTrigger = &AddService{
 		log:         sad.Log(),
 		sad:         sad,
 		serviceName: trigger.Value,
@@ -48,7 +48,7 @@ func NewAddServiceTrigger(sad interfaces.SubjectAccessDelegation, trigger *authz
 	return serviceTrigger, nil
 }
 
-func (p *AddServiceTrigger) addFunc(obj interface{}) {
+func (p *AddService) addFunc(obj interface{}) {
 
 	service, err := utils.GetServiceObject(obj)
 	if err != nil {
@@ -72,7 +72,7 @@ func (p *AddServiceTrigger) addFunc(obj interface{}) {
 	}
 }
 
-func (p *AddServiceTrigger) WaitOn() (forceClosed bool) {
+func (p *AddService) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
 	if p.watchChannels() {
@@ -84,7 +84,7 @@ func (p *AddServiceTrigger) WaitOn() (forceClosed bool) {
 	return false
 }
 
-func (p *AddServiceTrigger) watchChannels() (forceClose bool) {
+func (p *AddService) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true
@@ -93,7 +93,7 @@ func (p *AddServiceTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (p *AddServiceTrigger) Activate() {
+func (p *AddService) Activate() {
 	p.log.Debug("Add Service Trigger Activated")
 
 	go p.informer.Informer().Run(make(chan struct{}))
@@ -101,15 +101,15 @@ func (p *AddServiceTrigger) Activate() {
 	return
 }
 
-func (p *AddServiceTrigger) Completed() bool {
+func (p *AddService) Completed() bool {
 	return p.completed
 }
 
-func (p *AddServiceTrigger) Delete() error {
+func (p *AddService) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *AddServiceTrigger) Replicas() int {
+func (p *AddService) Replicas() int {
 	return p.replicas
 }

@@ -6,10 +6,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node_trigger"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod_trigger"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service_trigger"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time_trigger"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time"
 )
 
 const TimeKind = "Time"
@@ -27,7 +27,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 	for _, trigger := range sad.Triggers() {
 		switch trigger.Kind {
 		case TimeKind:
-			timeTrigger, err := time_trigger.New(sad, &trigger)
+			timeTrigger, err := time.New(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Time Tigger: %v", err))
 				break
@@ -35,7 +35,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, timeTrigger)
 
 		case AddNodeKind:
-			addNodeTrigger, err := node_trigger.NewAddNodeTrigger(sad, &trigger)
+			addNodeTrigger, err := node.NewAddNode(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Add Node Tigger: %v", err))
 				break
@@ -43,7 +43,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, addNodeTrigger)
 
 		case DelNodeKind:
-			delNodeTrigger, err := node_trigger.NewDelNodeTrigger(sad, &trigger)
+			delNodeTrigger, err := node.NewDelNode(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Del Node Tigger: %v", err))
 				break
@@ -51,7 +51,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, delNodeTrigger)
 
 		case AddServiceKind:
-			addServiceTrigger, err := service_trigger.NewAddServiceTrigger(sad, &trigger)
+			addServiceTrigger, err := service.NewAddService(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Add Service Tigger: %v", err))
 				break
@@ -59,7 +59,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, addServiceTrigger)
 
 		case DelServiceKind:
-			delServiceTrigger, err := service_trigger.NewDelServiceTrigger(sad, &trigger)
+			delServiceTrigger, err := service.NewDelService(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Del Service Tigger: %v", err))
 				break
@@ -67,7 +67,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, delServiceTrigger)
 
 		case AddPodKind:
-			addPodTrigger, err := pod_trigger.NewAddPodTrigger(sad, &trigger)
+			addPodTrigger, err := pod.NewAddPod(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Add Pod Tigger: %v", err))
 				break
@@ -75,7 +75,7 @@ func New(sad interfaces.SubjectAccessDelegation) ([]interfaces.Trigger, error) {
 			triggers = append(triggers, addPodTrigger)
 
 		case DelPodKind:
-			delPodTrigger, err := pod_trigger.NewDelPodTrigger(sad, &trigger)
+			delPodTrigger, err := pod.NewDelPod(sad, &trigger)
 			if err != nil {
 				result = multierror.Append(result, fmt.Errorf("failed to add new Del Pod Tigger: %v", err))
 				break

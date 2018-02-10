@@ -1,4 +1,4 @@
-package node_trigger
+package node
 
 import (
 	"github.com/sirupsen/logrus"
@@ -10,7 +10,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type AddNodeTrigger struct {
+type DelNode struct {
 	log *logrus.Entry
 
 	sad      interfaces.SubjectAccessDelegation
@@ -25,10 +25,10 @@ type AddNodeTrigger struct {
 	informer  informer.NodeInformer
 }
 
-var _ interfaces.Trigger = &AddNodeTrigger{}
+var _ interfaces.Trigger = &DelNode{}
 
-func NewAddNodeTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (nodeTrigger *AddNodeTrigger, err error) {
-	nodeTrigger = &AddNodeTrigger{
+func NewDelNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (nodeTrigger *DelNode, err error) {
+	nodeTrigger = &DelNode{
 		log:         sad.Log(),
 		sad:         sad,
 		nodeName:    trigger.Value,
@@ -41,18 +41,17 @@ func NewAddNodeTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1a
 	}
 
 	nodeTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		//TODO: Fix this
-		AddFunc: nodeTrigger.addFunc,
+		DeleteFunc: nodeTrigger.delFunc,
 	})
 
 	return nodeTrigger, nil
 }
 
-func (p *AddNodeTrigger) addFunc(obj interface{}) {
+func (p *DelNode) delFunc(obj interface{}) {
 
 	node, err := utils.GetNodeObject(obj)
 	if err != nil {
-		p.log.Errorf("failed to get added node object: %v", err)
+		p.log.Errorf("failed to get deleted node object: %v", err)
 		return
 	}
 	if node == nil {
@@ -63,7 +62,7 @@ func (p *AddNodeTrigger) addFunc(obj interface{}) {
 		return
 	}
 
-	p.log.Infof("A new node '%s' has been added", node.Name)
+	p.log.Infof("A node '%s' has been deleted", node.Name)
 	p.count++
 	if p.count >= p.replicas {
 		p.log.Infof("Required replicas was met")
@@ -72,19 +71,19 @@ func (p *AddNodeTrigger) addFunc(obj interface{}) {
 	}
 }
 
-func (p *AddNodeTrigger) WaitOn() (forceClosed bool) {
+func (p *DelNode) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
 	if p.watchChannels() {
-		p.log.Debug("Add Node Trigger was force closed")
+		p.log.Debug("Del Node Trigger was force closed")
 		return true
 	}
 
-	p.log.Debug("Add Node Trigger completed")
+	p.log.Debug("Del Node Trigger completed")
 	return false
 }
 
-func (p *AddNodeTrigger) watchChannels() (forceClose bool) {
+func (p *DelNode) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true
@@ -93,23 +92,23 @@ func (p *AddNodeTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (p *AddNodeTrigger) Activate() {
-	p.log.Debug("Add Node Trigger Activated")
+func (p *DelNode) Activate() {
+	p.log.Debug("Del Node Trigger Activated")
 
 	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }
 
-func (p *AddNodeTrigger) Completed() bool {
+func (p *DelNode) Completed() bool {
 	return p.completed
 }
 
-func (p *AddNodeTrigger) Delete() error {
+func (p *DelNode) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *AddNodeTrigger) Replicas() int {
+func (p *DelNode) Replicas() int {
 	return p.replicas
 }

@@ -1,4 +1,4 @@
-package time_trigger
+package time
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type TimeTrigger struct {
+type Time struct {
 	log *logrus.Entry
 
 	sad       interfaces.SubjectAccessDelegation
@@ -23,9 +23,9 @@ type TimeTrigger struct {
 	completed bool
 }
 
-var _ interfaces.Trigger = &TimeTrigger{}
+var _ interfaces.Trigger = &Time{}
 
-func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (timeTrigger *TimeTrigger, err error) {
+func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (timeTrigger *Time, err error) {
 
 	timestamp, err := utils.ParseTime(trigger.Value)
 	if err != nil {
@@ -34,7 +34,7 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 
 	sad.Log().Debugf("%+v", timestamp)
 
-	return &TimeTrigger{
+	return &Time{
 		log:       sad.Log(),
 		sad:       sad,
 		replicas:  trigger.Replicas,
@@ -44,12 +44,12 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 	}, nil
 }
 
-func (t *TimeTrigger) Activate() {
+func (t *Time) Activate() {
 	t.log.Debug("Time Trigger activated")
 	t.TickTock()
 }
 
-func (t *TimeTrigger) WaitOn() (forceClosed bool) {
+func (t *Time) WaitOn() (forceClosed bool) {
 	t.log.Debug("Trigger waiting")
 
 	if t.watchChannels() {
@@ -61,7 +61,7 @@ func (t *TimeTrigger) WaitOn() (forceClosed bool) {
 	return false
 }
 
-func (t *TimeTrigger) watchChannels() (forceClose bool) {
+func (t *Time) watchChannels() (forceClose bool) {
 	select {
 	case <-t.StopCh:
 		return true
@@ -71,19 +71,19 @@ func (t *TimeTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (t *TimeTrigger) Completed() bool {
+func (t *Time) Completed() bool {
 	return t.completed
 }
 
-func (t *TimeTrigger) Delete() error {
+func (t *Time) Delete() error {
 	close(t.StopCh)
 	return nil
 }
 
-func (t *TimeTrigger) TickTock() {
+func (t *Time) TickTock() {
 	t.tickerCh = time.After(time.Until(t.timestamp))
 }
 
-func (t *TimeTrigger) Replicas() int {
+func (t *Time) Replicas() int {
 	return t.replicas
 }

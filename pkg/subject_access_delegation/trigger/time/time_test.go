@@ -1,4 +1,4 @@
-package time_trigger
+package time
 
 //TODO: Get rid of the long wait times
 
@@ -10,15 +10,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type fakeTimeTrigger struct {
-	*TimeTrigger
+type fakeTime struct {
+	*Time
 	ctrl *gomock.Controller
 }
 
-func newFakeTimeTrigger(t *testing.T) *fakeTimeTrigger {
-	g := &fakeTimeTrigger{
+func newFakeTime(t *testing.T) *fakeTime {
+	g := &fakeTime{
 		ctrl: gomock.NewController(t),
-		TimeTrigger: &TimeTrigger{
+		Time: &Time{
 			StopCh:    make(chan struct{}),
 			timestamp: time.Now(),
 			completed: false,
@@ -26,13 +26,13 @@ func newFakeTimeTrigger(t *testing.T) *fakeTimeTrigger {
 		},
 	}
 
-	g.TimeTrigger.log.Level = logrus.ErrorLevel
+	g.Time.log.Level = logrus.ErrorLevel
 
 	return g
 }
 
-func TestTimeTrigger_Completed(t *testing.T) {
-	g := newFakeTimeTrigger(t)
+func TestTime_Completed(t *testing.T) {
+	g := newFakeTime(t)
 	defer g.ctrl.Finish()
 
 	if g.Completed() {
@@ -40,11 +40,11 @@ func TestTimeTrigger_Completed(t *testing.T) {
 	}
 }
 
-func TestTimeTrigger_Successful(t *testing.T) {
-	g := newFakeTimeTrigger(t)
+func TestTime_Successful(t *testing.T) {
+	g := newFakeTime(t)
 	defer g.ctrl.Finish()
 
-	g.TimeTrigger.timestamp = time.Now().Add(time.Millisecond)
+	g.Time.timestamp = time.Now().Add(time.Millisecond)
 	g.Activate()
 
 	if g.WaitOn() {
@@ -56,14 +56,14 @@ func TestTimeTrigger_Successful(t *testing.T) {
 	}
 }
 
-func TestTimeTrigger_ForceClosed(t *testing.T) {
-	g := newFakeTimeTrigger(t)
+func TestTime_ForceClosed(t *testing.T) {
+	g := newFakeTime(t)
 	defer g.ctrl.Finish()
 
 	g.timestamp = time.Now().Add(time.Second)
 	g.Activate()
 
-	go func(g *fakeTimeTrigger, t *testing.T) {
+	go func(g *fakeTime, t *testing.T) {
 		if err := g.Delete(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -78,8 +78,8 @@ func TestTimeTrigger_ForceClosed(t *testing.T) {
 	}
 }
 
-func TestTimeTrigger_DoubleActivate(t *testing.T) {
-	g := newFakeTimeTrigger(t)
+func TestTime_DoubleActivate(t *testing.T) {
+	g := newFakeTime(t)
 	defer g.ctrl.Finish()
 
 	g.timestamp = time.Now().Add(time.Nanosecond)

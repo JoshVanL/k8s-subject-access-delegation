@@ -1,4 +1,4 @@
-package pod_trigger
+package pod
 
 import (
 	"github.com/sirupsen/logrus"
@@ -10,7 +10,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-type DelPodTrigger struct {
+type DelPod struct {
 	log *logrus.Entry
 
 	sad      interfaces.SubjectAccessDelegation
@@ -25,10 +25,10 @@ type DelPodTrigger struct {
 	informer  informer.PodInformer
 }
 
-var _ interfaces.Trigger = &DelPodTrigger{}
+var _ interfaces.Trigger = &DelPod{}
 
-func NewDelPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *DelPodTrigger, err error) {
-	podTrigger = &DelPodTrigger{
+func NewDelPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *DelPod, err error) {
+	podTrigger = &DelPod{
 		log:         sad.Log(),
 		sad:         sad,
 		podName:     trigger.Value,
@@ -47,7 +47,7 @@ func NewDelPodTrigger(sad interfaces.SubjectAccessDelegation, trigger *authzv1al
 	return podTrigger, nil
 }
 
-func (p *DelPodTrigger) delFunc(obj interface{}) {
+func (p *DelPod) delFunc(obj interface{}) {
 
 	pod, err := utils.GetPodObject(obj)
 	if err != nil {
@@ -71,7 +71,7 @@ func (p *DelPodTrigger) delFunc(obj interface{}) {
 	}
 }
 
-func (p *DelPodTrigger) WaitOn() (forceClosed bool) {
+func (p *DelPod) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
 	if p.watchChannels() {
@@ -83,7 +83,7 @@ func (p *DelPodTrigger) WaitOn() (forceClosed bool) {
 	return false
 }
 
-func (p *DelPodTrigger) watchChannels() (forceClose bool) {
+func (p *DelPod) watchChannels() (forceClose bool) {
 	select {
 	case <-p.stopCh:
 		return true
@@ -92,7 +92,7 @@ func (p *DelPodTrigger) watchChannels() (forceClose bool) {
 	}
 }
 
-func (p *DelPodTrigger) Activate() {
+func (p *DelPod) Activate() {
 	p.log.Debug("Del Pod Trigger Activated")
 
 	go p.informer.Informer().Run(make(chan struct{}))
@@ -100,15 +100,15 @@ func (p *DelPodTrigger) Activate() {
 	return
 }
 
-func (p *DelPodTrigger) Completed() bool {
+func (p *DelPod) Completed() bool {
 	return p.completed
 }
 
-func (p *DelPodTrigger) Delete() error {
+func (p *DelPod) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *DelPodTrigger) Replicas() int {
+func (p *DelPod) Replicas() int {
 	return p.replicas
 }
