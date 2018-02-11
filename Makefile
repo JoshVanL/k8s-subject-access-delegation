@@ -23,7 +23,8 @@ help:
 
 all:  generate verify test build
 
-build: go_build
+build: build_linux build_darwin
+
 
 generate: go_build_bins go_codegen go_mock
 
@@ -73,8 +74,10 @@ go_codegen:
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
 		--output-file-base zz_generated.lister
 
-go_build:
+build_linux:
 	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  .
+
+build_darwin:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 .
 
 go_build_bins:
