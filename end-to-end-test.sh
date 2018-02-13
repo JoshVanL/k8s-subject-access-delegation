@@ -7,6 +7,8 @@ WIT='\e[0;0m'
 uname=$(uname)
 OS=${uname,,}
 
+FILE="k8s_subject_access_delegation_${OS}_amd64"
+
 SADProcess="k8s_subject_access_delegation_${OS}_amd64"
 CmdSleep="sleep 10"
 
@@ -48,12 +50,16 @@ func_test_installed() {
     fi
 }
 
-make build_$OS
+func_print "-- Running end-to-end testing. --"
+
+if [ ! -f "$FILE" ]
+then
+    func_print "Building Subject Access Control for $OS"
+    make build_$OS
+fi
 
 func_test_installed "minikube"
 func_test_installed "kubectl"
-
-func_print "-- Running end-to-end testing. --"
 
 func_print "Deleting current minikube for testing..."
 func_run_cmd $CmdDelete
