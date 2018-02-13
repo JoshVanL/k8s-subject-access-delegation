@@ -2,44 +2,33 @@ package end_to_end
 
 import (
 	//"bufio"
-	//"fmt"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/end_to_end/command"
 )
 
 func RunTests(log *logrus.Entry) error {
-	firstTest, err := NewCommand("echo", []string{"hello!"})
+	var err error
+
+	firstTest, err := command.New("echo", []string{"hello there!"})
 	if err != nil {
 		return fmt.Errorf("failed to create echo command: %v", err)
 	}
 
-	if err := firstTest.Run(); err != nil {
-		return err
+	go func() {
+		err = firstTest.Run()
+	}()
+
+	firstTest.Wait()
+
+	if err != nil {
+		fmt.Errorf("error when running command: %v", err)
 	}
 
-	//if err := firstTest.Start(); err != nil {
-	//	return fmt.Errorf("error starting echo command: %v", err)
-	//}
-
-	//stdout, err := firstTest.StdoutScan()
-	//if err != nil {
-	//	return fmt.Errorf("failed to get command stdout: %v", err)
-	//}
-
-	//log.Infof("stdout: '%s'", stdout)
-
-	//scanner := bufio.NewScanner(firstTest.Stdout)
-	//scanner.Split(bufio.ScanWords)
-	//for scanner.Scan() {
-	//	m := scanner.Text()
-	//	fmt.Printf(">>%s\n", m)
-	//}
-
-	//if err := firstTest.Wait(); err != nil {
-	//	return fmt.Errorf("error waiting echo command: %v", err)
-	//}
-
-	//log.Infof("All command run successfully!")
+	fmt.Printf("stdout: '%s'\n", firstTest.Stdout())
+	fmt.Printf("stderr: '%s'\n", firstTest.Stderr())
 
 	return nil
 }

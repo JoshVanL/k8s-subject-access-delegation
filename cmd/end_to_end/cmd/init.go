@@ -26,7 +26,7 @@ var RootCmd = &cobra.Command{
 		log := LogLevel(cmd)
 
 		if err := end_to_end.RunTests(log); err != nil {
-			log.Fatal("error running end to end tests: %v", err)
+			log.Fatalf("error running end to end tests: %v", err)
 		}
 	},
 }

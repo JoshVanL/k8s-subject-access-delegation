@@ -1,4 +1,4 @@
-package end_to_end
+package command
 
 import (
 	"bufio"
@@ -25,10 +25,10 @@ type Command struct {
 
 	stdoutBuffer *bytes.Buffer
 	stderrBuffer *bytes.Buffer
-	success      chan struct{}
+	complete     chan struct{}
 }
 
-func NewCommand(name string, args []string) (command *Command, err error) {
+func New(name string, args []string) (command *Command, err error) {
 	var result *multierror.Error
 
 	command = &Command{
@@ -37,7 +37,7 @@ func NewCommand(name string, args []string) (command *Command, err error) {
 		cmd:          exec.Command(name, args...),
 		stdoutBuffer: &bytes.Buffer{},
 		stderrBuffer: &bytes.Buffer{},
-		success:      make(chan struct{}),
+		complete:     make(chan struct{}),
 	}
 
 	if command.stdinWriter, err = command.cmd.StdinPipe(); err != nil {
@@ -51,9 +51,7 @@ func NewCommand(name string, args []string) (command *Command, err error) {
 	}
 
 	command.scanStdout = bufio.NewScanner(command.stdoutReader)
-	command.scanStdout.Split(bufio.ScanWords)
 	command.scanStderr = bufio.NewScanner(command.stderrReader)
-	command.scanStderr.Split(bufio.ScanWords)
 
 	return command, result.ErrorOrNil()
 }
@@ -62,10 +60,7 @@ func (c *Command) Run() error {
 	var result *multierror.Error
 	var stdoutError error
 	var stderrError error
-
 	var wg sync.WaitGroup
-
-	c.success = make(chan struct{})
 
 	if err := c.Start(); err != nil {
 		return err
@@ -91,11 +86,11 @@ func (c *Command) Run() error {
 
 	result = multierror.Append(result, stdoutError, stderrError)
 
-	if err := c.Wait(); err != nil {
+	if err := c.cmd.Wait(); err != nil {
 		result = multierror.Append(result, err)
-	} else {
-		close(c.success)
 	}
+
+	close(c.complete)
 
 	return result.ErrorOrNil()
 }
@@ -104,8 +99,20 @@ func (c *Command) Start() error {
 	return c.cmd.Start()
 }
 
-func (c *Command) Wait() error {
-	return c.cmd.Wait()
+func (c *Command) Wait() {
+	<-c.complete
+}
+
+func (c *Command) ReReady() {
+	c.complete = make(chan struct{})
+}
+
+func (c *Command) Stdout() string {
+	return c.stdoutBuffer.String()
+}
+
+func (c *Command) Stderr() string {
+	return c.stderrBuffer.String()
 }
 
 func (c *Command) stdoutScan() error {
@@ -124,7 +131,7 @@ func (c *Command) stderrScan() error {
 	var result *multierror.Error
 
 	for c.scanStderr.Scan() {
-		if _, err := c.stderrBuffer.WriteString(c.scanStderr.Text()); err != nil {
+		if _, err := c.stderrBuffer.Write(c.scanStderr.Bytes()); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
