@@ -1,6 +1,6 @@
 package main
 
-import "github.com/joshvanl/k8s-subject-access-delegation/cmd"
+import "github.com/joshvanl/k8s-subject-access-delegation/cmd/end_to_end/cmd"
 
 var (
 	version string = "dev"

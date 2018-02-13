@@ -23,8 +23,11 @@ help:
 
 all:  generate verify test build
 
-build: build_linux build_darwin
+build: build_sad build_end2end
 
+build_sad: build_linux_sad build_darwin_sad
+
+build_end2end: build_linux_end2end build_darwin_end2end
 
 generate: go_build_bins go_codegen go_mock
 
@@ -74,11 +77,17 @@ go_codegen:
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
 		--output-file-base zz_generated.lister
 
-build_linux:
-	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  .
+build_linux_sad:
+	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_linux_amd64  ./cmd/subject_access_delegation
 
-build_darwin:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 .
+build_linux_end2end:
+	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o end_to_end_testing_linux_amd64  ./cmd/end_to_end
+
+build_darwin_sad:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o k8s_subject_access_delegation_darwin_amd64 ./cmd/subject_access_delegation
+
+build_darwin_end2end:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o end_to_end_testing_darwin_amd64 ./cmd/end_to_end
 
 go_build_bins:
 	mkdir -p $(BINDIR)
