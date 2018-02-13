@@ -23,10 +23,11 @@ var RootCmd = &cobra.Command{
 	Use:   "end-to-end",
 	Short: "- Binary used to complete end to end testing of Subject Access Delegation.",
 	Run: func(cmd *cobra.Command, args []string) {
-		//log := LogLevel(cmd)
+		log := LogLevel(cmd)
 
-		end_to_end.RunTests()
-
+		if err := end_to_end.RunTests(log); err != nil {
+			log.Fatal("error running end to end tests: %v", err)
+		}
 	},
 }
 
