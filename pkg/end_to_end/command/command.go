@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -51,7 +52,9 @@ func New(name string, args []string) (command *Command, err error) {
 	}
 
 	command.scanStdout = bufio.NewScanner(command.stdoutReader)
+	command.scanStdout.Split(bufio.ScanLines)
 	command.scanStderr = bufio.NewScanner(command.stderrReader)
+	command.scanStderr.Split(bufio.ScanLines)
 
 	return command, result.ErrorOrNil()
 }
@@ -119,7 +122,7 @@ func (c *Command) stdoutScan() error {
 	var result *multierror.Error
 
 	for c.scanStdout.Scan() {
-		if _, err := c.stdoutBuffer.WriteString(c.scanStdout.Text()); err != nil {
+		if _, err := c.stdoutBuffer.WriteString(fmt.Sprintf("%s\n", c.scanStdout.Text())); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -131,10 +134,14 @@ func (c *Command) stderrScan() error {
 	var result *multierror.Error
 
 	for c.scanStderr.Scan() {
-		if _, err := c.stderrBuffer.Write(c.scanStderr.Bytes()); err != nil {
+		if _, err := c.stderrBuffer.WriteString(fmt.Sprintf("%s\n", c.scanStderr.Text())); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
 
 	return result.ErrorOrNil()
+}
+
+func (c *Command) String() string {
+	return fmt.Sprintf("%s %s", c.name, strings.Join(c.args, " "))
 }

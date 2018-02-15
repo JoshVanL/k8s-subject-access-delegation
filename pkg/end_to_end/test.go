@@ -1,34 +1,104 @@
 package end_to_end
 
 import (
-	//"bufio"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/end_to_end/command"
 )
 
-func RunTests(log *logrus.Entry) error {
-	var err error
+type TestingSuite struct {
+	log *logrus.Entry
 
-	firstTest, err := command.New("echo", []string{"hello there!"})
-	if err != nil {
-		return fmt.Errorf("failed to create echo command: %v", err)
+	blocks []*TestBlock
+}
+
+type TestBlock struct {
+	name string
+
+	commands []*command.Command
+}
+
+type CommandArguments struct {
+	program   string
+	arguments []string
+}
+
+func NewSuit(log *logrus.Entry) (suite *TestingSuite, err error) {
+
+	suite = &TestingSuite{
+		log: log,
+	}
+	suite.blocks, err = suite.allTestBlocks()
+
+	return suite, err
+}
+
+func (t *TestingSuite) RunTests() error {
+	var result *multierror.Error
+
+	for _, block := range t.blocks {
+		if err := t.run(block); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
 
-	go func() {
-		err = firstTest.Run()
-	}()
+	return result.ErrorOrNil()
+}
 
-	firstTest.Wait()
+func (t *TestingSuite) allTestBlocks() (blocks []*TestBlock, err error) {
+	var result *multierror.Error
 
+	block, err := initialStartup()
 	if err != nil {
-		fmt.Errorf("error when running command: %v", err)
+		result = multierror.Append(result, err)
+	}
+	blocks = append(blocks, block)
+
+	block, err = cleanUp()
+	if err != nil {
+		result = multierror.Append(result, err)
+	}
+	blocks = append(blocks, block)
+
+	return blocks, result.ErrorOrNil()
+}
+
+func NewTestBlock(name string, programs []*CommandArguments) (test *TestBlock, err error) {
+	var result *multierror.Error
+
+	test = &TestBlock{
+		name: name,
 	}
 
-	fmt.Printf("stdout: '%s'\n", firstTest.Stdout())
-	fmt.Printf("stderr: '%s'\n", firstTest.Stderr())
+	for _, program := range programs {
+		cmd, err := command.New(program.program, program.arguments)
+		if err != nil {
+			result = multierror.Append(result, err)
+			continue
+		}
+		test.commands = append(test.commands, cmd)
+	}
 
-	return nil
+	return test, result.ErrorOrNil()
+}
+
+func (t *TestingSuite) run(block *TestBlock) error {
+	var result *multierror.Error
+
+	t.log.Infof("-- Testing block: %s --", block.name)
+	for _, cmd := range block.commands {
+		t.log.Infof("Running command: $ %s", cmd.String())
+
+		if err := cmd.Run(); err != nil {
+			t.log.Warnf("Something went wrong: \n%s", cmd.Stderr())
+			result = multierror.Append(result, err)
+		} else {
+			fmt.Printf("%s", cmd.Stdout())
+		}
+	}
+
+	return result.ErrorOrNil()
 }

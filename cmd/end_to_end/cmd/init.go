@@ -25,7 +25,12 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log := LogLevel(cmd)
 
-		if err := end_to_end.RunTests(log); err != nil {
+		testingSuite, err := end_to_end.NewSuit(log)
+		if err != nil {
+			log.Fatalf("failed to create testing suite: %v", err)
+		}
+
+		if err := testingSuite.RunTests(); err != nil {
 			log.Fatalf("error running end to end tests: %v", err)
 		}
 	},
@@ -33,10 +38,6 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.PersistentFlags().IntP(FlagLogLevel, "l", 1, "Set the log level of output. 0-Fatal 1-Info 2-Debug")
-	//RootCmd.PersistentFlags().StringP(FlagApiServerURL, "u", "http://127.0.0.1:8001", "Set URL of Kubernetes API")
-	//RootCmd.PersistentFlags().StringP(FlagKubeConfig, "c", "~/.kube/config", "Path to kube config")
-	//RootCmd.PersistentFlags().IntP(FlagWorkers, "w", 2, "Number of worker threads for controller")
-	//RootCmd.PersistentFlags().StringSliceP(FlagNTPHosts, "n", []string{""}, "Optional list of host URLs of ntp servers to ensure correct time")
 }
 
 func Execute() {
