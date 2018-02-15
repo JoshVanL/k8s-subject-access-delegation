@@ -2,6 +2,7 @@ package end_to_end
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -87,17 +88,36 @@ func NewTestBlock(name string, programs []*CommandArguments) (test *TestBlock, e
 
 func (t *TestingSuite) run(block *TestBlock) error {
 	var result *multierror.Error
+	var wg sync.WaitGroup
 
 	t.log.Infof("-- Testing block: %s --", block.name)
 	for _, cmd := range block.commands {
 		t.log.Infof("Running command: $ %s", cmd.String())
 
-		if err := cmd.Run(); err != nil {
-			t.log.Warnf("Something went wrong: \n%s", cmd.Stderr())
-			result = multierror.Append(result, err)
-		} else {
-			fmt.Printf("%s", cmd.Stdout())
-		}
+		wg.Add(3)
+
+		go func() {
+			if err := cmd.Run(); err != nil {
+				result = multierror.Append(result, err)
+			}
+			wg.Done()
+		}()
+
+		go func() {
+			for stdout := range cmd.Stdout() {
+				fmt.Printf(stdout)
+			}
+			wg.Done()
+		}()
+
+		go func() {
+			for stderr := range cmd.Stderr() {
+				fmt.Printf(stderr)
+			}
+			wg.Done()
+		}()
+
+		wg.Wait()
 	}
 
 	return result.ErrorOrNil()
