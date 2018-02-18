@@ -30,7 +30,6 @@ type Command struct {
 
 func New(name string, args []string) (command *Command, err error) {
 	var result *multierror.Error
-
 	command = &Command{
 		name:         name,
 		args:         args,
@@ -123,7 +122,6 @@ func (c *Command) Stderr() chan string {
 
 func (c *Command) stdoutScan() error {
 	var result *multierror.Error
-
 	for c.scanStdout.Scan() {
 		fmt.Printf(fmt.Sprintf("%s\n", c.scanStdout.Text()))
 	}
@@ -133,7 +131,6 @@ func (c *Command) stdoutScan() error {
 
 func (c *Command) stderrScan() error {
 	var result *multierror.Error
-
 	for c.scanStderr.Scan() {
 		fmt.Printf(fmt.Sprintf("%s\n", c.scanStderr.Text()))
 	}
