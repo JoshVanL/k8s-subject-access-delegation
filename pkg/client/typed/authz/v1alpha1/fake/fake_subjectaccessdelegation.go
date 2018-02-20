@@ -32,9 +32,9 @@ type FakeSubjectAccessDelegations struct {
 	ns   string
 }
 
-var subjectaccessdelegationsResource = schema.GroupVersionResource{Group: "authz", Version: "v1alpha1", Resource: "subjectaccessdelegations"}
+var subjectaccessdelegationsResource = schema.GroupVersionResource{Group: "authz.k8s.io", Version: "v1alpha1", Resource: "subjectaccessdelegations"}
 
-var subjectaccessdelegationsKind = schema.GroupVersionKind{Group: "authz", Version: "v1alpha1", Kind: "SubjectAccessDelegation"}
+var subjectaccessdelegationsKind = schema.GroupVersionKind{Group: "authz.k8s.io", Version: "v1alpha1", Kind: "SubjectAccessDelegation"}
 
 // Get takes name of the subjectAccessDelegation, and returns the corresponding subjectAccessDelegation object, and an error if there is any.
 func (c *FakeSubjectAccessDelegations) Get(name string, options v1.GetOptions) (result *v1alpha1.SubjectAccessDelegation, err error) {

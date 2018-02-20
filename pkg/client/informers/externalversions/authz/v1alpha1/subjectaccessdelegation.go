@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	time "time"
+
 	authz_v1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 	versioned "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions/internalinterfaces"
@@ -27,7 +29,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	time "time"
 )
 
 // SubjectAccessDelegationInformer provides access to a shared informer and lister for
@@ -38,19 +39,34 @@ type SubjectAccessDelegationInformer interface {
 }
 
 type subjectAccessDelegationInformer struct {
-	factory internalinterfaces.SharedInformerFactory
+	factory          internalinterfaces.SharedInformerFactory
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
 // NewSubjectAccessDelegationInformer constructs a new informer for SubjectAccessDelegation type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewSubjectAccessDelegationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredSubjectAccessDelegationInformer(client, namespace, resyncPeriod, indexers, nil)
+}
+
+// NewFilteredSubjectAccessDelegationInformer constructs a new informer for SubjectAccessDelegation type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewFilteredSubjectAccessDelegationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
 				return client.AuthzV1alpha1().SubjectAccessDelegations(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
 				return client.AuthzV1alpha1().SubjectAccessDelegations(namespace).Watch(options)
 			},
 		},
@@ -60,12 +76,12 @@ func NewSubjectAccessDelegationInformer(client versioned.Interface, namespace st
 	)
 }
 
-func defaultSubjectAccessDelegationInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewSubjectAccessDelegationInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+func (f *subjectAccessDelegationInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredSubjectAccessDelegationInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *subjectAccessDelegationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&authz_v1alpha1.SubjectAccessDelegation{}, defaultSubjectAccessDelegationInformer)
+	return f.factory.InformerFor(&authz_v1alpha1.SubjectAccessDelegation{}, f.defaultInformer)
 }
 
 func (f *subjectAccessDelegationInformer) Lister() v1alpha1.SubjectAccessDelegationLister {
