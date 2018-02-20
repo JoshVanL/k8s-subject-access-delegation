@@ -95,6 +95,13 @@ func test1() (testBlock *TestBlock, err error) {
 			},
 			background: false,
 			delay:      1,
+			conditions: []Condition{
+				&SplitStringCondition{
+					line:  1,
+					split: 1,
+					match: "foo",
+				},
+			},
 		},
 		&Command{
 			program: "kubectl",
@@ -104,6 +111,12 @@ func test1() (testBlock *TestBlock, err error) {
 			},
 			background: false,
 			delay:      5,
+			conditions: []Condition{
+				&StringCondition{
+					line:  0,
+					match: "No resources found.",
+				},
+			},
 		},
 	}
 

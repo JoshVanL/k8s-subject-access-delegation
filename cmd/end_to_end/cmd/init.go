@@ -33,6 +33,8 @@ var RootCmd = &cobra.Command{
 		if err := testingSuite.RunTests(); err != nil {
 			log.Fatalf("error running end to end tests: %v", err)
 		}
+
+		log.Infof("== All tests passed. ==")
 	},
 }
 

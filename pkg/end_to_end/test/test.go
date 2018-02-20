@@ -31,6 +31,8 @@ type Command struct {
 	background bool
 	delay      int
 	conditions []Condition
+
+	stdout []string
 }
 
 func NewSuit(log *logrus.Entry) (suite *TestingSuite, err error) {
@@ -49,7 +51,7 @@ func (t *TestingSuite) RunTests() error {
 	for _, block := range t.blocks {
 		if err := t.run(block); err != nil {
 			result = multierror.Append(result, err)
-			t.log.Warnf("Testing block '%s' failed: %v", block.name, err)
+			t.log.Errorf("Testing block '%s' failed: %v", block.name, err)
 		}
 	}
 
@@ -81,7 +83,7 @@ func (t *TestingSuite) run(block *TestBlock) error {
 	var result *multierror.Error
 	var backgroundCmds []*command.Command
 
-	t.log.Infof("-- Testing block: %s --", block.name)
+	t.log.Infof("== Testing block: %s ==", block.name)
 	for _, cmd := range block.commands {
 		t.log.Infof("Running command: $ %s", cmd.command.String())
 
@@ -104,6 +106,7 @@ func (t *TestingSuite) run(block *TestBlock) error {
 
 		go func() {
 			for stdout := range cmd.command.Stdout() {
+				cmd.stdout = append(cmd.stdout, stdout)
 				fmt.Printf(stdout)
 			}
 			wg.Done()
@@ -115,6 +118,15 @@ func (t *TestingSuite) run(block *TestBlock) error {
 			}
 			wg.Done()
 		}()
+
+		for _, condition := range cmd.conditions {
+			if condition.TestConditon(cmd.stdout) {
+				t.log.Infof("Condition passed.")
+			} else {
+				err := fmt.Errorf("Condition failed in test block '%s': %s", block.name, condition.Expected(cmd.stdout))
+				result = multierror.Append(result, err)
+			}
+		}
 
 		if cmd.background {
 			time.Sleep(time.Second * 5)
