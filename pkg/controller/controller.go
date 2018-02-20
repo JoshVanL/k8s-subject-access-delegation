@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -89,9 +88,7 @@ func NewController(
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSad,
 		UpdateFunc: func(old, new interface{}) {
-			if !reflect.DeepEqual(old, new) {
-				controller.enqueueSad(new)
-			}
+			controller.enqueueSad(new)
 		},
 		DeleteFunc: controller.deleteSad,
 	})
