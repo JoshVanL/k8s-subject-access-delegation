@@ -4,7 +4,7 @@ metadata:
   name: test-sad2
 spec:
   duration: 6
-  repeat: 3
+  repeat: 1
   namespace: default
   originSubject:
     kind: Role

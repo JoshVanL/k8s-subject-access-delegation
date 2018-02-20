@@ -3,6 +3,7 @@ package end_to_end
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
@@ -19,12 +20,18 @@ type TestingSuite struct {
 type TestBlock struct {
 	name string
 
-	commands []*command.Command
+	commands []*Command
+}
+
+type Command struct {
+	command    *command.Command
+	background bool
 }
 
 type CommandArguments struct {
-	program   string
-	arguments []string
+	program    string
+	arguments  []string
+	background bool
 }
 
 func NewSuit(log *logrus.Entry) (suite *TestingSuite, err error) {
@@ -80,7 +87,10 @@ func NewTestBlock(name string, programs []*CommandArguments) (test *TestBlock, e
 			result = multierror.Append(result, err)
 			continue
 		}
-		test.commands = append(test.commands, cmd)
+		test.commands = append(test.commands, &Command{
+			command:    cmd,
+			background: program.background,
+		})
 	}
 
 	return test, result.ErrorOrNil()
@@ -88,36 +98,52 @@ func NewTestBlock(name string, programs []*CommandArguments) (test *TestBlock, e
 
 func (t *TestingSuite) run(block *TestBlock) error {
 	var result *multierror.Error
-	var wg sync.WaitGroup
+	var backgroundCmds []*command.Command
 
 	t.log.Infof("-- Testing block: %s --", block.name)
 	for _, cmd := range block.commands {
-		t.log.Infof("Running command: $ %s", cmd.String())
+		t.log.Infof("Running command: $ %s", cmd.command.String())
+
+		var wg sync.WaitGroup
 
 		wg.Add(3)
 
 		go func() {
-			if err := cmd.Run(); err != nil {
+			if err := cmd.command.Run(); err != nil {
 				result = multierror.Append(result, err)
 			}
+			if cmd.background {
+				backgroundCmds = append(backgroundCmds, cmd.command)
+			}
+
 			wg.Done()
 		}()
 
 		go func() {
-			for stdout := range cmd.Stdout() {
+			for stdout := range cmd.command.Stdout() {
 				fmt.Printf(stdout)
 			}
 			wg.Done()
 		}()
 
 		go func() {
-			for stderr := range cmd.Stderr() {
+			for stderr := range cmd.command.Stderr() {
 				fmt.Printf(stderr)
 			}
 			wg.Done()
 		}()
 
-		wg.Wait()
+		if cmd.background {
+			time.Sleep(time.Second * 5)
+		} else {
+			wg.Wait()
+		}
+	}
+
+	for _, cmd := range backgroundCmds {
+		if err := cmd.Kill(); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
 
 	return result.ErrorOrNil()

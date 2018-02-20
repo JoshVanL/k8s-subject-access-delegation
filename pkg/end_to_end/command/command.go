@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/hashicorp/go-multierror"
 )
@@ -127,6 +128,10 @@ func (c *Command) stdoutScan() error {
 	}
 
 	return result.ErrorOrNil()
+}
+
+func (c *Command) Kill() error {
+	return c.cmd.Process.Signal(syscall.SIGINT)
 }
 
 func (c *Command) stderrScan() error {
