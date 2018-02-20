@@ -13,7 +13,6 @@ import (
 )
 
 type Command struct {
-	stdinWriter  io.WriteCloser
 	stderrReader io.ReadCloser
 	stdoutReader io.ReadCloser
 
@@ -24,25 +23,22 @@ type Command struct {
 	args []string
 	cmd  *exec.Cmd
 
-	stdoutBuffer chan string
-	stderrBuffer chan string
-	complete     chan struct{}
+	complete chan struct{}
+	stdoutCh chan string
+	stderrCh chan string
 }
 
 func New(name string, args []string) (command *Command, err error) {
 	var result *multierror.Error
 	command = &Command{
-		name:         name,
-		args:         args,
-		cmd:          exec.Command(name, args...),
-		stdoutBuffer: make(chan string, 256),
-		stderrBuffer: make(chan string, 256),
-		complete:     make(chan struct{}),
+		name:     name,
+		args:     args,
+		cmd:      exec.Command(name, args...),
+		complete: make(chan struct{}),
+		stdoutCh: make(chan string),
+		stderrCh: make(chan string),
 	}
 
-	if command.stdinWriter, err = command.cmd.StdinPipe(); err != nil {
-		result = multierror.Append(result, fmt.Errorf("unable to get command StdinPipe: %v", err))
-	}
 	if command.stderrReader, err = command.cmd.StderrPipe(); err != nil {
 		result = multierror.Append(result, fmt.Errorf("unable to get command StderrPipe: %v", err))
 	}
@@ -60,8 +56,6 @@ func New(name string, args []string) (command *Command, err error) {
 
 func (c *Command) Run() error {
 	var result *multierror.Error
-	var stdoutError error
-	var stderrError error
 	var wg sync.WaitGroup
 
 	if err := c.Start(); err != nil {
@@ -71,24 +65,24 @@ func (c *Command) Run() error {
 	wg.Add(2)
 
 	go func() {
-		if err := c.stdoutScan(); err != nil {
-			stdoutError = err
+		for c.scanStdout.Scan() {
+			c.stdoutCh <- c.scanStdout.Text()
 		}
-		close(c.stdoutBuffer)
+
+		close(c.stdoutCh)
 		wg.Done()
 	}()
 
 	go func() {
-		if err := c.stderrScan(); err != nil {
-			stderrError = err
+		for c.scanStderr.Scan() {
+			c.stderrCh <- c.scanStderr.Text()
 		}
+
 		wg.Done()
-		close(c.stderrBuffer)
+		close(c.stderrCh)
 	}()
 
 	wg.Wait()
-
-	result = multierror.Append(result, stdoutError, stderrError)
 
 	if err := c.cmd.Wait(); err != nil {
 		result = multierror.Append(result, err)
@@ -109,38 +103,20 @@ func (c *Command) Wait() {
 
 func (c *Command) ReReady() {
 	c.complete = make(chan struct{})
-	c.stdoutBuffer = make(chan string, 256)
-	c.stderrBuffer = make(chan string, 256)
+	c.stderrCh = make(chan string)
+	c.stdoutCh = make(chan string)
 }
 
 func (c *Command) Stdout() chan string {
-	return c.stdoutBuffer
+	return c.stdoutCh
 }
 
 func (c *Command) Stderr() chan string {
-	return c.stderrBuffer
-}
-
-func (c *Command) stdoutScan() error {
-	var result *multierror.Error
-	for c.scanStdout.Scan() {
-		fmt.Printf(fmt.Sprintf("%s\n", c.scanStdout.Text()))
-	}
-
-	return result.ErrorOrNil()
+	return c.stderrCh
 }
 
 func (c *Command) Kill() error {
 	return c.cmd.Process.Signal(syscall.SIGINT)
-}
-
-func (c *Command) stderrScan() error {
-	var result *multierror.Error
-	for c.scanStderr.Scan() {
-		fmt.Printf(fmt.Sprintf("%s\n", c.scanStderr.Text()))
-	}
-
-	return result.ErrorOrNil()
 }
 
 func (c *Command) String() string {

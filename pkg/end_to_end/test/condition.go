@@ -25,9 +25,6 @@ type StringCondition struct {
 }
 
 func (s *SplitStringCondition) TestConditon(stdout []string) (pass bool) {
-	for _, str := range stdout {
-		fmt.Printf("stdout=%s", str)
-	}
 	if len(stdout) < s.line+1 {
 		return false
 	}
@@ -53,9 +50,6 @@ func (s *SplitStringCondition) Expected(stdout []string) string {
 }
 
 func (s *StringCondition) TestConditon(stdout []string) (pass bool) {
-	for _, str := range stdout {
-		fmt.Printf("stdout=%s", str)
-	}
 	if len(stdout) < s.line+1 {
 		return false
 	}

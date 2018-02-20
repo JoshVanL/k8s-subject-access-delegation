@@ -35,7 +35,7 @@ func initialStartup() (testBlock *TestBlock, err error) {
 			arguments: []string{
 				"start",
 				"--extra-config=apiserver.Authorization.Mode=RBAC",
-				"--memory=2048",
+				"--memory=1024",
 			},
 			background: false,
 		},
@@ -98,8 +98,8 @@ func test1() (testBlock *TestBlock, err error) {
 			conditions: []Condition{
 				&SplitStringCondition{
 					line:  1,
-					split: 1,
-					match: "foo",
+					split: 0,
+					match: "test-pod-add-default-pod-reader",
 				},
 			},
 		},

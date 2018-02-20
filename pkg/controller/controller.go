@@ -399,7 +399,6 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 		}
 
 		time.Sleep(time.Second)
-
 	}
 
 	return fmt.Errorf("unable to find SAD custom resource definition from Kubetnetes")

@@ -105,19 +105,26 @@ func (t *TestingSuite) run(block *TestBlock) error {
 		}()
 
 		go func() {
-			for stdout := range cmd.command.Stdout() {
-				cmd.stdout = append(cmd.stdout, stdout)
-				fmt.Printf(stdout)
+			for str := range cmd.command.Stdout() {
+				cmd.stdout = append(cmd.stdout, str)
+				fmt.Printf("%s\n", str)
 			}
 			wg.Done()
 		}()
 
 		go func() {
-			for stderr := range cmd.command.Stderr() {
-				fmt.Printf(stderr)
+			for str := range cmd.command.Stderr() {
+				cmd.stdout = append(cmd.stdout, str)
+				fmt.Printf("%s\n", str)
 			}
 			wg.Done()
 		}()
+
+		if cmd.background {
+			time.Sleep(time.Second * 5)
+		} else {
+			wg.Wait()
+		}
 
 		for _, condition := range cmd.conditions {
 			if condition.TestConditon(cmd.stdout) {
@@ -126,12 +133,6 @@ func (t *TestingSuite) run(block *TestBlock) error {
 				err := fmt.Errorf("Condition failed in test block '%s': %s", block.name, condition.Expected(cmd.stdout))
 				result = multierror.Append(result, err)
 			}
-		}
-
-		if cmd.background {
-			time.Sleep(time.Second * 5)
-		} else {
-			wg.Wait()
 		}
 	}
 
