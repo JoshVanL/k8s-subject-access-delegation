@@ -30,8 +30,6 @@ import (
 // Don't stop the delegation repeating if it wasn't ablt to apply, just wait again?? (Not sure, repeat on failure)
 // Support more resources and origin subejects, not just role bindings. e.g. get the role bindings of a user and use that to apply permissions
 
-//TODO: Support multiple destination subjects
-
 const controllerAgentName = "SAD-controller"
 
 const (
@@ -84,7 +82,6 @@ func NewController(
 		ntpClient:           ntp_client.NewNTPClient(hosts),
 	}
 
-	//log.Info("Setting up event handlers")
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSad,
 		UpdateFunc: func(old, new interface{}) {
@@ -109,7 +106,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 		}
 
 	} else {
-		c.log.Infof("No NTP URLS specified.")
+		c.log.Infof("No NTP URLs specified.")
 	}
 
 	c.log.Infof("Using current time: %s", time.Now().Add(c.clockOffset).String())

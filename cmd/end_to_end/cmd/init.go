@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/end_to_end"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/end_to_end/test"
 )
 
 const FlagApiServerURL = "api-url"
@@ -25,7 +25,7 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log := LogLevel(cmd)
 
-		testingSuite, err := end_to_end.NewSuit(log)
+		testingSuite, err := test.NewSuit(log)
 		if err != nil {
 			log.Fatalf("failed to create testing suite: %v", err)
 		}

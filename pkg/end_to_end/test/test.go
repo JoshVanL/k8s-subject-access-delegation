@@ -1,4 +1,4 @@
-package end_to_end
+package test
 
 import (
 	"fmt"
@@ -24,14 +24,13 @@ type TestBlock struct {
 }
 
 type Command struct {
-	command    *command.Command
-	background bool
-}
+	command   *command.Command
+	program   string
+	arguments []string
 
-type CommandArguments struct {
-	program    string
-	arguments  []string
 	background bool
+	delay      int
+	conditions []Condition
 }
 
 func NewSuit(log *logrus.Entry) (suite *TestingSuite, err error) {
@@ -50,50 +49,32 @@ func (t *TestingSuite) RunTests() error {
 	for _, block := range t.blocks {
 		if err := t.run(block); err != nil {
 			result = multierror.Append(result, err)
+			t.log.Warnf("Testing block '%s' failed: %v", block.name, err)
 		}
 	}
 
 	return result.ErrorOrNil()
 }
 
-func (t *TestingSuite) allTestBlocks() (blocks []*TestBlock, err error) {
+func NewTestBlock(name string, tests []*Command) (testBlock *TestBlock, err error) {
 	var result *multierror.Error
 
-	block, err := initialStartup()
-	if err != nil {
-		result = multierror.Append(result, err)
-	}
-	blocks = append(blocks, block)
-
-	block, err = cleanUp()
-	if err != nil {
-		result = multierror.Append(result, err)
-	}
-	blocks = append(blocks, block)
-
-	return blocks, result.ErrorOrNil()
-}
-
-func NewTestBlock(name string, programs []*CommandArguments) (test *TestBlock, err error) {
-	var result *multierror.Error
-
-	test = &TestBlock{
+	block := &TestBlock{
 		name: name,
 	}
 
-	for _, program := range programs {
-		cmd, err := command.New(program.program, program.arguments)
+	for _, test := range tests {
+		cmd, err := command.New(test.program, test.arguments)
 		if err != nil {
 			result = multierror.Append(result, err)
 			continue
 		}
-		test.commands = append(test.commands, &Command{
-			command:    cmd,
-			background: program.background,
-		})
+		test.command = cmd
+
+		block.commands = append(block.commands, test)
 	}
 
-	return test, result.ErrorOrNil()
+	return block, result.ErrorOrNil()
 }
 
 func (t *TestingSuite) run(block *TestBlock) error {
@@ -107,6 +88,8 @@ func (t *TestingSuite) run(block *TestBlock) error {
 		var wg sync.WaitGroup
 
 		wg.Add(3)
+
+		time.Sleep(time.Second * time.Duration(cmd.delay))
 
 		go func() {
 			if err := cmd.command.Run(); err != nil {
