@@ -165,7 +165,6 @@ func (c *Controller) processNextWorkItem() bool {
 			return fmt.Errorf("error syncing '%s': %s", key, err.Error())
 		}
 		c.workqueue.Forget(obj)
-		c.log.Infof("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
