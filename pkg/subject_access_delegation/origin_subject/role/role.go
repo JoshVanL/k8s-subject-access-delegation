@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
 type Role struct {

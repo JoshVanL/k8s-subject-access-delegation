@@ -5,7 +5,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/service_account"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/user"

@@ -22,6 +22,7 @@ import (
 	sadscheme "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned/scheme"
 	informers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions"
 	listers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/listers/authz/v1alpha1"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/ntp_client"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
 )
@@ -54,7 +55,7 @@ type Controller struct {
 	ntpClient    *ntp_client.NTPClient
 	clockOffset  time.Duration
 
-	delegations map[string]*subject_access_delegation.SubjectAccessDelegation
+	delegations map[string]interfaces.SubjectAccessDelegation
 }
 
 func NewController(
@@ -90,7 +91,7 @@ func NewController(
 		DeleteFunc: controller.deleteSad,
 	})
 
-	controller.delegations = make(map[string]*subject_access_delegation.SubjectAccessDelegation)
+	controller.delegations = make(map[string]interfaces.SubjectAccessDelegation)
 
 	return controller
 }
@@ -335,7 +336,7 @@ func (c *Controller) deleteSad(obj interface{}) {
 	c.log.Infof("Subject Access Delegation '%s' has been deleted", name)
 }
 
-func (c *Controller) appendDelegation(delegation *subject_access_delegation.SubjectAccessDelegation, sad *authzv1alpha1.SubjectAccessDelegation) error {
+func (c *Controller) appendDelegation(delegation interfaces.SubjectAccessDelegation, sad *authzv1alpha1.SubjectAccessDelegation) error {
 	if _, ok := c.delegations[sad.Name]; ok {
 		return fmt.Errorf("Subject Access Delegation '%s' already exists.", sad.Name)
 	}

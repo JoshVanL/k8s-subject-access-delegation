@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service"

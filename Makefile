@@ -103,7 +103,7 @@ go_build_bins:
 
 go_mock:
 	mkdir -p $(MOCKDIR)
-	$(BINDIR)/mockgen -imports .=github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces -package=mocks -source=pkg/subject_access_delegation/interfaces/interfaces.go -destination=$(MOCKDIR)/subject_access_delegation.go
+	$(BINDIR)/mockgen -imports .=github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces -package=mocks -source=pkg/interfaces/interfaces.go -destination=$(MOCKDIR)/subject_access_delegation.go
 	$(BINDIR)/mockgen -destination=pkg/subject_access_delegation/mocks/kubernetes.go -package=mocks -source=vendor/k8s.io/client-go/kubernetes/clientset.go
 	# mockgen only supports embedded interfaces in reflector mode
 	$(BINDIR)/mockgen $(CLIENTGoCore) CoreV1Interface,ServiceAccountInterface,PodInterface > $(MOCKDIR)/core_v1.go

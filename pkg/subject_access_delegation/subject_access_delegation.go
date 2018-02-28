@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"

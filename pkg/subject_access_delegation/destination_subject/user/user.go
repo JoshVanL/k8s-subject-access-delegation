@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
 type User struct {

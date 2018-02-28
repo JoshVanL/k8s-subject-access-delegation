@@ -3,10 +3,10 @@ package destination_subject
 import (
 	"fmt"
 
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/group"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/service_account"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject/user"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
 )
 
 const ServiceAccountKind = "ServiceAccount"
