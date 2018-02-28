@@ -290,7 +290,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_Successful(t *testing.T) {
 
 	s.fakeRoleInterface.EXPECT().Get(s.sad.Spec.OriginSubject.Name, metav1.GetOptions{}).Times(repeat).Return(&rbacv1.Role{}, nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
-	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).Times(repeat).Return(nil, nil)
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding.Name, gomock.Any()).Times(repeat).Return(nil)
 
@@ -334,7 +333,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginSA_Successful(t *testing.T) {
 	s.fakeSAInterface.EXPECT().Get(originSubjectSA.Name, gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
 
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnServiceAccount(), nil)
-	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding1.Name, gomock.Any()).Times(repeat).Return(nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding2).Times(repeat).Return(nil, nil)
@@ -381,7 +379,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
 
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnUser(), nil)
-	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding1).Times(repeat).Return(nil, nil)
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding1.Name, gomock.Any()).Times(repeat).Return(nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding2).Times(repeat).Return(nil, nil)
@@ -419,7 +416,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginRole_ForceClose(t *testing.T) {
 
 	s.fakeRoleInterface.EXPECT().Get(s.sad.Spec.OriginSubject.Name, metav1.GetOptions{}).AnyTimes().Return(&rbacv1.Role{}, nil)
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).AnyTimes().Return(returnServiceAccount(), nil)
-	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).AnyTimes().Return(returnUser(), nil)
 	s.fakeRoleBindingsIn.EXPECT().Create(createBinding).AnyTimes().Return(nil, nil)
 	s.fakeRoleBindingsIn.EXPECT().Delete(createBinding.Name, gomock.Any()).AnyTimes().Return(nil)
 

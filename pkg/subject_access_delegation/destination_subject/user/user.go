@@ -1,12 +1,7 @@
 package user
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/interfaces"
@@ -19,7 +14,7 @@ type User struct {
 
 	namespace string
 	name      string
-	user      *corev1.ServiceAccount
+	uid       string
 }
 
 var _ interfaces.DestinationSubject = &User{}
@@ -34,27 +29,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *User {
 	}
 }
 
-func (d *User) getUserAccount() error {
-	options := metav1.GetOptions{}
-
-	sa, err := d.client.Core().ServiceAccounts(d.Namespace()).Get(d.Name(), options)
-	if err != nil {
-		return fmt.Errorf("failed to get service account '%s': %v", d.Name(), err)
-	}
-	d.user = sa
-
-	return nil
-}
-
 func (d *User) ResolveDestination() error {
-	if err := d.getUserAccount(); err != nil {
-		return err
-	}
-
-	if d.user == nil {
-		return errors.New("service account is nil")
-	}
-
 	return nil
 }
 
