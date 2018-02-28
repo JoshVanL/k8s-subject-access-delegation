@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -20,7 +19,7 @@ type User struct {
 
 	namespace string
 	name      string
-	user      *corev1.ServiceAccount
+	uid       string
 }
 
 var _ interfaces.OriginSubject = &User{}
@@ -36,7 +35,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *User {
 }
 
 func (o *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
-	roleBindings, err := o.getSARoleBindings()
+	roleBindings, err := o.getUserRoleBindings()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +48,7 @@ func (o *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
 	return roleRefs, nil
 }
 
-func (o *User) getSARoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
+func (o *User) getUserRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
 	// make this more efficient
 	options := metav1.ListOptions{}
 
@@ -66,7 +65,7 @@ func (o *User) getSARoleBindings() (roleBindings []rbacv1.RoleBinding, err error
 		for _, subject := range binding.Subjects {
 			if subject.Kind == rbacv1.UserKind && subject.Name == o.Name() {
 				roleBindings = append(roleBindings, binding)
-				continue
+				break
 			}
 		}
 	}
@@ -74,25 +73,8 @@ func (o *User) getSARoleBindings() (roleBindings []rbacv1.RoleBinding, err error
 	return roleBindings, nil
 }
 
-func (o *User) getUserAccount() error {
-	options := metav1.GetOptions{}
-
-	serviceAccount, err := o.client.Core().ServiceAccounts(o.Namespace()).Get(o.Name(), options)
-	if err != nil {
-		return fmt.Errorf("failed to get User Account '%s': %v", o.Name(), err)
-	}
-
-	if serviceAccount == nil {
-		return errors.New("service account is nil")
-	}
-
-	o.user = serviceAccount
-
-	return nil
-}
-
 func (o *User) ResolveOrigin() error {
-	return o.getUserAccount()
+	return nil
 }
 
 func (o *User) Namespace() string {

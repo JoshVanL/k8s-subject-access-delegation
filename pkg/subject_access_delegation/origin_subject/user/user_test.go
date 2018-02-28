@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/mocks"
@@ -16,11 +15,10 @@ type fakeUser struct {
 	*User
 	ctrl *gomock.Controller
 
-	fakeClient                  *mocks.MockInterface
-	fakeRbac                    *mocks.MockRbacV1Interface
-	fakeRoleBindingsInterface   *mocks.MockRoleBindingInterface
-	fakeCore                    *mocks.MockCoreV1Interface
-	fakeServiceAccountInterface *mocks.MockServiceAccountInterface
+	fakeClient                *mocks.MockInterface
+	fakeRbac                  *mocks.MockRbacV1Interface
+	fakeRoleBindingsInterface *mocks.MockRoleBindingInterface
+	fakeCore                  *mocks.MockCoreV1Interface
 }
 
 func newFakeUser(t *testing.T) *fakeUser {
@@ -29,6 +27,7 @@ func newFakeUser(t *testing.T) *fakeUser {
 		User: &User{
 			namespace: "fakeNamespace",
 			name:      "me",
+			uid:       "me",
 		},
 	}
 
@@ -36,53 +35,22 @@ func newFakeUser(t *testing.T) *fakeUser {
 	u.fakeRbac = mocks.NewMockRbacV1Interface(u.ctrl)
 	u.fakeRoleBindingsInterface = mocks.NewMockRoleBindingInterface(u.ctrl)
 	u.fakeCore = mocks.NewMockCoreV1Interface(u.ctrl)
-	u.fakeServiceAccountInterface = mocks.NewMockServiceAccountInterface(u.ctrl)
 
 	u.User.client = u.fakeClient
 
 	return u
 }
 
-func TestUser_ResolveDestination_Nil(t *testing.T) {
+func TestUser_ResolveDestination(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
-
-	u.fakeClient.EXPECT().Core().Times(1).Return(u.fakeCore)
-	u.fakeCore.EXPECT().ServiceAccounts(u.User.namespace).Times(1).Return(u.fakeServiceAccountInterface)
-	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, gomock.Any()).Times(1).Return(nil, nil)
-
-	if err := u.ResolveOrigin(); err == nil {
-		t.Error("expected error but got none - rolebindings is nil")
-	}
-}
-
-func TestUser_ResolveOrigin_Error(t *testing.T) {
-	u := newFakeUser(t)
-	defer u.ctrl.Finish()
-
-	u.fakeClient.EXPECT().Core().Times(1).Return(u.fakeCore)
-	u.fakeCore.EXPECT().ServiceAccounts(u.User.namespace).Times(1).Return(u.fakeServiceAccountInterface)
-	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, gomock.Any()).Times(1).Return(&corev1.ServiceAccount{}, errors.New("this is an error"))
-
-	if err := u.ResolveOrigin(); err == nil {
-		t.Error("expected error but got none - returned error")
-	}
-}
-
-func TestUser_ResolveOrigin_Successful(t *testing.T) {
-	u := newFakeUser(t)
-	defer u.ctrl.Finish()
-
-	u.fakeClient.EXPECT().Core().Times(1).Return(u.fakeCore)
-	u.fakeCore.EXPECT().ServiceAccounts(u.User.namespace).Times(1).Return(u.fakeServiceAccountInterface)
-	u.fakeServiceAccountInterface.EXPECT().Get(u.User.name, gomock.Any()).Times(1).Return(&corev1.ServiceAccount{}, nil)
 
 	if err := u.ResolveOrigin(); err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Errorf("expected nil, go non-nil?!: %v", err)
 	}
 }
 
-func TestUser_RoleRefs_Nil(t *testing.T) {
+func TestUser_UserRefs_Nil(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 
@@ -96,7 +64,7 @@ func TestUser_RoleRefs_Nil(t *testing.T) {
 	}
 }
 
-func TestUser_RoleRefs_Error(t *testing.T) {
+func TestUser_UserRefs_Error(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 
@@ -110,15 +78,15 @@ func TestUser_RoleRefs_Error(t *testing.T) {
 	}
 }
 
-func TestUser_RoleRefs_Successful_None(t *testing.T) {
+func TestUser_UserRefs_Successful_None(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 
-	roleRefsReturn := &rbacv1.RoleBindingList{}
+	userRefsReturn := &rbacv1.RoleBindingList{}
 
 	u.fakeClient.EXPECT().Rbac().Times(1).Return(u.fakeRbac)
 	u.fakeRbac.EXPECT().RoleBindings(u.namespace).Times(1).Return(u.fakeRoleBindingsInterface)
-	u.fakeRoleBindingsInterface.EXPECT().List(gomock.Any()).Return(roleRefsReturn, nil)
+	u.fakeRoleBindingsInterface.EXPECT().List(gomock.Any()).Return(userRefsReturn, nil)
 
 	refs, err := u.RoleRefs()
 	if err != nil {
@@ -130,7 +98,7 @@ func TestUser_RoleRefs_Successful_None(t *testing.T) {
 	}
 }
 
-func TestUser_RoleRefs_Successful_All(t *testing.T) {
+func TestUser_UserRefs_Successful_All(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 
@@ -209,7 +177,7 @@ func TestUser_RoleRefs_Successful_All(t *testing.T) {
 	}
 }
 
-func TestUser_RoleRefs_Successful_Some(t *testing.T) {
+func TestUser_UserRefs_Successful_Some(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 
@@ -282,7 +250,7 @@ func TestUser_RoleRefs_Successful_Some(t *testing.T) {
 	}
 }
 
-func TestUser_RoleRefs_Successful_NoRef(t *testing.T) {
+func TestUser_UserRefs_Successful_NoRef(t *testing.T) {
 	u := newFakeUser(t)
 	defer u.ctrl.Finish()
 

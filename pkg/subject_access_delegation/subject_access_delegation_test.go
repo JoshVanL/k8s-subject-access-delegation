@@ -379,7 +379,6 @@ func TestSAD_Delegate_Nill_Repeat_Time_OriginUser_Successful(t *testing.T) {
 	createBinding3.RoleRef = roleRef3
 
 	s.fakeRoleBindingsIn.EXPECT().List(gomock.Any()).Times(repeat).Return(&roleBindingsReturn, nil)
-	s.fakeSAInterface.EXPECT().Get(originSubjectUser.Name, gomock.Any()).Times(repeat).Return(returnUser(), nil)
 
 	s.fakeSAInterface.EXPECT().Get("TargetServiceAccount", gomock.Any()).Times(repeat).Return(returnUser(), nil)
 	s.fakeSAInterface.EXPECT().Get("TargetUser", gomock.Any()).Times(repeat).Return(returnUser(), nil)

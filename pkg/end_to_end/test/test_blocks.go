@@ -59,6 +59,7 @@ func initialStartup() (testBlock *TestBlock, err error) {
 				"-f",
 				"docs/pod-role-service-account.yaml",
 			},
+			delay:      4,
 			background: false,
 		},
 	}
