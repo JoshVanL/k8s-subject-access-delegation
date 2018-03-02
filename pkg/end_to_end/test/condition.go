@@ -14,53 +14,53 @@ type Condition interface {
 }
 
 type SplitStringCondition struct {
-	line  int
-	split int
-	match string
+	Line  int    `yaml:"Line"`
+	Split int    `yaml:"Split"`
+	Match string `yaml:"Match:`
 }
 
 type StringCondition struct {
-	line  int
-	match string
+	Line  int    `yaml:"Line"`
+	Match string `yaml:"Match"`
 }
 
 func (s *SplitStringCondition) TestConditon(stdout []string) (pass bool) {
-	if len(stdout) < s.line+1 {
+	if len(stdout) < s.Line+1 {
 		return false
 	}
 
-	words := strings.Fields(stdout[s.line])
-	if len(words) < s.split+1 {
+	words := strings.Fields(stdout[s.Line])
+	if len(words) < s.Split+1 {
 		return false
 	}
 
-	return words[s.split] == s.match
+	return words[s.Split] == s.Match
 }
 
 func (s *SplitStringCondition) Expected(stdout []string) string {
-	if len(stdout) < s.line+1 {
-		return gotNothing(s.match)
+	if len(stdout) < s.Line+1 {
+		return gotNothing(s.Match)
 	}
 
-	words := strings.Fields(stdout[s.line])
-	if len(words) < s.split+1 {
-		return gotNothing(s.match)
+	words := strings.Fields(stdout[s.Line])
+	if len(words) < s.Split+1 {
+		return gotNothing(s.Match)
 	}
-	return fmt.Sprintf("expected='%s', got='%s'", s.match, words[s.split])
+	return fmt.Sprintf("expected='%s', got='%s'", s.Match, words[s.Split])
 }
 
 func (s *StringCondition) TestConditon(stdout []string) (pass bool) {
-	if len(stdout) < s.line+1 {
+	if len(stdout) < s.Line+1 {
 		return false
 	}
-	return stdout[s.line] == s.match
+	return stdout[s.Line] == s.Match
 }
 
 func (s *StringCondition) Expected(stdout []string) string {
-	if len(stdout) < s.line+1 {
-		return gotNothing(s.match)
+	if len(stdout) < s.Line+1 {
+		return gotNothing(s.Match)
 	}
-	return fmt.Sprintf("expected='%s', got='%s'", s.match, stdout[s.line])
+	return fmt.Sprintf("expected='%s', got='%s'", s.Match, stdout[s.Line])
 }
 
 func gotNothing(expected string) string {

@@ -1,0 +1,57 @@
+testing_blocks:
+  - name: "Initiating startup"
+    commands:
+    - program: "minikube"
+      arguments:
+      - "start"
+      - "--extra-config=apiserver.Authorization.Mode=RBAC"
+      - "--memory=1024"
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "all"
+    - program: "./k8s_subject_access_delegation_linux_amd64"
+      background: true
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/pod-role-service-account.yaml"
+      delay: 4
+
+  - name: "test 1"
+    commands:
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/e2e_1.yaml"
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/nginx_pod.yaml"
+      delay:      1
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "rolebindings"
+      delay: 1
+      split_string_conditions:
+      - line: 1
+        split: 0
+        match: "test-pod-add-default-pod-reader"
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "rolebindings"
+      delay: 5
+      string_conditions:
+          - line: 0
+            match: "No resources found."
+
+  - name: "Cleaning up"
+    commands:
+    - program: "minikube"
+      arguments:
+      - "delete"

@@ -3,21 +3,15 @@ package cmd
 import (
 	"fmt"
 	"os"
-	//"time"
 
-	//"github.com/hashicorp/go-multierror"
-	//"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/end_to_end/test"
 )
 
-const FlagApiServerURL = "api-url"
-const FlagKubeConfig = "kube-config"
-const FlagWorkers = "worker-threads"
 const FlagLogLevel = "log-level"
-const FlagNTPHosts = "ntp-hosts"
+const FlagTestFile = "test-file"
 
 var RootCmd = &cobra.Command{
 	Use:   "end-to-end",
@@ -25,7 +19,12 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log := LogLevel(cmd)
 
-		testingSuite, err := test.NewSuit(log)
+		filename, err := cmd.PersistentFlags().GetString(FlagTestFile)
+		if err != nil {
+			log.Fatalf("failed to get test file from flag: %v", err)
+		}
+
+		testingSuite, err := test.NewSuite(filename, log)
 		if err != nil {
 			log.Fatalf("failed to create testing suite: %v", err)
 		}
@@ -40,6 +39,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.PersistentFlags().IntP(FlagLogLevel, "l", 1, "Set the log level of output. 0-Fatal 1-Info 2-Debug")
+	RootCmd.PersistentFlags().StringP(FlagTestFile, "t", "tests.yaml", "File path of the yaml test file.")
 }
 
 func Execute() {
