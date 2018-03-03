@@ -34,7 +34,7 @@ type Command struct {
 	Background  bool                   `yaml:"background"`
 	Delay       int                    `yaml:"delay"`
 	SplitString []SplitStringCondition `yaml:"split_string_conditions"`
-	String      []StringCondition      `yaml:"sptring_conditions"`
+	String      []StringCondition      `yaml:"string_conditions"`
 
 	stdout []string
 }
@@ -64,7 +64,7 @@ func readTestFile(filename string) (*TestingSuite, error) {
 	}
 
 	suite := new(TestingSuite)
-	if err := yaml.Unmarshal(f, suite); err != nil {
+	if err := yaml.UnmarshalStrict(f, suite); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal test file: %v", err)
 	}
 

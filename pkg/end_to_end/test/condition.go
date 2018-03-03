@@ -14,14 +14,14 @@ type Condition interface {
 }
 
 type SplitStringCondition struct {
-	Line  int    `yaml:"Line"`
-	Split int    `yaml:"Split"`
-	Match string `yaml:"Match:`
+	Line  int    `yaml:"line"`
+	Split int    `yaml:"split"`
+	Match string `yaml:"match:`
 }
 
 type StringCondition struct {
-	Line  int    `yaml:"Line"`
-	Match string `yaml:"Match"`
+	Line  int    `yaml:"line"`
+	Match string `yaml:"match"`
 }
 
 func (s *SplitStringCondition) TestConditon(stdout []string) (pass bool) {
