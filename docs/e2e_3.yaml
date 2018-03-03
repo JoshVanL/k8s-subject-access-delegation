@@ -1,0 +1,19 @@
+apiVersion: authz.k8s.io/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: test-group
+  namespace: default
+spec:
+  repeat: 1
+  deletionTime: 5s
+  originSubject:
+    kind: ServiceAccount
+    name: test-sa
+  destinationSubjects:
+  - kind: Group
+    name: test-group1
+  - kind: Group
+    name: test-group2
+  triggers:
+  - kind: AddPod
+    value: nginx3

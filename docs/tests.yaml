@@ -96,6 +96,44 @@ testing_blocks:
           - line: 0
             match: "No resources found."
 
+  - name: "test 3"
+    commands:
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/rolebinding.yaml"
+      delay:      1
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/e2e_3.yaml"
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/nginx_pod3.yaml"
+      delay:      1
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "rolebindings"
+      delay: 1
+      split_string_conditions:
+      - line: 3
+        split: 0
+        match: "test-group-default-pod-logs-reader"
+      - line: 4
+        split: 0
+        match: "test-group-default-pod-reader"
+    - program: "kubectl"
+      arguments:
+      - "delete"
+      - "-f"
+      - "docs/nginx_pod3.yaml"
+      delay: 1
+
   - name: "Cleaning up"
     commands:
     - program: "minikube"

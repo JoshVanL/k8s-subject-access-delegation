@@ -194,7 +194,7 @@ func (s *SubjectAccessDelegation) buildRoleBindings() error {
 	}
 
 	for _, roleRef := range roleRefs {
-		name := fmt.Sprintf("%s-%s-%s", s.Name(), s.Namespace(), roleRef.Name)
+		name := fmt.Sprintf("%s-%s-%s-%s", s.Name(), s.originName(), s.Namespace(), roleRef.Name)
 		roleBinding := &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.Namespace()},
 			RoleRef:    *roleRef,
