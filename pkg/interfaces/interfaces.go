@@ -3,11 +3,19 @@ package interfaces
 import (
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 )
+
+type Controller interface {
+	SeenUid(uid types.UID) bool
+	DeletedUid(uid types.UID) bool
+	AddUid(uid types.UID)
+	DeleteUid(uid types.UID)
+}
 
 type SubjectAccessDelegation interface {
 	Namespace() string
@@ -23,6 +31,10 @@ type SubjectAccessDelegation interface {
 	OriginSubject() OriginSubject
 	DestinationSubjects() []DestinationSubject
 	ResolveDestinations() error
+	SeenUid(uid types.UID) bool
+	DeletedUid(uid types.UID) bool
+	AddUid(uid types.UID)
+	DeleteUid(uid types.UID)
 }
 
 type OriginSubject interface {

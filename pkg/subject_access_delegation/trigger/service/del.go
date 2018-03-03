@@ -58,9 +58,11 @@ func (p *DelService) delFunc(obj interface{}) {
 		p.log.Error("failed to get service, received nil object")
 	}
 
-	if service.Name != p.serviceName {
+	if service.Name != p.serviceName || p.sad.DeletedUid(service.UID) {
 		return
 	}
+
+	p.sad.AddUid(service.UID)
 
 	p.log.Infof("A service '%s' has been deleted", service.Name)
 	p.count++

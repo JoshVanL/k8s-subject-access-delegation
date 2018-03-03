@@ -59,9 +59,11 @@ func (p *AddService) addFunc(obj interface{}) {
 		p.log.Error("failed to get service, received nil object")
 	}
 
-	if service.Name != p.serviceName {
+	if service.Name != p.serviceName || p.sad.SeenUid(service.UID) {
 		return
 	}
+
+	p.sad.AddUid(service.UID)
 
 	p.log.Infof("A new service '%s' has been added", service.Name)
 	p.count++

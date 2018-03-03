@@ -58,9 +58,11 @@ func (p *DelNode) delFunc(obj interface{}) {
 		p.log.Error("failed to get node, received nil object")
 	}
 
-	if node.Name != p.nodeName {
+	if node.Name != p.nodeName || p.sad.DeletedUid(node.UID) {
 		return
 	}
+
+	p.sad.DeleteUid(node.UID)
 
 	p.log.Infof("A node '%s' has been deleted", node.Name)
 	p.count++

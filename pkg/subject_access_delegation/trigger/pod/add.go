@@ -61,9 +61,11 @@ func (p *AddPod) addFunc(obj interface{}) {
 		p.log.Error("failed to get pod, received nil object")
 	}
 
-	if pod.Name != p.podName {
+	if pod.Name != p.podName || p.sad.SeenUid(pod.UID) {
 		return
 	}
+
+	p.sad.AddUid(pod.UID)
 
 	p.log.Infof("A new pod '%s' has been added", pod.Name)
 	p.count++

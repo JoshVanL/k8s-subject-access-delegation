@@ -67,7 +67,7 @@ testing_blocks:
       arguments:
       - "create"
       - "-f"
-      - "docs/nginx_pod.yaml"
+      - "docs/nginx_pod2.yaml"
       delay:      1
     - program: "kubectl"
       arguments:
@@ -85,7 +85,7 @@ testing_blocks:
       arguments:
       - "delete"
       - "-f"
-      - "docs/nginx_pod.yaml"
+      - "docs/nginx_pod2.yaml"
       delay: 1
     - program: "kubectl"
       arguments:

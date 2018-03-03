@@ -9,6 +9,7 @@ import (
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -56,7 +57,12 @@ type Controller struct {
 	clockOffset  time.Duration
 
 	delegations map[string]interfaces.SubjectAccessDelegation
+
+	seenUids    map[types.UID]bool
+	deletedUids map[types.UID]bool
 }
+
+var _ interfaces.Controller = &Controller{}
 
 func NewController(
 	kubeclientset kubernetes.Interface,
@@ -81,6 +87,9 @@ func NewController(
 		workqueue:           workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SubjectAccessDelegation"),
 		log:                 log,
 		ntpClient:           ntp_client.NewNTPClient(hosts),
+		delegations:         make(map[string]interfaces.SubjectAccessDelegation),
+		seenUids:            make(map[types.UID]bool),
+		deletedUids:         make(map[types.UID]bool),
 	}
 
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -90,8 +99,6 @@ func NewController(
 		},
 		DeleteFunc: controller.deleteSad,
 	})
-
-	controller.delegations = make(map[string]interfaces.SubjectAccessDelegation)
 
 	return controller
 }
@@ -217,7 +224,7 @@ func (c *Controller) syncHandler(key string) error {
 func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegation) error {
 	c.log.Infof("New Subject Access Delegation '%s'", sad.Name)
 
-	delegation := subject_access_delegation.New(sad, c.log, c.kubeInformerFactory, c.kubeclientset, c.clockOffset)
+	delegation := subject_access_delegation.New(c, sad, c.log, c.kubeInformerFactory, c.kubeclientset, c.clockOffset)
 	if err := c.appendDelegation(delegation, sad); err != nil {
 		return err
 	}
@@ -403,4 +410,19 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 	}
 
 	return fmt.Errorf("unable to find SAD custom resource definition from Kubetnetes")
+}
+
+func (c *Controller) AddUid(uid types.UID) {
+	c.seenUids[uid] = true
+}
+
+func (c *Controller) DeleteUid(uid types.UID) {
+	c.deletedUids[uid] = true
+}
+
+func (c *Controller) SeenUid(uid types.UID) bool {
+	return c.seenUids[uid]
+}
+func (c *Controller) DeletedUid(uid types.UID) bool {
+	return c.deletedUids[uid]
 }

@@ -59,9 +59,11 @@ func (p *AddNode) addFunc(obj interface{}) {
 		p.log.Error("failed to get node, received nil object")
 	}
 
-	if node.Name != p.nodeName {
+	if node.Name != p.nodeName || p.sad.SeenUid(node.UID) {
 		return
 	}
+
+	p.sad.AddUid(node.UID)
 
 	p.log.Infof("A new node '%s' has been added", node.Name)
 	p.count++

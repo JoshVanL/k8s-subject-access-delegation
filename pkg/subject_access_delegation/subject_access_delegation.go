@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
@@ -21,7 +22,8 @@ import (
 )
 
 type SubjectAccessDelegation struct {
-	log *logrus.Entry
+	controller interfaces.Controller
+	log        *logrus.Entry
 
 	sad                 *authzv1alpha1.SubjectAccessDelegation
 	kubeInformerFactory kubeinformers.SharedInformerFactory
@@ -37,8 +39,11 @@ type SubjectAccessDelegation struct {
 	clockOffset time.Duration
 }
 
-func New(sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface, clockOffset time.Duration) *SubjectAccessDelegation {
+var _ interfaces.SubjectAccessDelegation = &SubjectAccessDelegation{}
+
+func New(controller interfaces.Controller, sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface, clockOffset time.Duration) *SubjectAccessDelegation {
 	return &SubjectAccessDelegation{
+		controller:          controller,
 		log:                 log,
 		client:              client,
 		kubeInformerFactory: kubeInformerFactory,
@@ -411,4 +416,20 @@ func (s *SubjectAccessDelegation) Repeat() int {
 
 func (s *SubjectAccessDelegation) KubeInformerFactory() kubeinformers.SharedInformerFactory {
 	return s.kubeInformerFactory
+}
+
+func (s *SubjectAccessDelegation) SeenUid(uid types.UID) bool {
+	return s.controller.SeenUid(uid)
+}
+
+func (s *SubjectAccessDelegation) DeletedUid(uid types.UID) bool {
+	return s.controller.SeenUid(uid)
+}
+
+func (s *SubjectAccessDelegation) AddUid(uid types.UID) {
+	s.controller.AddUid(uid)
+}
+
+func (s *SubjectAccessDelegation) DeleteUid(uid types.UID) {
+	s.controller.DeleteUid(uid)
 }

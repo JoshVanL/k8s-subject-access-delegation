@@ -58,9 +58,11 @@ func (p *DelPod) delFunc(obj interface{}) {
 		p.log.Error("failed to get pod, received nil object")
 	}
 
-	if pod.Name != p.podName {
+	if pod.Name != p.podName || p.sad.DeletedUid(pod.UID) {
 		return
 	}
+
+	p.sad.DeleteUid(pod.UID)
 
 	p.log.Infof("A pod '%s' has been deleted", pod.Name)
 	p.count++
