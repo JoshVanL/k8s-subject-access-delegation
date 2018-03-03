@@ -27,8 +27,8 @@ type DelPod struct {
 
 var _ interfaces.Trigger = &DelPod{}
 
-func NewDelPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *DelPod, err error) {
-	podTrigger = &DelPod{
+func NewDelPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*DelPod, error) {
+	podTrigger := &DelPod{
 		log:         sad.Log(),
 		sad:         sad,
 		podName:     trigger.Value,

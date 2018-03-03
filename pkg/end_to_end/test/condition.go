@@ -39,13 +39,14 @@ func (s *SplitStringCondition) TestConditon(stdout []string) (pass bool) {
 
 func (s *SplitStringCondition) Expected(stdout []string) string {
 	if len(stdout) < s.Line+1 {
-		return gotNothing(s.Match)
+		return gotNothing(s.Match, stdout)
 	}
 
 	words := strings.Fields(stdout[s.Line])
 	if len(words) < s.Split+1 {
-		return gotNothing(s.Match)
+		return gotNothing(s.Match, stdout)
 	}
+
 	return fmt.Sprintf("expected='%s', got='%s'", s.Match, words[s.Split])
 }
 
@@ -58,11 +59,11 @@ func (s *StringCondition) TestConditon(stdout []string) (pass bool) {
 
 func (s *StringCondition) Expected(stdout []string) string {
 	if len(stdout) < s.Line+1 {
-		return gotNothing(s.Match)
+		return gotNothing(s.Match, stdout)
 	}
 	return fmt.Sprintf("expected='%s', got='%s'", s.Match, stdout[s.Line])
 }
 
-func gotNothing(expected string) string {
-	return fmt.Sprintf("expected='%s', got=nothing", expected)
+func gotNothing(expected string, stdout []string) string {
+	return fmt.Sprintf("expected='%s', got(all)=%s", expected, strings.Join(stdout, "\n"))
 }

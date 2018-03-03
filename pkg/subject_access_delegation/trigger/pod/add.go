@@ -29,8 +29,8 @@ type AddPod struct {
 
 var _ interfaces.Trigger = &AddPod{}
 
-func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (podTrigger *AddPod, err error) {
-	podTrigger = &AddPod{
+func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddPod, error) {
+	podTrigger := &AddPod{
 		log:         sad.Log(),
 		sad:         sad,
 		podName:     trigger.Value,

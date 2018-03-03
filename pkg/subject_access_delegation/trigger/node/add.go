@@ -27,8 +27,8 @@ type AddNode struct {
 
 var _ interfaces.Trigger = &AddNode{}
 
-func NewAddNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (nodeTrigger *AddNode, err error) {
-	nodeTrigger = &AddNode{
+func NewAddNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddNode, error) {
+	nodeTrigger := &AddNode{
 		log:         sad.Log(),
 		sad:         sad,
 		nodeName:    trigger.Value,

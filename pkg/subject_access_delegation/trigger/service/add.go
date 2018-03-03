@@ -27,8 +27,8 @@ type AddService struct {
 
 var _ interfaces.Trigger = &AddService{}
 
-func NewAddService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (serviceTrigger *AddService, err error) {
-	serviceTrigger = &AddService{
+func NewAddService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddService, error) {
+	serviceTrigger := &AddService{
 		log:         sad.Log(),
 		sad:         sad,
 		serviceName: trigger.Value,

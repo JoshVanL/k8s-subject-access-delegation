@@ -27,8 +27,8 @@ type DelNode struct {
 
 var _ interfaces.Trigger = &DelNode{}
 
-func NewDelNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (nodeTrigger *DelNode, err error) {
-	nodeTrigger = &DelNode{
+func NewDelNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*DelNode, error) {
+	nodeTrigger := &DelNode{
 		log:         sad.Log(),
 		sad:         sad,
 		nodeName:    trigger.Value,

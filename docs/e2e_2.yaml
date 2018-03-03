@@ -1,0 +1,19 @@
+apiVersion: authz.k8s.io/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: test-pod-add
+  namespace: default
+spec:
+  repeat: 1
+  deletionTime: 5s
+  originSubject:
+    kind: Role
+    name: pod-reader
+  destinationSubjects:
+  - kind: User
+    name: test-user1
+  - kind: User
+    name: test-user2
+  triggers:
+  - kind: AddPod
+    value: nginx2

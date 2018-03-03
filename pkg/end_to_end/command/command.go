@@ -28,9 +28,9 @@ type Command struct {
 	stderrCh chan string
 }
 
-func New(name string, args []string) (command *Command, err error) {
+func New(name string, args []string) (*Command, error) {
 	var result *multierror.Error
-	command = &Command{
+	command := &Command{
 		name:     name,
 		args:     args,
 		cmd:      exec.Command(name, args...),
@@ -39,13 +39,17 @@ func New(name string, args []string) (command *Command, err error) {
 		stderrCh: make(chan string),
 	}
 
-	if command.stderrReader, err = command.cmd.StderrPipe(); err != nil {
+	errReader, err := command.cmd.StderrPipe()
+	if err != nil {
 		result = multierror.Append(result, fmt.Errorf("unable to get command StderrPipe: %v", err))
 	}
-	if command.stdoutReader, err = command.cmd.StdoutPipe(); err != nil {
+	outReader, err := command.cmd.StdoutPipe()
+	if err != nil {
 		result = multierror.Append(result, fmt.Errorf("unable to get command StdoutPipe: %v", err))
 	}
 
+	command.stderrReader = errReader
+	command.stdoutReader = outReader
 	command.scanStdout = bufio.NewScanner(command.stdoutReader)
 	command.scanStdout.Split(bufio.ScanLines)
 	command.scanStderr = bufio.NewScanner(command.stderrReader)

@@ -27,8 +27,8 @@ type DelService struct {
 
 var _ interfaces.Trigger = &DelService{}
 
-func NewDelService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (serviceTrigger *DelService, err error) {
-	serviceTrigger = &DelService{
+func NewDelService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*DelService, error) {
+	serviceTrigger := &DelService{
 		log:         sad.Log(),
 		sad:         sad,
 		serviceName: trigger.Value,
