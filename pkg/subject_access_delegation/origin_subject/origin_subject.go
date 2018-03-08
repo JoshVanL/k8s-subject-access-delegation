@@ -6,6 +6,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/group"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/service_account"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/user"
@@ -28,7 +29,12 @@ func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.
 	case rbacv1.UserKind:
 		originSubject = user.New(sad, name)
 		return originSubject, nil
-	}
 
-	return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", kind)
+	case rbacv1.GroupKind:
+		originSubject = group.New(sad, name)
+		return originSubject, nil
+
+	default:
+		return nil, fmt.Errorf("Subject Accesss Deletgation does not support Origin Subject Kind '%s'", kind)
+	}
 }
