@@ -8,6 +8,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	informer "k8s.io/client-go/informers/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
@@ -23,27 +25,37 @@ type ServiceAccount struct {
 	namespace      string
 	name           string
 	serviceAccount *corev1.ServiceAccount
+
+	bindings        []*rbacv1.RoleBinding
+	clusterBindings []*rbacv1.ClusterRoleBinding
+	uids            map[types.UID]bool
+
+	bindingInformer        informer.RoleBindingInformer
+	clusterbindingInformer informer.ClusterRoleBindingInformer
 }
 
 var _ interfaces.OriginSubject = &ServiceAccount{}
 
 func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
 	return &ServiceAccount{
-		log:       sad.Log(),
-		client:    sad.Client(),
-		sad:       sad,
-		namespace: sad.Namespace(),
-		name:      name,
+		log:                    sad.Log(),
+		client:                 sad.Client(),
+		sad:                    sad,
+		namespace:              sad.Namespace(),
+		name:                   name,
+		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
+		clusterbindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
 	}
 }
 
-func (o *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
-	roleBindings, err := o.getRoleBindings()
-	if err != nil {
-		return nil, err
+// TODO: this just needs to return the role refs of the rolebindings
+func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
+	for _, binding := range s.bindings {
+		roleRef := binding.RoleRef
+		roleRefs = append(roleRefs, &roleRef)
 	}
 
-	for _, binding := range roleBindings {
+	for _, binding := range s.clusterBindings {
 		roleRef := binding.RoleRef
 		roleRefs = append(roleRefs, &roleRef)
 	}
@@ -51,60 +63,119 @@ func (o *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
 	return roleRefs, nil
 }
 
-func (o *ServiceAccount) getRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
+func (s *ServiceAccount) getRoleBindings() error {
 	// make this more efficient
 	options := metav1.ListOptions{}
 
-	bindingsList, err := o.client.Rbac().RoleBindings(o.Namespace()).List(options)
+	bindingsList, err := s.client.Rbac().RoleBindings(s.Namespace()).List(options)
 	if err != nil {
-		return roleBindings, fmt.Errorf("failed to retrieve Rolebindings of Service Account '%s': %v", o.Name(), err)
+		return fmt.Errorf("failed to retrieve Rolebindings of Service Account '%s': %v", s.Name(), err)
 	}
 
-	if bindingsList == nil {
-		return roleBindings, errors.New("bindings list is nil")
+	clusterBindingsList, err := s.client.Rbac().ClusterRoleBindings().List(options)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve Cluster Rolebindings of Service Account '%s': %v", s.Name(), err)
 	}
+
+	s.bindings = make([]*rbacv1.RoleBinding, 0)
+	s.clusterBindings = make([]*rbacv1.ClusterRoleBinding, 0)
+	s.uids = make(map[types.UID]bool)
 
 	for _, binding := range bindingsList.Items {
-		for _, subject := range binding.Subjects {
-			if subject.Kind == serviceAccountKind && subject.Name == o.Name() {
-				roleBindings = append(roleBindings, binding)
-				continue
-			}
+		if s.bindingContainsSubject(&binding) {
+			s.bindings = append(s.bindings, &binding)
+			s.uids[binding.UID] = true
+			break
 		}
 	}
 
-	return roleBindings, nil
+	for _, binding := range clusterBindingsList.Items {
+		if s.clusterBindingContainsSubject(&binding) {
+			s.clusterBindings = append(s.clusterBindings, &binding)
+			s.uids[binding.UID] = true
+		}
+	}
+
+	return nil
 }
 
-func (o *ServiceAccount) getServiceAccount() error {
+func (s *ServiceAccount) getServiceAccount() error {
 	options := metav1.GetOptions{}
 
-	serviceAccount, err := o.client.Core().ServiceAccounts(o.Namespace()).Get(o.Name(), options)
+	serviceAccount, err := s.client.Core().ServiceAccounts(s.Namespace()).Get(s.Name(), options)
 	if err != nil {
-		return fmt.Errorf("failed to get Service Account '%s': %v", o.Name(), err)
+		return fmt.Errorf("failed to get Service Account '%s': %v", s.Name(), err)
 	}
 
 	if serviceAccount == nil {
 		return errors.New("service account is nil")
 	}
 
-	o.serviceAccount = serviceAccount
+	s.serviceAccount = serviceAccount
 
 	return nil
 }
 
-func (o *ServiceAccount) ResolveOrigin() error {
-	return o.getServiceAccount()
+func (s *ServiceAccount) ResolveOrigin() error {
+	if err := s.getServiceAccount(); err != nil {
+		return err
+	}
+
+	if err := s.getRoleBindings(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (o *ServiceAccount) Namespace() string {
-	return o.namespace
+//func (s *ServiceAccount) ListenRolebindings() error {
+//
+//	s.bindingInformer.Informer().AddEventHandler(
+//
+//	return nil
+//}
+
+func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {
+	for _, subject := range binding.Subjects {
+		if subject.Kind == serviceAccountKind && subject.Name == s.Name() {
+			return true
+		}
+	}
+
+	return false
 }
 
-func (o *ServiceAccount) Name() string {
-	return o.name
+func (s *ServiceAccount) clusterBindingContainsSubject(binding *rbacv1.ClusterRoleBinding) bool {
+	for _, subject := range binding.Subjects {
+		if subject.Kind == serviceAccountKind && subject.Name == s.Name() {
+			return true
+		}
+	}
+
+	return false
 }
 
-func (o *ServiceAccount) Kind() string {
+func (s *ServiceAccount) seenUID(uid types.UID) bool {
+	b, ok := s.uids[uid]
+	if !ok {
+		return false
+	}
+
+	return b
+}
+
+func (s *ServiceAccount) addUID(uid types.UID) {
+	s.uids[uid] = true
+}
+
+func (s *ServiceAccount) Namespace() string {
+	return s.namespace
+}
+
+func (s *ServiceAccount) Name() string {
+	return s.name
+}
+
+func (s *ServiceAccount) Kind() string {
 	return serviceAccountKind
 }

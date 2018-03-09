@@ -1,72 +1,120 @@
 package utils
 
 import (
-	"fmt"
+	"errors"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
-func GetPodObject(obj interface{}) (pod *corev1.Pod, err error) {
+func GetPodObject(obj interface{}) (*corev1.Pod, error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object, invalid type")
+			return nil, errors.New("error decoding object, invalid type")
 		}
 		object, ok = tombstone.Obj.(metav1.Object)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
+			return nil, errors.New("error decoding object tombstone, invalid type")
 		}
 	}
 
-	if pod, ok = object.(*corev1.Pod); !ok {
-		return nil, fmt.Errorf("failed to covert object to Pod type")
+	pod, ok := object.(*corev1.Pod)
+	if !ok {
+		return nil, errors.New("failed to covert object to Pod type")
 	}
 
 	return pod, nil
 }
 
-func GetNodeObject(obj interface{}) (node *corev1.Node, err error) {
+func GetNodeObject(obj interface{}) (*corev1.Node, error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object, invalid type")
+			return nil, errors.New("error decoding object, invalid type")
 		}
 		object, ok = tombstone.Obj.(metav1.Object)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
+			return nil, errors.New("error decoding object tombstone, invalid type")
 		}
 	}
 
-	if node, ok = object.(*corev1.Node); !ok {
-		return nil, fmt.Errorf("failed to covert object to Pod type")
+	node, ok := object.(*corev1.Node)
+	if !ok {
+		return nil, errors.New("failed to covert object to Pod type")
 	}
 
 	return node, nil
 }
 
-func GetServiceObject(obj interface{}) (service *corev1.Service, err error) {
+func GetServiceObject(obj interface{}) (*corev1.Service, error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object, invalid type")
+			return nil, errors.New("error decoding object, invalid type")
 		}
 		object, ok = tombstone.Obj.(metav1.Object)
 		if !ok {
-			return nil, fmt.Errorf("error decoding object tombstone, invalid type")
+			return nil, errors.New("error decoding object tombstone, invalid type")
 		}
 	}
 
-	if service, ok = object.(*corev1.Service); !ok {
-		return nil, fmt.Errorf("failed to covert object to Pod type")
+	service, ok := object.(*corev1.Service)
+	if !ok {
+		return nil, errors.New("failed to covert object to ServiceAccount type")
 	}
 
 	return service, nil
+}
+
+func GetRolebindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, errors.New("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, errors.New("error decoding object tombstone, invalid type")
+		}
+	}
+
+	binding, ok := object.(*rbacv1.RoleBinding)
+	if !ok {
+		return nil, errors.New("failed to covert object to Rolebinding type")
+	}
+
+	return binding, nil
+}
+
+func GetClusterRolebindingObject(obj interface{}) (*rbacv1.ClusterRoleBinding, error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, errors.New("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, errors.New("error decoding object tombstone, invalid type")
+		}
+	}
+
+	binding, ok := object.(*rbacv1.ClusterRoleBinding)
+	if !ok {
+		return nil, errors.New("failed to covert object to Cluster Rolebinding type")
+	}
+
+	return binding, nil
 }
