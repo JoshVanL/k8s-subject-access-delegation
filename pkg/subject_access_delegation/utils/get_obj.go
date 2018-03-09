@@ -75,7 +75,7 @@ func GetServiceObject(obj interface{}) (*corev1.Service, error) {
 	return service, nil
 }
 
-func GetRolebindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
+func GetRoleBindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
@@ -91,13 +91,13 @@ func GetRolebindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
 
 	binding, ok := object.(*rbacv1.RoleBinding)
 	if !ok {
-		return nil, errors.New("failed to covert object to Rolebinding type")
+		return nil, errors.New("failed to covert object to RoleBinding type")
 	}
 
 	return binding, nil
 }
 
-func GetClusterRolebindingObject(obj interface{}) (*rbacv1.ClusterRoleBinding, error) {
+func GetClusterRoleBindingObject(obj interface{}) (*rbacv1.ClusterRoleBinding, error) {
 	var object metav1.Object
 	var ok bool
 	if object, ok = obj.(metav1.Object); !ok {
@@ -113,7 +113,7 @@ func GetClusterRolebindingObject(obj interface{}) (*rbacv1.ClusterRoleBinding, e
 
 	binding, ok := object.(*rbacv1.ClusterRoleBinding)
 	if !ok {
-		return nil, errors.New("failed to covert object to Cluster Rolebinding type")
+		return nil, errors.New("failed to covert object to Cluster RoleBinding type")
 	}
 
 	return binding, nil

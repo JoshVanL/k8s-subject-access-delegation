@@ -155,19 +155,6 @@ func (s *ServiceAccount) clusterBindingContainsSubject(binding *rbacv1.ClusterRo
 	return false
 }
 
-func (s *ServiceAccount) seenUID(uid types.UID) bool {
-	b, ok := s.uids[uid]
-	if !ok {
-		return false
-	}
-
-	return b
-}
-
-func (s *ServiceAccount) addUID(uid types.UID) {
-	s.uids[uid] = true
-}
-
 func (s *ServiceAccount) Namespace() string {
 	return s.namespace
 }
