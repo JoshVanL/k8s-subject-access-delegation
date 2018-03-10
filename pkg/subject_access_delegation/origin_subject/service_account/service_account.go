@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	informer "k8s.io/client-go/informers/rbac/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
@@ -125,15 +126,24 @@ func (s *ServiceAccount) ResolveOrigin() error {
 		return err
 	}
 
+	s.ListenRolebindings()
+
 	return nil
 }
 
-//func (s *ServiceAccount) ListenRolebindings() error {
-//
-//	s.bindingInformer.Informer().AddEventHandler(
-//
-//	return nil
-//}
+func (s *ServiceAccount) ListenRolebindings() {
+	s.bindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    s.addFuncRoleBinding,
+		UpdateFunc: s.updateRoleBindingOject,
+		DeleteFunc: s.delFuncRoleBinding,
+	})
+
+	s.clusterbindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    s.addFuncClusterRoleBinding,
+		UpdateFunc: s.updateClusterRoleBindingOject,
+		DeleteFunc: s.delFuncClusterRoleBinding,
+	})
+}
 
 func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {
 	for _, subject := range binding.Subjects {

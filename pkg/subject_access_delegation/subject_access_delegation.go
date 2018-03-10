@@ -3,6 +3,7 @@ package subject_access_delegation
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -37,6 +38,8 @@ type SubjectAccessDelegation struct {
 
 	stopCh      chan struct{}
 	clockOffset time.Duration
+	triggered   bool
+	mutex       *sync.Mutex
 }
 
 var _ interfaces.SubjectAccessDelegation = &SubjectAccessDelegation{}
@@ -48,14 +51,18 @@ func New(controller interfaces.Controller, sad *authzv1alpha1.SubjectAccessDeleg
 		client:              client,
 		kubeInformerFactory: kubeInformerFactory,
 		sad:                 sad,
+		triggered:           false,
 		stopCh:              make(chan struct{}),
 		clockOffset:         clockOffset,
+		mutex:               new(sync.Mutex),
 	}
 }
 
 func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	for i := 0; i < s.Repeat(); i++ {
 		s.log.Infof("Subject Access Delegation \"%s\" (%d/%d)", s.Name(), i+1, s.Repeat())
+
+		s.triggered = false
 
 		if err := s.initDelegation(); err != nil {
 			return false, fmt.Errorf("error initiating Subject Access Delegation: %v", err)
@@ -71,6 +78,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		}
 
 		s.log.Infof("All triggers fired!")
+		s.triggered = true
 
 		if err := s.ApplyDelegation(); err != nil {
 			return false, fmt.Errorf("failed to apply delegation: %v", err)
@@ -138,22 +146,20 @@ func (s *SubjectAccessDelegation) waitOnDeletion() {
 func (s *SubjectAccessDelegation) ApplyDelegation() error {
 	s.log.Infof("Applying Subject Access Delegation '%s'", s.Name())
 
-	if err := s.buildRoleBindings(); err != nil {
+	bindings, err := s.buildRoleBindings()
+	if err != nil {
 		return fmt.Errorf("failed to build rolebindings: %v", err)
 	}
 
-	return s.applyRoleBindings()
+	return s.applyRoleBindings(bindings)
 }
 
-func (s *SubjectAccessDelegation) applyRoleBindings() error {
+func (s *SubjectAccessDelegation) applyRoleBindings(bindings []*rbacv1.RoleBinding) error {
 	var result *multierror.Error
 
-	for _, roleBinding := range s.roleBindings {
-		_, err := s.client.Rbac().RoleBindings(s.Namespace()).Create(roleBinding)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to create role binding: %v", err))
-		} else {
-			s.log.Infof("Role Binding '%s' Created", roleBinding.Name)
+	for _, roleBinding := range bindings {
+		if err := s.createRoleBinding(roleBinding); err != nil {
+			result = multierror.Append(result, err)
 		}
 	}
 
@@ -162,14 +168,10 @@ func (s *SubjectAccessDelegation) applyRoleBindings() error {
 
 func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 	var result *multierror.Error
-	options := &metav1.DeleteOptions{}
 
-	for _, roleBinding := range s.roleBindings {
-		err := s.client.Rbac().RoleBindings(s.Namespace()).Delete(roleBinding.Name, options)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to delete role binding: %v", err))
-		} else {
-			s.log.Infof("Role Binding '%s' Deleted", roleBinding.Name)
+	for _, binding := range s.roleBindings {
+		if err := s.deleteRoleBinding(binding); err != nil {
+			result = multierror.Append(result, err)
 		}
 	}
 
@@ -178,7 +180,33 @@ func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) buildRoleBindings() error {
+func (s *SubjectAccessDelegation) createRoleBinding(binding *rbacv1.RoleBinding) error {
+
+	binding, err := s.client.Rbac().RoleBindings(s.Namespace()).Create(binding)
+	if err != nil {
+		return fmt.Errorf("failed to create role binding: %v", err)
+	}
+
+	s.log.Infof("Role Binding '%s' Created", binding.Name)
+
+	s.roleBindings = append(s.roleBindings, binding)
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) deleteRoleBinding(binding *rbacv1.RoleBinding) error {
+	options := &metav1.DeleteOptions{}
+
+	if err := s.client.Rbac().RoleBindings(s.Namespace()).Delete(binding.Name, options); err != nil {
+		return fmt.Errorf("failed to delete role binding: %v", err)
+	}
+
+	s.log.Infof("Role Binding '%s' Deleted", binding.Name)
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) buildRoleBindings() ([]*rbacv1.RoleBinding, error) {
 	var roleBindings []*rbacv1.RoleBinding
 	var subjects []rbacv1.Subject
 	var roleRefs []*rbacv1.RoleRef
@@ -186,11 +214,11 @@ func (s *SubjectAccessDelegation) buildRoleBindings() error {
 
 	roleRefs, err = s.originSubject.RoleRefs()
 	if err != nil {
-		return fmt.Errorf("failed to resolve Role References: %v", err)
+		return nil, fmt.Errorf("failed to resolve Role References: %v", err)
 	}
 
 	for _, destinationSubject := range s.DestinationSubjects() {
-		subjects = append(subjects, rbacv1.Subject{Name: destinationSubject.Name(), Kind: destinationSubject.Kind()})
+		subjects = append(subjects, rbacv1.Subject{Name: destinationSubject.Name(), Kind: destinationSubject.Kind(), Namespace: s.Namespace()})
 	}
 
 	for _, roleRef := range roleRefs {
@@ -208,9 +236,7 @@ func (s *SubjectAccessDelegation) buildRoleBindings() error {
 		roleBindings = append(roleBindings, roleBinding)
 	}
 
-	s.roleBindings = roleBindings
-
-	return nil
+	return roleBindings, nil
 }
 
 func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
@@ -360,6 +386,35 @@ func (s *SubjectAccessDelegation) Delete() error {
 	close(s.stopCh)
 
 	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) DeleteRoleBinding(uid types.UID) bool {
+	for i, binding := range s.roleBindings {
+		if binding.UID == uid {
+
+			copy(s.roleBindings[i:], s.roleBindings[i+1:])
+			s.roleBindings[len(s.roleBindings)-1] = nil
+			s.roleBindings = s.roleBindings[:len(s.roleBindings)-1]
+
+			if err := s.deleteRoleBinding(binding); err != nil {
+				s.log.Errorf("Tryed to delete role binding but something went very wrong: %v", err)
+			}
+
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *SubjectAccessDelegation) AddRoleBinding(binding *rbacv1.RoleBinding) error {
+	if s.triggered {
+		if err := s.createRoleBinding(binding); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *SubjectAccessDelegation) RealTime(time time.Time) time.Time {
