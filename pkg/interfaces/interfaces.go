@@ -24,6 +24,7 @@ type SubjectAccessDelegation interface {
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
 	KubeInformerFactory() kubeinformers.SharedInformerFactory
+
 	Triggers() []authzv1alpha1.EventTrigger
 	Delegate() (closed bool, err error)
 	DeleteRoleBindings() error
@@ -31,6 +32,11 @@ type SubjectAccessDelegation interface {
 	OriginSubject() OriginSubject
 	DestinationSubjects() []DestinationSubject
 	ResolveDestinations() error
+
+	AddRoleBinding(roleRef *rbacv1.RoleRef) error
+	UpdateRoleBinding(old, new *rbacv1.RoleBinding) error
+	DeleteRoleBinding(roleRef *rbacv1.RoleRef) error
+
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
 	AddUid(uid types.UID)

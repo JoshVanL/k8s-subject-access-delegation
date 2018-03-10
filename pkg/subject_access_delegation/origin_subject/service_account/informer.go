@@ -20,7 +20,7 @@ func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
 	}
 
 	// if we arn't referenced or we've seen this binding before, return
-	if !s.bindingContainsSubject(binding) || s.seenUID(binding.UID) {
+	if s.bindingContainsSubject(binding) || s.seenUID(binding.UID) {
 		return
 	}
 
@@ -28,6 +28,10 @@ func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
 
 	s.addUID(binding.UID)
 	s.bindings = append(s.bindings, binding)
+
+	if err := s.sad.AddRoleBinding(&binding.RoleRef); err != nil {
+		s.log.Errorf("Failed to add new rolebinding: %v", err)
+	}
 }
 
 // TODO: We need to tell the controller to update it's referenced rolebindings
@@ -47,6 +51,10 @@ func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 
 	if !s.deleteRoleBinding(binding.UID) {
 		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
+	}
+
+	if err := s.sad.DeleteRoleBinding(&binding.RoleRef); err != nil {
+		s.log.Errorf("Failed to delete rolebinding: %v", err)
 	}
 }
 
