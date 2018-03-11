@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -17,6 +16,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/role_binding"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
@@ -34,7 +34,8 @@ type SubjectAccessDelegation struct {
 	triggers            []interfaces.Trigger
 	deletionTimeStamp   time.Time
 
-	roleBindings    []*rbacv1.RoleBinding
+	roleBindings    []interfaces.Binding
+	clusterBindings []*rbacv1.RoleBinding
 	bindingSubjects []rbacv1.Subject
 
 	triggered   bool
@@ -51,7 +52,7 @@ func New(controller interfaces.Controller, sad *authzv1alpha1.SubjectAccessDeleg
 		client:              client,
 		kubeInformerFactory: kubeInformerFactory,
 		sad:                 sad,
-		roleBindings:        make([]*rbacv1.RoleBinding, 0),
+		roleBindings:        make([]interfaces.Binding, 0),
 		bindingSubjects:     make([]rbacv1.Subject, 0),
 		triggered:           false,
 		stopCh:              make(chan struct{}),
@@ -154,41 +155,6 @@ func (s *SubjectAccessDelegation) ApplyDelegation() error {
 		return fmt.Errorf("failed to build rolebindings: %v", err)
 	}
 
-	return s.applyRoleBindings(bindings)
-}
-
-func (s *SubjectAccessDelegation) buildRoleBindings() ([]*rbacv1.RoleBinding, error) {
-	var roleBindings []*rbacv1.RoleBinding
-
-	roleRefs, err := s.originSubject.RoleRefs()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve Role References: %v", err)
-	}
-
-	for _, roleRef := range roleRefs {
-		roleBinding := s.buildRoleBinding(roleRef)
-		//timestamp := metav1.Time{
-		//	Time: time.Now(),
-		//}
-		//roleBinding.CreationTimestamp = timestamp
-
-		roleBindings = append(roleBindings, roleBinding)
-	}
-
-	return roleBindings, nil
-}
-
-func (s *SubjectAccessDelegation) buildRoleBinding(roleRef *rbacv1.RoleRef) *rbacv1.RoleBinding {
-	name := fmt.Sprintf("%s-%s-%s-%s", s.Name(), s.originName(), s.Namespace(), roleRef.Name)
-
-	return &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.Namespace()},
-		RoleRef:    *roleRef,
-		Subjects:   s.bindingSubjects,
-	}
-}
-
-func (s *SubjectAccessDelegation) applyRoleBindings(bindings []*rbacv1.RoleBinding) error {
 	var result *multierror.Error
 
 	for _, roleBinding := range bindings {
@@ -200,6 +166,25 @@ func (s *SubjectAccessDelegation) applyRoleBindings(bindings []*rbacv1.RoleBindi
 	return result.ErrorOrNil()
 }
 
+func (s *SubjectAccessDelegation) buildRoleBindings() ([]interfaces.Binding, error) {
+	var roleBindings []interfaces.Binding
+
+	roleRefs, clusterRoleRefs, err := s.originSubject.RoleRefs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve Role References: %v", err)
+	}
+
+	for _, roleRef := range roleRefs {
+		roleBindings = append(roleBindings, role_binding.NewRoleBinding(s, roleRef))
+	}
+
+	for _, roleRef := range clusterRoleRefs {
+		roleBindings = append(roleBindings, role_binding.NewRoleBinding(s, roleRef))
+	}
+
+	return roleBindings, nil
+}
+
 func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 	var result *multierror.Error
 
@@ -209,30 +194,27 @@ func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 		}
 	}
 
-	s.roleBindings = make([]*rbacv1.RoleBinding, 0)
+	s.roleBindings = make([]interfaces.Binding, 0)
 
 	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) createRoleBinding(binding *rbacv1.RoleBinding) error {
-
-	binding, err := s.client.Rbac().RoleBindings(s.Namespace()).Create(binding)
+func (s *SubjectAccessDelegation) createRoleBinding(binding interfaces.Binding) error {
+	binding, err := binding.CreateRoleBinding()
 	if err != nil {
 		return fmt.Errorf("failed to create role binding: %v", err)
 	}
 
-	s.log.Infof("Role Binding '%s' Created", binding.Name)
+	s.log.Infof("Role Binding '%s' Created", binding.Name())
 
 	s.roleBindings = append(s.roleBindings, binding)
 
 	return nil
 }
 
-func (s *SubjectAccessDelegation) deleteRoleBinding(binding *rbacv1.RoleBinding) error {
-	options := &metav1.DeleteOptions{}
-
-	if err := s.client.Rbac().RoleBindings(s.Namespace()).Delete(binding.Name, options); err != nil {
-		return fmt.Errorf("failed to delete role binding: %v", err)
+func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) error {
+	if err := binding.DeleteRoleBinding(); err != nil {
+		return err
 	}
 
 	s.log.Infof("Role Binding '%s' Deleted", binding.Name)
@@ -389,11 +371,10 @@ func (s *SubjectAccessDelegation) Delete() error {
 	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) AddRoleBinding(roleRef *rbacv1.RoleRef) error {
+func (s *SubjectAccessDelegation) AddRoleBinding(addBinding interfaces.Binding) error {
 	if s.triggered {
 		// We need to create a rolebinding for sad, not the origin subject one
-		sadBinding := s.buildRoleBinding(roleRef)
-		if err := s.createRoleBinding(sadBinding); err != nil {
+		if err := s.createRoleBinding(addBinding); err != nil {
 			return err
 		}
 	}
@@ -403,10 +384,10 @@ func (s *SubjectAccessDelegation) AddRoleBinding(roleRef *rbacv1.RoleRef) error 
 
 // This is a bit wrong, although a role ref may be duped and this is fine, the
 // names will be wrong
-func (s *SubjectAccessDelegation) DeleteRoleBinding(roleRef *rbacv1.RoleRef) bool {
+func (s *SubjectAccessDelegation) DeleteRoleBinding(delBinding interfaces.Binding) bool {
 	if s.triggered {
 		for i, binding := range s.roleBindings {
-			if binding.RoleRef.Name == roleRef.Name && binding.RoleRef.Kind == roleRef.Kind {
+			if binding.RoleRef().Name == delBinding.RoleRef().Name && binding.RoleRef().Kind == delBinding.RoleRef().Kind {
 
 				copy(s.roleBindings[i:], s.roleBindings[i+1:])
 				s.roleBindings[len(s.roleBindings)-1] = nil
@@ -427,7 +408,7 @@ func (s *SubjectAccessDelegation) DeleteRoleBinding(roleRef *rbacv1.RoleRef) boo
 
 // Here we will want to delete all the new bindings THEN delete all the old or
 // via versa
-func (s *SubjectAccessDelegation) UpdateRoleBinding(old, new *rbacv1.RoleBinding) error {
+func (s *SubjectAccessDelegation) UpdateRoleBinding(old, new interfaces.Binding) error {
 	var result *multierror.Error
 
 	if s.triggered {
@@ -435,9 +416,7 @@ func (s *SubjectAccessDelegation) UpdateRoleBinding(old, new *rbacv1.RoleBinding
 			result = multierror.Append(result, err)
 		}
 
-		binding := s.buildRoleBinding(&new.RoleRef)
-
-		if err := s.createRoleBinding(binding); err != nil {
+		if err := s.createRoleBinding(new); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -525,4 +504,8 @@ func (s *SubjectAccessDelegation) AddUid(uid types.UID) {
 
 func (s *SubjectAccessDelegation) DeleteUid(uid types.UID) {
 	s.controller.DeleteUid(uid)
+}
+
+func (s *SubjectAccessDelegation) BindingSubjects() []rbacv1.Subject {
+	return s.bindingSubjects
 }

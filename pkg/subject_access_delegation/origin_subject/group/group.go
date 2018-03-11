@@ -35,7 +35,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *Group {
 }
 
 func (o *Group) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
-	roleBindings, err := o.getGroupRoleBindings()
+	roleBindings, err := o.groupRoleBindings()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (o *Group) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
 	return roleRefs, nil
 }
 
-func (o *Group) getGroupRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
+func (o *Group) groupRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
 	// make this more efficient
 	options := metav1.ListOptions{}
 

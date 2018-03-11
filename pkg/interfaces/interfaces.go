@@ -18,8 +18,8 @@ type Controller interface {
 }
 
 type SubjectAccessDelegation interface {
-	Namespace() string
 	Name() string
+	Namespace() string
 	Kind() string
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
@@ -33,19 +33,21 @@ type SubjectAccessDelegation interface {
 	DestinationSubjects() []DestinationSubject
 	ResolveDestinations() error
 
-	AddRoleBinding(roleRef *rbacv1.RoleRef) error
-	UpdateRoleBinding(old, new *rbacv1.RoleBinding) error
-	DeleteRoleBinding(roleRef *rbacv1.RoleRef) bool
+	AddRoleBinding(addBinding Binding) error
+	UpdateRoleBinding(old, new Binding) error
+	DeleteRoleBinding(delBining Binding) bool
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
 	AddUid(uid types.UID)
 	DeleteUid(uid types.UID)
+
+	BindingSubjects() []rbacv1.Subject
 }
 
 type OriginSubject interface {
 	ResolveOrigin() error
-	RoleRefs() ([]*rbacv1.RoleRef, error)
+	RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error)
 	Name() string
 	Kind() string
 }
@@ -62,4 +64,11 @@ type Trigger interface {
 	WaitOn() (forcedClosed bool)
 	Delete() error
 	Replicas() int
+}
+
+type Binding interface {
+	Name() string
+	RoleRef() *rbacv1.RoleRef
+	CreateRoleBinding() (Binding, error)
+	DeleteRoleBinding() error
 }

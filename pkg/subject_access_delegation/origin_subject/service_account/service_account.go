@@ -50,7 +50,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
 }
 
 // TODO: this just needs to return the role refs of the rolebindings
-func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
+func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error) {
 	for _, binding := range s.bindings {
 		roleRef := binding.RoleRef
 		roleRefs = append(roleRefs, &roleRef)
@@ -58,10 +58,10 @@ func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
 
 	for _, binding := range s.clusterBindings {
 		roleRef := binding.RoleRef
-		roleRefs = append(roleRefs, &roleRef)
+		clusterRoleRefs = append(clusterRoleRefs, &roleRef)
 	}
 
-	return roleRefs, nil
+	return roleRefs, clusterRoleRefs, nil
 }
 
 func (s *ServiceAccount) getRoleBindings() error {

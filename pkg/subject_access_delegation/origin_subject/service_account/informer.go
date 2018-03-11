@@ -7,53 +7,58 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/role_binding"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
 // TODO: if this is active then this needs to change the permissions on the
 // destination subject
 func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
-	binding, err := s.getRoleBindingObject(obj)
+	roleBinding, err := s.getRoleBindingObject(obj)
 	if err != nil {
 		s.log.Errorf("failed to decode newly added rolebinding: %v", err)
 		return
 	}
 
 	// if we arn't referenced or we've seen this binding before, return
-	if s.bindingContainsSubject(binding) || s.seenUID(binding.UID) {
+	if s.bindingContainsSubject(roleBinding) || s.seenUID(roleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A new rolebinding referencing '%s' has been added. Updating SAD", s.Name())
 
-	s.addUID(binding.UID)
-	s.bindings = append(s.bindings, binding)
+	s.addUID(roleBinding.UID)
+	s.bindings = append(s.bindings, roleBinding)
 
-	if err := s.sad.AddRoleBinding(&binding.RoleRef); err != nil {
+	binding := role_binding.NewFromRoleBinding(s.sad, roleBinding)
+
+	if err := s.sad.AddRoleBinding(binding); err != nil {
 		s.log.Errorf("Failed to add new rolebinding: %v", err)
 	}
 }
 
 // TODO: We need to tell the controller to update it's referenced rolebindings
 func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
-	binding, err := s.getRoleBindingObject(obj)
+	roleBinding, err := s.getRoleBindingObject(obj)
 	if err != nil {
 		s.log.Errorf("failed to decode newly deleted rolebinding: %v", err)
 		return
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.bindingContainsSubject(binding) || !s.seenUID(binding.UID) {
+	if !s.bindingContainsSubject(roleBinding) || !s.seenUID(roleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
 
-	if !s.deleteRoleBinding(binding.UID) {
+	if !s.deleteRoleBinding(roleBinding.UID) {
 		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
 	}
 
-	if !s.sad.DeleteRoleBinding(&binding.RoleRef) {
+	binding := role_binding.NewFromRoleBinding(s.sad, roleBinding)
+
+	if !s.sad.DeleteRoleBinding(binding) {
 		s.log.Errorf("Failed to delete rolebinding '%s'. It did not exist.", binding.Name)
 	}
 }
@@ -61,24 +66,34 @@ func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 // TODO: we need to tell the controller to update it's replicated binding to
 // newObj
 func (s *ServiceAccount) updateRoleBindingOject(oldObj, newObj interface{}) {
-	oldBinding, err := s.getRoleBindingObject(oldObj)
+	oldRoleBinding, err := s.getRoleBindingObject(oldObj)
 	if err != nil {
 		s.log.Error(err)
 		return
 	}
 
-	newBinding, err := s.getRoleBindingObject(newObj)
+	newRoleBinding, err := s.getRoleBindingObject(newObj)
 	if err != nil {
 		s.log.Error(err)
 		return
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.bindingContainsSubject(oldBinding) || !s.seenUID(oldBinding.UID) {
+	if !s.bindingContainsSubject(oldRoleBinding) || !s.seenUID(oldRoleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
+
+	if !s.deleteRoleBinding(oldRoleBinding.UID) {
+		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
+	}
+
+	s.addUID(newRoleBinding.UID)
+	s.bindings = append(s.bindings, newRoleBinding)
+
+	oldBinding := role_binding.NewFromRoleBinding(s.sad, oldRoleBinding)
+	newBinding := role_binding.NewFromRoleBinding(s.sad, newRoleBinding)
 
 	if err := s.sad.UpdateRoleBinding(oldBinding, newBinding); err != nil {
 		s.log.Errorf("error during updating SAD rolebindings: %v", err)
