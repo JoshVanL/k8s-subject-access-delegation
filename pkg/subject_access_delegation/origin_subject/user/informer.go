@@ -35,7 +35,6 @@ func (u *User) addFuncRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: We need to tell the controller to update it's referenced rolebindings
 func (u *User) delFuncRoleBinding(obj interface{}) {
 	roleBinding, err := u.getRoleBindingObject(obj)
 	if err != nil {
@@ -61,10 +60,8 @@ func (u *User) delFuncRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: we need to tell the controller to update it's replicated binding to
-// newObj
-func (u *User) updateRoleBindingOject(oldObj, newObj interface{}) {
-	oldRoleBinding, err := u.getRoleBindingObject(oldObj)
+func (u *User) updateRoleBinding(oldObj, newObj interface{}) {
+	oldRoleBinding, err := utils.GetRoleBindingObject(oldObj)
 	if err != nil {
 		u.log.Error(err)
 		return
@@ -76,16 +73,12 @@ func (u *User) updateRoleBindingOject(oldObj, newObj interface{}) {
 		return
 	}
 
-	// if we arn't referenced or haven't seen this binding before, return
+	// If we arn't referenced or haven't seen this binding before, return
 	if !u.bindingContainsSubject(oldRoleBinding) || !u.seenUID(oldRoleBinding.UID) {
 		return
 	}
 
-	u.log.Infof("A RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
-
-	if !u.deleteRoleBinding(oldRoleBinding.UID) {
-		u.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
-	}
+	u.log.Info("A RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
 
 	u.addUID(newRoleBinding.UID)
 	u.bindings = append(u.bindings, newRoleBinding)
@@ -94,12 +87,10 @@ func (u *User) updateRoleBindingOject(oldObj, newObj interface{}) {
 	newBinding := role_binding.NewFromRoleBinding(u.sad, newRoleBinding)
 
 	if err := u.sad.UpdateRoleBinding(oldBinding, newBinding); err != nil {
-		u.log.Errorf("error during updating SAD rolebindings: %v", err)
+		u.log.Errorf("error during updating sad cluster rolebindings: %v", err)
 	}
 }
 
-// TODO: if this is active then this needs to change the permissions on the
-// destination subject
 func (u *User) addFuncClusterRoleBinding(obj interface{}) {
 	clusterRoleBinding, err := u.getClusterRoleBindingObject(obj)
 	if err != nil {
@@ -123,7 +114,6 @@ func (u *User) addFuncClusterRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: We need to tell the controller to update it's referenced rolebindings
 func (u *User) delFuncClusterRoleBinding(obj interface{}) {
 	clusterRoleBinding, err := u.getClusterRoleBindingObject(obj)
 	if err != nil {
@@ -149,10 +139,8 @@ func (u *User) delFuncClusterRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: we need to tell the controller to update it's replicated binding to
-// newObj
-func (u *User) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
-	oldClusterRoleBinding, err := u.getClusterRoleBindingObject(oldObj)
+func (u *User) updateClusterRoleBinding(oldObj, newObj interface{}) {
+	oldClusterRoleBinding, err := utils.GetClusterRoleBindingObject(oldObj)
 	if err != nil {
 		u.log.Error(err)
 		return
@@ -164,12 +152,12 @@ func (u *User) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
 		return
 	}
 
-	// if we arn't referenced or haven't seen this binding before, return
+	// If we arn't referenced or haven't seen this binding before, return
 	if !u.clusterBindingContainsSubject(oldClusterRoleBinding) || !u.seenUID(oldClusterRoleBinding.UID) {
 		return
 	}
 
-	u.log.Infof("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
+	u.log.Info("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
 
 	u.addUID(newClusterRoleBinding.UID)
 	u.clusterBindings = append(u.clusterBindings, newClusterRoleBinding)
@@ -178,7 +166,7 @@ func (u *User) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
 	newBinding := role_binding.NewFromClusterRoleBinding(u.sad, newClusterRoleBinding)
 
 	if err := u.sad.UpdateRoleBinding(oldBinding, newBinding); err != nil {
-		u.log.Errorf("error during updating SAD cluster rolebindings: %v", err)
+		u.log.Errorf("error during updating sad cluster rolebindings: %v", err)
 	}
 }
 

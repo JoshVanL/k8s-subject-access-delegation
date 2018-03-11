@@ -69,13 +69,13 @@ func (u *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1
 func (u *User) ListenRolebindings() {
 	u.bindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    u.addFuncRoleBinding,
-		UpdateFunc: u.updateRoleBindingOject,
+		UpdateFunc: u.updateRoleBinding,
 		DeleteFunc: u.delFuncRoleBinding,
 	})
 
 	u.clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    u.addFuncClusterRoleBinding,
-		UpdateFunc: u.updateClusterRoleBindingOject,
+		UpdateFunc: u.updateClusterRoleBinding,
 		DeleteFunc: u.delFuncClusterRoleBinding,
 	})
 }

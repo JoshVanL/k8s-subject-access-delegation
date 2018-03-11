@@ -35,7 +35,6 @@ func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: We need to tell the controller to update it's referenced rolebindings
 func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 	roleBinding, err := s.getRoleBindingObject(obj)
 	if err != nil {
@@ -61,9 +60,7 @@ func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: we need to tell the controller to update it's replicated binding to
-// newObj
-func (s *ServiceAccount) updateRoleBindingOject(oldObj, newObj interface{}) {
+func (s *ServiceAccount) updateRoleBinding(oldObj, newObj interface{}) {
 	oldRoleBinding, err := s.getRoleBindingObject(oldObj)
 	if err != nil {
 		s.log.Error(err)
@@ -98,8 +95,6 @@ func (s *ServiceAccount) updateRoleBindingOject(oldObj, newObj interface{}) {
 	}
 }
 
-// TODO: if this is active then this needs to change the permissions on the
-// destination subject
 func (s *ServiceAccount) addFuncClusterRoleBinding(obj interface{}) {
 	clusterRoleBinding, err := s.getClusterRoleBindingObject(obj)
 	if err != nil {
@@ -123,7 +118,6 @@ func (s *ServiceAccount) addFuncClusterRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: We need to tell the controller to update it's referenced rolebindings
 func (s *ServiceAccount) delFuncClusterRoleBinding(obj interface{}) {
 	clusterRoleBinding, err := s.getClusterRoleBindingObject(obj)
 	if err != nil {
@@ -149,9 +143,7 @@ func (s *ServiceAccount) delFuncClusterRoleBinding(obj interface{}) {
 	}
 }
 
-// TODO: we need to tell the controller to update it's replicated binding to
-// newObj
-func (s *ServiceAccount) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
+func (s *ServiceAccount) updateClusterRoleBinding(oldObj, newObj interface{}) {
 	oldClusterRoleBinding, err := s.getClusterRoleBindingObject(oldObj)
 	if err != nil {
 		s.log.Error(err)

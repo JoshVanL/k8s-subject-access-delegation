@@ -130,13 +130,13 @@ func (s *ServiceAccount) serviceAccountObject() error {
 func (s *ServiceAccount) ListenRolebindings() {
 	s.bindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    s.addFuncRoleBinding,
-		UpdateFunc: s.updateRoleBindingOject,
+		UpdateFunc: s.updateRoleBinding,
 		DeleteFunc: s.delFuncRoleBinding,
 	})
 
 	s.clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    s.addFuncClusterRoleBinding,
-		UpdateFunc: s.updateClusterRoleBindingOject,
+		UpdateFunc: s.updateClusterRoleBinding,
 		DeleteFunc: s.delFuncClusterRoleBinding,
 	})
 }
