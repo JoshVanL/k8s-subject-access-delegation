@@ -55,12 +55,12 @@ The Subject Access Delegation will also take several other attributes:
 * **Namespace**: Namespace the delegation is active in.
 * **Repeat**: How many times the delegation should be repeated. Default value of
   one.
-* **Delegation Time**: Time for then the delegation should be removed. Default
+* **Delegation Time**: Time for when the delegation should be removed. Default
   is never.
 
 An example of a rule is as follows. Here `Remote-Employee1` and
-`Remote-Employee2` will take on the permissions of the user `Employee` every day
-6:00pm for 14 hours every day for 365 days.
+`Remote-Employee2` will take on the permissions of the user `Employee` at 6:00pm
+for 14 hours every day for 365 days.
 
 ```yaml
 apiVersion: authz.k8s.io/v1alpha1
@@ -94,4 +94,4 @@ passed NTP server URLs.
 - Regular expressions for value strings.
 - Deletion via event triggers.
 - Failure recovery.
-- Further event trigger events.
+- Further event trigger options.
