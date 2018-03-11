@@ -24,7 +24,7 @@ type Role struct {
 
 var _ interfaces.OriginSubject = &Role{}
 
-const roleKind = "Role"
+const RoleKind = "Role"
 
 func New(sad interfaces.SubjectAccessDelegation, name string) *Role {
 	return &Role{
@@ -39,7 +39,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *Role {
 func (o *Role) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error) {
 	return []*rbacv1.RoleRef{
 		&rbacv1.RoleRef{
-			Kind: roleKind,
+			Kind: RoleKind,
 			Name: o.Name(),
 		},
 	}, nil, nil
@@ -74,5 +74,5 @@ func (o *Role) Name() string {
 }
 
 func (o *Role) Kind() string {
-	return roleKind
+	return RoleKind
 }
