@@ -12,7 +12,7 @@ rule, destination subjects will then take on the permissions of whatever the
 origin subject holds by means of replicating appropriate Role Bindings and
 Cluster Role Bindings.
 
-##Origin Subject
+## Origin Subject
 All Subject Access Delegations need one and only one Origin Subject. This will
 be the origin for all Role Bindings created onto the Destination Subjects. An
 Origin Subject can be one of a:
@@ -28,7 +28,7 @@ Origin Subject can be one of a:
 * **Group**: Role Bindings and Cluster Role Bindings bound to this
   Group are replicated onto the Destination Subjects.
 
-##Destination Subjects
+## Destination Subjects
 All Subject Access Delegations need one or more of a Destination Subject. These
 subjects will have the corresponding Role Bindings applied to them. A
 destination subject can be one of a:
@@ -37,7 +37,7 @@ destination subject can be one of a:
 * **User**
 * **Group**
 
-##Triggers
+## Triggers
 All Subject Access Delegations need one or more triggers within their rule. Once
 these triggers have been satisfied they will trigger the permissions to take
 place. Triggers come as two different kinds:
@@ -47,7 +47,7 @@ place. Triggers come as two different kinds:
 * **Event**: Some event that needs to take place within the cluster for the
   trigger to be satisfied. For example a pod being created or terminated.
 
-##Metadata and Spec
+## Metadata and Spec
 The Subject Access Delegation will also take several other attributes:
 
 * **Name**: Name of the Subject Access Delegation. Must be unique to the
@@ -84,13 +84,13 @@ triggers:
   value: 6:00pm
 ```
 
-##Notes
+## Notes
 - The controller also supports an adjusted internal time clock through use of
 passed NTP server URLs.
 - Permissions on destination subjects are dynamic in accordance to changes to
   the origin subject's within active rules.
 
-##Coming Features
+## Coming Features
 - Regular expressions for value strings.
 - Deletion via event triggers.
 - Failure recovery.
