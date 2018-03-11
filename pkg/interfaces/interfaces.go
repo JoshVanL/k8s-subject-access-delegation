@@ -47,7 +47,7 @@ type SubjectAccessDelegation interface {
 
 type OriginSubject interface {
 	ResolveOrigin() error
-	RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error)
+	RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef)
 	Name() string
 	Kind() string
 }

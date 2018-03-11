@@ -10,7 +10,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/cluster_role"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/service_account"
-	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/user"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/user"
 )
 
 const RoleKind = "Role"
@@ -32,9 +32,9 @@ func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.
 		originSubject = service_account.New(sad, name)
 		return originSubject, nil
 
-		//	case rbacv1.UserKind:
-		//		originSubject = user.New(sad, name)
-		//		return originSubject, nil
+	case rbacv1.UserKind:
+		originSubject = user.New(sad, name)
+		return originSubject, nil
 
 		//	case rbacv1.GroupKind:
 		//		originSubject = group.New(sad, name)

@@ -169,10 +169,7 @@ func (s *SubjectAccessDelegation) ApplyDelegation() error {
 func (s *SubjectAccessDelegation) buildRoleBindings() ([]interfaces.Binding, error) {
 	var roleBindings []interfaces.Binding
 
-	roleRefs, clusterRoleRefs, err := s.originSubject.RoleRefs()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve Role References: %v", err)
-	}
+	roleRefs, clusterRoleRefs := s.originSubject.RoleRefs()
 
 	for _, roleRef := range roleRefs {
 		roleBindings = append(roleBindings, role_binding.NewRoleBinding(s, roleRef))

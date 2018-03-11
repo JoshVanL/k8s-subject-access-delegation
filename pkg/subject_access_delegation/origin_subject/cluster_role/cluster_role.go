@@ -34,14 +34,14 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *ClusterRole {
 	}
 }
 
-func (c *ClusterRole) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error) {
+func (c *ClusterRole) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	return nil,
 		[]*rbacv1.RoleRef{
 			&rbacv1.RoleRef{
 				Kind: ClusterRoleKind,
 				Name: c.Name(),
 			},
-		}, nil
+		}
 }
 
 func (c *ClusterRole) getRole() error {

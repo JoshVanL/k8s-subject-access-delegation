@@ -11,8 +11,6 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-// TODO: if this is active then this needs to change the permissions on the
-// destination subject
 func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
 	roleBinding, err := s.getRoleBindingObject(obj)
 	if err != nil {
@@ -208,19 +206,6 @@ func (s *ServiceAccount) getClusterRoleBindingObject(obj interface{}) (*rbacv1.C
 	return binding, nil
 }
 
-func (s *ServiceAccount) seenUID(uid types.UID) bool {
-	b, ok := s.uids[uid]
-	if !ok {
-		return false
-	}
-
-	return b
-}
-
-func (s *ServiceAccount) addUID(uid types.UID) {
-	s.uids[uid] = true
-}
-
 func (s *ServiceAccount) deleteRoleBinding(uid types.UID) bool {
 	for i, binding := range s.bindings {
 		if binding.UID == uid {
@@ -249,4 +234,17 @@ func (s *ServiceAccount) deleteClusterRoleBinding(uid types.UID) bool {
 	}
 
 	return false
+}
+
+func (s *ServiceAccount) seenUID(uid types.UID) bool {
+	b, ok := s.uids[uid]
+	if !ok {
+		return false
+	}
+
+	return b
+}
+
+func (s *ServiceAccount) addUID(uid types.UID) {
+	s.uids[uid] = true
 }

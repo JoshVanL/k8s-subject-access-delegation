@@ -16,8 +16,6 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
-const serviceAccountKind = "ServiceAccount"
-
 type ServiceAccount struct {
 	log    *logrus.Entry
 	client kubernetes.Interface
@@ -32,7 +30,7 @@ type ServiceAccount struct {
 	uids            map[types.UID]bool
 
 	bindingInformer        informer.RoleBindingInformer
-	clusterbindingInformer informer.ClusterRoleBindingInformer
+	clusterBindingInformer informer.ClusterRoleBindingInformer
 }
 
 var _ interfaces.OriginSubject = &ServiceAccount{}
@@ -45,26 +43,38 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
 		namespace:              sad.Namespace(),
 		name:                   name,
 		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
-		clusterbindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
+		clusterBindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
 	}
+}
+
+func (s *ServiceAccount) ResolveOrigin() error {
+	if err := s.serviceAccountObject(); err != nil {
+		return err
+	}
+
+	if err := s.roleBindings(); err != nil {
+		return err
+	}
+
+	s.ListenRolebindings()
+
+	return nil
 }
 
 // TODO: this just needs to return the role refs of the rolebindings
-func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error) {
+func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	for _, binding := range s.bindings {
-		roleRef := binding.RoleRef
-		roleRefs = append(roleRefs, &roleRef)
+		roleRefs = append(roleRefs, &binding.RoleRef)
 	}
 
 	for _, binding := range s.clusterBindings {
-		roleRef := binding.RoleRef
-		clusterRoleRefs = append(clusterRoleRefs, &roleRef)
+		clusterRoleRefs = append(clusterRoleRefs, &binding.RoleRef)
 	}
 
-	return roleRefs, clusterRoleRefs, nil
+	return roleRefs, clusterRoleRefs
 }
 
-func (s *ServiceAccount) getRoleBindings() error {
+func (s *ServiceAccount) roleBindings() error {
 	// make this more efficient
 	options := metav1.ListOptions{}
 
@@ -100,7 +110,7 @@ func (s *ServiceAccount) getRoleBindings() error {
 	return nil
 }
 
-func (s *ServiceAccount) getServiceAccount() error {
+func (s *ServiceAccount) serviceAccountObject() error {
 	options := metav1.GetOptions{}
 
 	serviceAccount, err := s.client.Core().ServiceAccounts(s.Namespace()).Get(s.Name(), options)
@@ -117,20 +127,6 @@ func (s *ServiceAccount) getServiceAccount() error {
 	return nil
 }
 
-func (s *ServiceAccount) ResolveOrigin() error {
-	if err := s.getServiceAccount(); err != nil {
-		return err
-	}
-
-	if err := s.getRoleBindings(); err != nil {
-		return err
-	}
-
-	s.ListenRolebindings()
-
-	return nil
-}
-
 func (s *ServiceAccount) ListenRolebindings() {
 	s.bindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    s.addFuncRoleBinding,
@@ -138,7 +134,7 @@ func (s *ServiceAccount) ListenRolebindings() {
 		DeleteFunc: s.delFuncRoleBinding,
 	})
 
-	s.clusterbindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	s.clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    s.addFuncClusterRoleBinding,
 		UpdateFunc: s.updateClusterRoleBindingOject,
 		DeleteFunc: s.delFuncClusterRoleBinding,
@@ -147,7 +143,7 @@ func (s *ServiceAccount) ListenRolebindings() {
 
 func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {
 	for _, subject := range binding.Subjects {
-		if subject.Kind == serviceAccountKind && subject.Name == s.Name() {
+		if subject.Kind == rbacv1.ServiceAccountKind && subject.Name == s.Name() {
 			return true
 		}
 	}
@@ -157,7 +153,7 @@ func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) boo
 
 func (s *ServiceAccount) clusterBindingContainsSubject(binding *rbacv1.ClusterRoleBinding) bool {
 	for _, subject := range binding.Subjects {
-		if subject.Kind == serviceAccountKind && subject.Name == s.Name() {
+		if subject.Kind == rbacv1.ServiceAccountKind && subject.Name == s.Name() {
 			return true
 		}
 	}
@@ -174,5 +170,5 @@ func (s *ServiceAccount) Name() string {
 }
 
 func (s *ServiceAccount) Kind() string {
-	return serviceAccountKind
+	return rbacv1.ServiceAccountKind
 }

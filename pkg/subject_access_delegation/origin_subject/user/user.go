@@ -1,13 +1,15 @@
 package user
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	informer "k8s.io/client-go/informers/rbac/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
@@ -19,72 +21,129 @@ type User struct {
 
 	namespace string
 	name      string
-	uid       string
+	uids      map[types.UID]bool
+
+	bindings        []*rbacv1.RoleBinding
+	clusterBindings []*rbacv1.ClusterRoleBinding
+
+	bindingInformer        informer.RoleBindingInformer
+	clusterBindingInformer informer.ClusterRoleBindingInformer
 }
 
 var _ interfaces.OriginSubject = &User{}
 
 func New(sad interfaces.SubjectAccessDelegation, name string) *User {
 	return &User{
-		log:       sad.Log(),
-		client:    sad.Client(),
-		sad:       sad,
-		namespace: sad.Namespace(),
-		name:      name,
+		log:                    sad.Log(),
+		client:                 sad.Client(),
+		sad:                    sad,
+		namespace:              sad.Namespace(),
+		name:                   name,
+		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
+		clusterBindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
 	}
 }
 
-func (o *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, err error) {
-	roleBindings, err := o.getUserRoleBindings()
-	if err != nil {
-		return nil, err
+func (u *User) ResolveOrigin() error {
+	if err := u.roleBindings(); err != nil {
+		return err
 	}
 
-	for _, binding := range roleBindings {
-		roleRef := binding.RoleRef
-		roleRefs = append(roleRefs, &roleRef)
-	}
+	u.ListenRolebindings()
 
-	return roleRefs, nil
-}
-
-func (o *User) getUserRoleBindings() (roleBindings []rbacv1.RoleBinding, err error) {
-	// make this more efficient
-	options := metav1.ListOptions{}
-
-	bindingsList, err := o.client.Rbac().RoleBindings(o.Namespace()).List(options)
-	if err != nil {
-		return roleBindings, fmt.Errorf("failed to retrieve Rolebindings of User Account '%s': %v", o.Name(), err)
-	}
-
-	if bindingsList == nil {
-		return roleBindings, errors.New("binding list is nil")
-	}
-
-	for _, binding := range bindingsList.Items {
-		for _, subject := range binding.Subjects {
-			if subject.Kind == rbacv1.UserKind && subject.Name == o.Name() {
-				roleBindings = append(roleBindings, binding)
-				break
-			}
-		}
-	}
-
-	return roleBindings, nil
-}
-
-func (o *User) ResolveOrigin() error {
 	return nil
 }
 
-func (o *User) Namespace() string {
-	return o.namespace
+func (u *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
+	for _, binding := range u.bindings {
+		roleRefs = append(roleRefs, &binding.RoleRef)
+	}
+
+	for _, binding := range u.clusterBindings {
+		clusterRoleRefs = append(clusterRoleRefs, &binding.RoleRef)
+	}
+
+	return roleRefs, clusterRoleRefs
 }
 
-func (o *User) Name() string {
-	return o.name
+func (u *User) ListenRolebindings() {
+	u.bindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    u.addFuncRoleBinding,
+		UpdateFunc: u.updateRoleBindingOject,
+		DeleteFunc: u.delFuncRoleBinding,
+	})
+
+	u.clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    u.addFuncClusterRoleBinding,
+		UpdateFunc: u.updateClusterRoleBindingOject,
+		DeleteFunc: u.delFuncClusterRoleBinding,
+	})
 }
 
-func (o *User) Kind() string {
+func (u *User) roleBindings() error {
+	// make this more efficient
+	options := metav1.ListOptions{}
+
+	bindingsList, err := u.client.Rbac().RoleBindings(u.Namespace()).List(options)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve Rolebindings of User Account '%s': %v", u.Name(), err)
+	}
+
+	clusterBindingsList, err := u.client.Rbac().ClusterRoleBindings().List(options)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve Cluster Rolebindings of User Account '%s': %v", u.Name(), err)
+	}
+
+	u.bindings = make([]*rbacv1.RoleBinding, 0)
+	u.clusterBindings = make([]*rbacv1.ClusterRoleBinding, 0)
+	u.uids = make(map[types.UID]bool)
+
+	for _, binding := range bindingsList.Items {
+		if u.bindingContainsSubject(&binding) {
+			u.bindings = append(u.bindings, &binding)
+			u.uids[binding.UID] = true
+			break
+		}
+	}
+
+	for _, binding := range clusterBindingsList.Items {
+		if u.clusterBindingContainsSubject(&binding) {
+			u.clusterBindings = append(u.clusterBindings, &binding)
+			u.uids[binding.UID] = true
+		}
+	}
+
+	return nil
+}
+
+func (u *User) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {
+	for _, subject := range binding.Subjects {
+		if subject.Kind == rbacv1.UserKind && subject.Name == u.Name() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (u *User) clusterBindingContainsSubject(binding *rbacv1.ClusterRoleBinding) bool {
+	for _, subject := range binding.Subjects {
+		if subject.Kind == rbacv1.UserKind && subject.Name == u.Name() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (u *User) Namespace() string {
+	return u.namespace
+}
+
+func (u *User) Name() string {
+	return u.name
+}
+
+func (u *User) Kind() string {
 	return rbacv1.UserKind
 }

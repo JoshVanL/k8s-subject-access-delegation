@@ -36,13 +36,13 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *Role {
 	}
 }
 
-func (o *Role) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef, err error) {
+func (o *Role) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	return []*rbacv1.RoleRef{
 		&rbacv1.RoleRef{
 			Kind: RoleKind,
 			Name: o.Name(),
 		},
-	}, nil, nil
+	}, nil
 }
 
 func (o *Role) getRole() error {
