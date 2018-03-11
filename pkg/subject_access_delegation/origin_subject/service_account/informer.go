@@ -103,57 +103,85 @@ func (s *ServiceAccount) updateRoleBindingOject(oldObj, newObj interface{}) {
 // TODO: if this is active then this needs to change the permissions on the
 // destination subject
 func (s *ServiceAccount) addFuncClusterRoleBinding(obj interface{}) {
-	binding, err := s.getClusterRoleBindingObject(obj)
+	clusterRoleBinding, err := s.getClusterRoleBindingObject(obj)
 	if err != nil {
 		s.log.Errorf("failed to decode newly added cluster rolebinding: %v", err)
 	}
 
 	// if we arn't referenced or have seen this binding before, return
-	if !s.clusterBindingContainsSubject(binding) || s.seenUID(binding.UID) {
+	if !s.clusterBindingContainsSubject(clusterRoleBinding) || s.seenUID(clusterRoleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A new cluster rolebinding referencing '%s' has been added. Updating SAD", s.Name())
 
-	s.addUID(binding.UID)
-	s.clusterBindings = append(s.clusterBindings, binding)
+	s.addUID(clusterRoleBinding.UID)
+	s.clusterBindings = append(s.clusterBindings, clusterRoleBinding)
+
+	binding := role_binding.NewFromClusterRoleBinding(s.sad, clusterRoleBinding)
+
+	if err := s.sad.AddRoleBinding(binding); err != nil {
+		s.log.Errorf("Failed to add new cluster rolebinding: %v", err)
+	}
 }
 
 // TODO: We need to tell the controller to update it's referenced rolebindings
 func (s *ServiceAccount) delFuncClusterRoleBinding(obj interface{}) {
-	binding, err := s.getClusterRoleBindingObject(obj)
+	clusterRoleBinding, err := s.getClusterRoleBindingObject(obj)
 	if err != nil {
 		s.log.Errorf("failed to decode newly deleted cluster rolebinding: %v", err)
 		return
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.clusterBindingContainsSubject(binding) || !s.seenUID(binding.UID) {
+	if !s.clusterBindingContainsSubject(clusterRoleBinding) || !s.seenUID(clusterRoleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A Cluster RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
 
-	if !s.deleteClusterRoleBinding(binding.UID) {
+	if !s.deleteClusterRoleBinding(clusterRoleBinding.UID) {
 		s.log.Errorf("Didn't find the deleted cluster rolbinding in SAD references. Something has gone very wrong.")
+	}
+
+	binding := role_binding.NewFromClusterRoleBinding(s.sad, clusterRoleBinding)
+
+	if !s.sad.DeleteRoleBinding(binding) {
+		s.log.Errorf("Failed to delete cluster rolebinding '%s'. It did not exist.", binding.Name)
 	}
 }
 
 // TODO: we need to tell the controller to update it's replicated binding to
 // newObj
 func (s *ServiceAccount) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
-	binding, err := s.getClusterRoleBindingObject(oldObj)
+	oldClusterRoleBinding, err := s.getClusterRoleBindingObject(oldObj)
+	if err != nil {
+		s.log.Error(err)
+		return
+	}
+
+	newClusterRoleBinding, err := s.getClusterRoleBindingObject(newObj)
 	if err != nil {
 		s.log.Error(err)
 		return
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.clusterBindingContainsSubject(binding) || !s.seenUID(binding.UID) {
+	if !s.clusterBindingContainsSubject(oldClusterRoleBinding) || !s.seenUID(oldClusterRoleBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
+
+	s.addUID(newClusterRoleBinding.UID)
+	s.clusterBindings = append(s.clusterBindings, newClusterRoleBinding)
+
+	oldBinding := role_binding.NewFromClusterRoleBinding(s.sad, oldClusterRoleBinding)
+	newBinding := role_binding.NewFromClusterRoleBinding(s.sad, newClusterRoleBinding)
+
+	if err := s.sad.UpdateRoleBinding(oldBinding, newBinding); err != nil {
+		s.log.Errorf("error during updating SAD cluster rolebindings: %v", err)
+	}
 }
 
 func (s *ServiceAccount) getRoleBindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
