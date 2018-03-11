@@ -12,10 +12,9 @@ import (
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	clientset "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned"
 	informers "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/informers/externalversions"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/controller"
@@ -27,15 +26,16 @@ const FlagKubeConfig = "kube-config"
 const FlagWorkers = "worker-threads"
 const FlagLogLevel = "log-level"
 const FlagNTPHosts = "ntp-hosts"
+const FlagMasterURL = "master-url"
+const FlagInClusterConfig = "in-cluster-config"
 
 var RootCmd = &cobra.Command{
 	Use:   "subject-access-delegation",
 	Short: "- Subject Access Delegation via Role Bindings onto resources in Kubernetes using event and time based triggers",
 	Run: func(cmd *cobra.Command, args []string) {
-		log := LogLevel(cmd)
-
-		var masterURL string
 		var result *multierror.Error
+
+		log := LogLevel(cmd)
 
 		hosts, err := cmd.Flags().GetStringSlice(FlagNTPHosts)
 		if err != nil {
@@ -49,23 +49,15 @@ var RootCmd = &cobra.Command{
 			result = multierror.Append(result, fmt.Errorf("number of worker threads must be between 1 and 10: %d", workerThreads))
 		}
 
-		kubeconfig, err := cmd.PersistentFlags().GetString(FlagKubeConfig)
+		cfg, err := KubeConfig(cmd)
 		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("unable to parse kube config flag: %v", err))
+			result = multierror.Append(result, err)
 		}
 
-		kubeconfig, err = homedir.Expand(kubeconfig)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("unable to expand config directory ('%s'): %v", kubeconfig, err))
-		}
-
-		cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("error building kubeconfig: %v", err))
-		}
-
-		if result != nil {
-			log.Fatal(result.ErrorOrNil())
+		if result.ErrorOrNil() != nil {
+			fmt.Printf("Failed to initiate Subject Access Delegation Flags: %s\n", result.Error())
+			fmt.Printf("Exiting.\n")
+			os.Exit(1)
 		}
 
 		kubeClient, err := kubernetes.NewForConfig(cfg)
@@ -75,7 +67,7 @@ var RootCmd = &cobra.Command{
 
 		apiextClientSet, err := apiextcs.NewForConfig(cfg)
 		if err != nil {
-			log.Fatalf("error building api extention clientset: %v", err)
+			log.Fatalf("error building API extension clientset: %v", err)
 		}
 
 		exampleClient, err := clientset.NewForConfig(cfg)
@@ -88,7 +80,9 @@ var RootCmd = &cobra.Command{
 		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, hosts, log)
 
 		if err := controller.EnsureCRD(apiextClientSet); err != nil {
-			log.Fatalf("failed to ensure custom resource definition: %v", err)
+			fmt.Printf("Failed to ensure custom resource definition: %v", result.Error())
+			fmt.Printf("Exiting.\n")
+			os.Exit(1)
 		}
 
 		stopCh := signals.RunSignalHandler(log)
@@ -97,7 +91,9 @@ var RootCmd = &cobra.Command{
 		go exampleInformerFactory.Start(stopCh)
 
 		if err = controller.Run(workerThreads, stopCh); err != nil {
-			log.Fatalf("error running controller: %s", err.Error())
+			fmt.Printf("Error running controller: %v\n", err)
+			fmt.Printf("Exiting.\n")
+			os.Exit(1)
 		}
 
 	},
@@ -109,6 +105,8 @@ func init() {
 	RootCmd.PersistentFlags().StringP(FlagKubeConfig, "c", "~/.kube/config", "Path to kube config")
 	RootCmd.PersistentFlags().IntP(FlagWorkers, "w", 2, "Number of worker threads for controller")
 	RootCmd.PersistentFlags().StringSliceP(FlagNTPHosts, "n", []string{""}, "Optional list of host URLs of ntp servers to ensure correct time")
+	RootCmd.PersistentFlags().BoolP(FlagInClusterConfig, "i", false, "Use in cluster config instead of kube config file (takes priority over kube config file and master URL)")
+	RootCmd.PersistentFlags().StringP(FlagMasterURL, "m", "", "Master URL used to retrieve kube config")
 }
 
 func Execute() {
@@ -116,6 +114,48 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+}
+
+func KubeConfig(cmd *cobra.Command) (*rest.Config, error) {
+	var config *rest.Config
+
+	inConfig, err := cmd.PersistentFlags().GetBool(FlagInClusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse InClusterConfig flag: %v", err)
+	}
+
+	if inConfig {
+
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error using rest to get in cluster config; %v", err)
+		}
+
+	} else {
+
+		kubeconfig, err := cmd.PersistentFlags().GetString(FlagKubeConfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse kube config flag: %v", err)
+		}
+
+		masterURL, err := cmd.PersistentFlags().GetString(FlagMasterURL)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse master URL flag: %v", err)
+		}
+
+		kubeconfig, err = homedir.Expand(kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to expand config directory ('%s'): %v", kubeconfig, err)
+		}
+
+		config, err = clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("error building kubeconfig: %v", err)
+		}
+
+	}
+
+	return config, nil
 }
 
 func LogLevel(cmd *cobra.Command) *logrus.Entry {
