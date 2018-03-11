@@ -430,17 +430,17 @@ func (s *SubjectAccessDelegation) DeleteRoleBinding(roleRef *rbacv1.RoleRef) boo
 func (s *SubjectAccessDelegation) UpdateRoleBinding(old, new *rbacv1.RoleBinding) error {
 	var result *multierror.Error
 
-	//if s.triggered {
-	//	if err := s.deleteRoleBinding(old); err != nil {
-	//		result = multierror.Append(result, err)
-	//	}
+	if s.triggered {
+		if err := s.deleteRoleBinding(old); err != nil {
+			result = multierror.Append(result, err)
+		}
 
-	//	binding := s.buildRoleBinding(&new.RoleRef, s.buildDestinationSubjects())
+		binding := s.buildRoleBinding(&new.RoleRef)
 
-	//	if err := s.createRoleBinding(binding); err != nil {
-	//		result = multierror.Append(result, err)
-	//	}
-	//}
+		if err := s.createRoleBinding(binding); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
 
 	return result.ErrorOrNil()
 }

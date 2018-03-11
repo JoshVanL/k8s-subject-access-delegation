@@ -53,26 +53,36 @@ func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
 	}
 
-	if err := s.sad.DeleteRoleBinding(&binding.RoleRef); err != nil {
-		s.log.Errorf("Failed to delete rolebinding: %v", err)
+	if !s.sad.DeleteRoleBinding(&binding.RoleRef) {
+		s.log.Errorf("Failed to delete rolebinding '%s'. It did not exist.", binding.Name)
 	}
 }
 
 // TODO: we need to tell the controller to update it's replicated binding to
 // newObj
 func (s *ServiceAccount) updateRoleBindingOject(oldObj, newObj interface{}) {
-	binding, err := s.getRoleBindingObject(oldObj)
+	oldBinding, err := s.getRoleBindingObject(oldObj)
+	if err != nil {
+		s.log.Error(err)
+		return
+	}
+
+	newBinding, err := s.getRoleBindingObject(newObj)
 	if err != nil {
 		s.log.Error(err)
 		return
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.bindingContainsSubject(binding) || !s.seenUID(binding.UID) {
+	if !s.bindingContainsSubject(oldBinding) || !s.seenUID(oldBinding.UID) {
 		return
 	}
 
 	s.log.Infof("A RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
+
+	if err := s.sad.UpdateRoleBinding(oldBinding, newBinding); err != nil {
+		s.log.Errorf("error during updating SAD rolebindings: %v", err)
+	}
 }
 
 // TODO: if this is active then this needs to change the permissions on the

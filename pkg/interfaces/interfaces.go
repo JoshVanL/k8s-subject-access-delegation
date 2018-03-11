@@ -35,7 +35,7 @@ type SubjectAccessDelegation interface {
 
 	AddRoleBinding(roleRef *rbacv1.RoleRef) error
 	UpdateRoleBinding(old, new *rbacv1.RoleBinding) error
-	DeleteRoleBinding(roleRef *rbacv1.RoleRef) error
+	DeleteRoleBinding(roleRef *rbacv1.RoleRef) bool
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
