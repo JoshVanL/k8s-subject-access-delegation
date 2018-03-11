@@ -6,6 +6,7 @@ testing_blocks:
       - "start"
       - "--extra-config=apiserver.Authorization.Mode=RBAC"
       - "--memory=1024"
+      - "--vm-driver=none"
     - program: "kubectl"
       arguments:
       - "get"
@@ -40,7 +41,7 @@ testing_blocks:
       split_string_conditions:
       - line: 1
         split: 0
-        match: "test-pod-add-default-pod-reader"
+        match: "test-pod-add-pod-reader-default-pod-reader"
     - program: "kubectl"
       arguments:
       - "delete"
@@ -123,10 +124,10 @@ testing_blocks:
       split_string_conditions:
       - line: 3
         split: 0
-        match: "test-group-default-pod-logs-reader"
+        match: "test-group-test-sa-default-pod-logs-reader"
       - line: 4
         split: 0
-        match: "test-group-default-pod-reader"
+        match: "test-group-test-sa-default-pod-reader"
     - program: "kubectl"
       arguments:
       - "delete"

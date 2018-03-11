@@ -62,7 +62,7 @@ func New(controller interfaces.Controller, sad *authzv1alpha1.SubjectAccessDeleg
 
 func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	for i := 0; i < s.Repeat(); i++ {
-		s.log.Infof("Subject Access Delegation \"%s\" (%d/%d)", s.Name(), i+1, s.Repeat())
+		s.log.Infof("Subject Access Delegation '%s' (%d/%d)", s.Name(), i+1, s.Repeat())
 
 		s.triggered = false
 
@@ -214,7 +214,7 @@ func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) 
 		return err
 	}
 
-	s.log.Infof("Role Binding '%s' Deleted", binding.Name)
+	s.log.Infof("Role Binding '%s' Deleted", binding.Name())
 
 	return nil
 }

@@ -56,11 +56,11 @@ func (u *User) ResolveOrigin() error {
 
 func (u *User) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	for _, binding := range u.bindings {
-		roleRefs = append(roleRefs, &binding.RoleRef)
+		roleRefs = append(roleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	for _, binding := range u.clusterBindings {
-		clusterRoleRefs = append(clusterRoleRefs, &binding.RoleRef)
+		clusterRoleRefs = append(clusterRoleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	return roleRefs, clusterRoleRefs
@@ -99,16 +99,15 @@ func (u *User) roleBindings() error {
 	u.uids = make(map[types.UID]bool)
 
 	for _, binding := range bindingsList.Items {
-		if u.bindingContainsSubject(&binding) {
-			u.bindings = append(u.bindings, &binding)
+		if u.bindingContainsSubject(binding.DeepCopy()) {
+			u.bindings = append(u.bindings, binding.DeepCopy())
 			u.uids[binding.UID] = true
-			break
 		}
 	}
 
 	for _, binding := range clusterBindingsList.Items {
-		if u.clusterBindingContainsSubject(&binding) {
-			u.clusterBindings = append(u.clusterBindings, &binding)
+		if u.clusterBindingContainsSubject(binding.DeepCopy()) {
+			u.clusterBindings = append(u.clusterBindings, binding.DeepCopy())
 			u.uids[binding.UID] = true
 		}
 	}

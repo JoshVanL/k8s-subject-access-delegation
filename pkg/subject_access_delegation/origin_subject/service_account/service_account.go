@@ -61,14 +61,13 @@ func (s *ServiceAccount) ResolveOrigin() error {
 	return nil
 }
 
-// TODO: this just needs to return the role refs of the rolebindings
 func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	for _, binding := range s.bindings {
-		roleRefs = append(roleRefs, &binding.RoleRef)
+		roleRefs = append(roleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	for _, binding := range s.clusterBindings {
-		clusterRoleRefs = append(clusterRoleRefs, &binding.RoleRef)
+		clusterRoleRefs = append(clusterRoleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	return roleRefs, clusterRoleRefs
@@ -93,16 +92,15 @@ func (s *ServiceAccount) roleBindings() error {
 	s.uids = make(map[types.UID]bool)
 
 	for _, binding := range bindingsList.Items {
-		if s.bindingContainsSubject(&binding) {
-			s.bindings = append(s.bindings, &binding)
+		if s.bindingContainsSubject(binding.DeepCopy()) {
+			s.bindings = append(s.bindings, binding.DeepCopy())
 			s.uids[binding.UID] = true
-			break
 		}
 	}
 
 	for _, binding := range clusterBindingsList.Items {
-		if s.clusterBindingContainsSubject(&binding) {
-			s.clusterBindings = append(s.clusterBindings, &binding)
+		if s.clusterBindingContainsSubject(binding.DeepCopy()) {
+			s.clusterBindings = append(s.clusterBindings, binding.DeepCopy())
 			s.uids[binding.UID] = true
 		}
 	}

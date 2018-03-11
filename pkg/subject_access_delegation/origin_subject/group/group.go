@@ -56,11 +56,11 @@ func (g *Group) ResolveOrigin() error {
 
 func (g *Group) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef) {
 	for _, binding := range g.bindings {
-		roleRefs = append(roleRefs, &binding.RoleRef)
+		roleRefs = append(roleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	for _, binding := range g.clusterBindings {
-		clusterRoleRefs = append(clusterRoleRefs, &binding.RoleRef)
+		clusterRoleRefs = append(clusterRoleRefs, &binding.DeepCopy().RoleRef)
 	}
 
 	return roleRefs, clusterRoleRefs
@@ -99,16 +99,15 @@ func (g *Group) roleBindings() error {
 	g.uids = make(map[types.UID]bool)
 
 	for _, binding := range bindingsList.Items {
-		if g.bindingContainsSubject(&binding) {
-			g.bindings = append(g.bindings, &binding)
+		if g.bindingContainsSubject(binding.DeepCopy()) {
+			g.bindings = append(g.bindings, binding.DeepCopy())
 			g.uids[binding.UID] = true
-			break
 		}
 	}
 
 	for _, binding := range clusterBindingsList.Items {
-		if g.clusterBindingContainsSubject(&binding) {
-			g.clusterBindings = append(g.clusterBindings, &binding)
+		if g.clusterBindingContainsSubject(binding.DeepCopy()) {
+			g.clusterBindings = append(g.clusterBindings, binding.DeepCopy())
 			g.uids[binding.UID] = true
 		}
 	}

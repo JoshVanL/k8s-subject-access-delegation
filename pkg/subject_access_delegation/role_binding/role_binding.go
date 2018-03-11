@@ -39,7 +39,7 @@ func NewFromRoleBinding(sad interfaces.SubjectAccessDelegation, roleBinding *rba
 func (r *RoleBinding) CreateRoleBinding() (interfaces.Binding, error) {
 	binding, err := r.sad.Client().Rbac().RoleBindings(r.sad.Namespace()).Create(r.roleBinding)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create role binding: %v", err)
+		return nil, err
 	}
 
 	r.roleBinding = binding
@@ -50,7 +50,7 @@ func (r *RoleBinding) CreateRoleBinding() (interfaces.Binding, error) {
 func (r *RoleBinding) DeleteRoleBinding() error {
 	options := &metav1.DeleteOptions{}
 	if err := r.sad.Client().Rbac().RoleBindings(r.sad.Namespace()).Delete(r.roleBinding.Name, options); err != nil {
-		return fmt.Errorf("failed to delete role binding: %v", err)
+		return err
 	}
 
 	return nil
