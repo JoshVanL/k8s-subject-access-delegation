@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,18 +30,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
 )
 
-// Add a start and stop time/duration of the permissions
-// Don't stop the delegation repeating if it wasn't ablt to apply, just wait again?? (Not sure, repeat on failure)
-// Support more resources and origin subejects, not just role bindings. e.g. get the role bindings of a user and use that to apply permissions
-
 const controllerAgentName = "SAD-controller"
-
-const (
-	SuccessSynced         = "Synced"
-	ErrResourceExists     = "ErrResourceExists"
-	MessageResourceExists = "Resource %q already exists and is not managed by Subject Access Delegation"
-	MessageResourceSynced = "Subject Access Delegation synced successfully"
-)
 
 type Controller struct {
 	kubeclientset kubernetes.Interface
@@ -109,12 +100,12 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	if c.ntpClient != nil {
 		if err := c.tryGetNtpTime(); err != nil {
-			c.log.Errorf("failed to set accurate time for controller: %v", err)
+			c.log.Errorf("Failed to set accurate time for controller: %v", err)
 			c.log.Warn("Continuing without optimum clock accuracy.")
 		}
 
 	} else {
-		c.log.Infof("No NTP URLs specified.")
+		c.log.Infof("No NTP server URLs specified.")
 	}
 
 	c.log.Infof("Using current time: %s", time.Now().Add(c.clockOffset).String())
@@ -128,11 +119,51 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}
+
+	c.log.Infof("Syncing any Subject Access Delegations already created...")
+	if err := c.updateStateFromAPI(); err != nil {
+		c.log.Errorf("Error syncing with API server: %v", err)
+	}
+
 	c.log.Info("Controller Ready.")
 
 	<-stopCh
 
 	return nil
+}
+
+func (c *Controller) updateStateFromAPI() error {
+	options := metav1.ListOptions{}
+	namespaces, err := c.kubeclientset.Core().Namespaces().List(options)
+	if err != nil {
+		return fmt.Errorf("failed to list namespaces in current cluster: %v", err)
+	}
+
+	var result *multierror.Error
+	var sads []*authzv1alpha1.SubjectAccessDelegation
+
+	for _, namespace := range namespaces.Items {
+		delegations, err := c.sadsLister.SubjectAccessDelegations(namespace.Name).List(labels.Everything())
+		if err != nil {
+			result = multierror.Append(result, err)
+
+		} else {
+
+			for _, sad := range delegations {
+				sads = append(sads, sad.DeepCopy())
+			}
+		}
+	}
+
+	for _, sad := range sads {
+		if _, ok := c.delegations[sad.Name]; !ok {
+			if err := c.ProcessDelegation(sad); err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to process present delegation '%s': %v", sad.Name, err))
+			}
+		}
+	}
+
+	return result.ErrorOrNil()
 }
 
 func (c *Controller) tryGetNtpTime() error {
@@ -208,7 +239,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	if !sad.Status.Processed {
 		if err := c.ProcessDelegation(sad); err != nil {
-			c.log.Errorf("failed to process Subject Access Delegation: %v", err)
+			c.log.Errorf("Failed to process Subject Access Delegation: %v", err)
 			return err
 		}
 	}
@@ -217,7 +248,6 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	//c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 
@@ -232,7 +262,6 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 	go func() {
 		closed, err := delegation.Delegate()
 		if err != nil {
-			// ----> If it fails here, delete from queue etc. <----
 			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
 		}
 
@@ -278,7 +307,7 @@ func (c *Controller) enqueueSad(obj interface{}) {
 func (c *Controller) handleObject(obj interface{}) {
 	sad, err := c.getSADObject(obj)
 	if err != nil {
-		c.log.Error(err)
+		c.log.Errorf("Error handling object: %v", err)
 	}
 
 	c.enqueueSad(sad)
@@ -354,7 +383,7 @@ func (c *Controller) appendDelegation(delegation interfaces.SubjectAccessDelegat
 }
 
 func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
-	c.log.Info("Creating Subject Access Delegation Custom Resource Definition...")
+	c.log.Info("Ensuring Subject Access Delegation Custom Resource Definition...")
 
 	crd := &apiextv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -395,7 +424,7 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 			if apierrors.IsNotFound(err) {
 				c.log.Infof("Custom resource not yet found, retrying (%d/3)..", trys+1)
 			} else {
-				c.log.Warnf("error ensuring crd was created: %v", err)
+				c.log.Warnf("Error ensuring crd was created: %v", err)
 			}
 
 			continue

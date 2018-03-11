@@ -1,7 +1,5 @@
 package pod
 
-//TODO: Have one parent listener for each research type e.g. one pod, deployment tigger listener that sends info to all relevant trigger children -- reduces api overhead
-
 import (
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"

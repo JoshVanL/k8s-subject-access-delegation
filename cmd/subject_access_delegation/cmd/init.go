@@ -80,7 +80,7 @@ var RootCmd = &cobra.Command{
 		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, hosts, log)
 
 		if err := controller.EnsureCRD(apiextClientSet); err != nil {
-			fmt.Printf("Failed to ensure custom resource definition: %v", result.Error())
+			fmt.Printf("Failed to ensure custom resource definition: %v", err)
 			fmt.Printf("Exiting.\n")
 			os.Exit(1)
 		}
@@ -95,7 +95,6 @@ var RootCmd = &cobra.Command{
 			fmt.Printf("Exiting.\n")
 			os.Exit(1)
 		}
-
 	},
 }
 
