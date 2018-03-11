@@ -7,7 +7,7 @@ import (
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/group"
-	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/role"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/service_account"
 	//"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject/user"
 )
@@ -18,9 +18,9 @@ func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.
 	var originSubject interfaces.OriginSubject
 
 	switch kind {
-	//case RoleKind:
-	//	originSubject = role.New(sad, name)
-	//	return originSubject, nil
+	case RoleKind:
+		originSubject = role.New(sad, name)
+		return originSubject, nil
 
 	case rbacv1.ServiceAccountKind:
 		originSubject = service_account.New(sad, name)
