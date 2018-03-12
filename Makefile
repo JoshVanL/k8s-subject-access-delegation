@@ -107,6 +107,6 @@ go_mock:
 	$(BINDIR)/mockgen -destination=pkg/subject_access_delegation/mocks/kubernetes.go -package=mocks -source=vendor/k8s.io/client-go/kubernetes/clientset.go
 	# mockgen only supports embedded interfaces in reflector mode
 	$(BINDIR)/mockgen $(CLIENTGoCore) CoreV1Interface,ServiceAccountInterface,PodInterface > $(MOCKDIR)/core_v1.go
-	$(BINDIR)/mockgen $(CLIENTGoRbac) RoleBindingInterface,RoleInterface,RbacV1Interface > $(MOCKDIR)/rbac_v1.go
+	$(BINDIR)/mockgen $(CLIENTGoRbac) RoleBindingInterface,ClusterRoleBindingInterface,RoleInterface,ClusterRoleInterface,RbacV1Interface > $(MOCKDIR)/rbac_v1.go
 	find $(MOCKDIR)/ -type f -exec sed -i 's/mock_v1/mocks/g' {} +
 	find $(MOCKDIR)/ -type f -exec sed -i 's/github.com\/joshvanl\/k8s-subject-access-delegation\/vendor\///g' {} +

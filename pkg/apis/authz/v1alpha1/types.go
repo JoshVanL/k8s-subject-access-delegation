@@ -31,6 +31,7 @@ type EventTrigger struct {
 	Kind     string `json:"kind"`
 	Value    string `json:"value"`
 	Replicas int    `json:"replicas"`
+	Triggerd bool
 }
 
 type SubjectAccessDelegationSpec struct {
