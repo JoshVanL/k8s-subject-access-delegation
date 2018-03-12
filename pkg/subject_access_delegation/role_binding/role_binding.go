@@ -9,6 +9,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
+const RoleBindingKind = "RoleBinding"
+
 var _ interfaces.Binding = &RoleBinding{}
 
 type RoleBinding struct {
@@ -64,6 +66,6 @@ func (r *RoleBinding) RoleRef() *rbacv1.RoleRef {
 	return &r.roleBinding.RoleRef
 }
 
-func (r *RoleBinding) DeepCopyBinding() interfaces.Binding {
-	return r
+func (r *RoleBinding) Kind() string {
+	return RoleBindingKind
 }

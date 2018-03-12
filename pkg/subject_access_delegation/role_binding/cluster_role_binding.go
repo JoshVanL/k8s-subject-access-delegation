@@ -9,6 +9,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
+const ClusterRoleBindingKind = "ClusterRoleBinding"
+
 var _ interfaces.Binding = &ClusterRoleBinding{}
 
 type ClusterRoleBinding struct {
@@ -64,6 +66,6 @@ func (c *ClusterRoleBinding) RoleRef() *rbacv1.RoleRef {
 	return &c.clusterRoleBinding.RoleRef
 }
 
-func (c *ClusterRoleBinding) DeepCopyBinding() interfaces.Binding {
-	return c
+func (c *ClusterRoleBinding) Kind() string {
+	return ClusterRoleBindingKind
 }

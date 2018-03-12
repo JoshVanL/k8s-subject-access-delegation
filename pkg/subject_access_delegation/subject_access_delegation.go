@@ -268,6 +268,7 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 		if err := s.cleanUpBindings(); err != nil {
 			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
 		}
+
 		return false, nil
 	}
 
@@ -305,13 +306,28 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	var result *multierror.Error
 
-	for _, binding := range s.sad.Status.Bindings {
-		if binding != nil {
-			if err := binding.DeleteRoleBinding(); err != nil {
-				result = multierror.Append(result, err)
-			}
+	options := &metav1.DeleteOptions{}
+
+	for _, binding := range s.sad.Status.RoleBindings {
+		if err := s.client.Rbac().RoleBindings(s.Namespace()).Delete(binding, options); err != nil {
+			result = multierror.Append(result, err)
 		}
 	}
+
+	for _, binding := range s.sad.Status.ClusterRoleBindings {
+		if err := s.client.Rbac().ClusterRoleBindings().Delete(binding, options); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	s.sad.Status.RoleBindings = make([]string, 0)
+	s.sad.Status.ClusterRoleBindings = make([]string, 0)
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		result = multierror.Append(result, fmt.Errorf("failed to update trigger status against API server: %v", err))
+	}
+	s.sad = sad
 
 	return result.ErrorOrNil()
 }
@@ -358,7 +374,6 @@ func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to update trigger status against API server: %v", err)
 	}
-
 	s.sad = sad
 
 	return nil
@@ -386,21 +401,24 @@ func (s *SubjectAccessDelegation) updateBindingList(binding interfaces.Binding) 
 		return err
 	}
 
-	deepCopy := s.sad.DeepCopy().Status.Bindings
+	if binding.Kind() == role_binding.RoleBindingKind {
 
-	if len(deepCopy) == 0 {
-		deepCopy = make(map[string]interfaces.Binding)
+		deepCopy := s.sad.DeepCopy().Status.RoleBindings
+		deepCopy = append(deepCopy, binding.Name())
+		s.sad.Status.RoleBindings = deepCopy
+
+	} else {
+
+		deepCopy := s.sad.DeepCopy().Status.ClusterRoleBindings
+		deepCopy = append(deepCopy, binding.Name())
+		s.sad.Status.ClusterRoleBindings = deepCopy
+
 	}
-
-	deepCopy[binding.Name()] = binding
-
-	s.sad.Status.Bindings = deepCopy
 
 	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
 	if err != nil {
 		return fmt.Errorf("failed to update binding list against API server: %v", err)
 	}
-
 	s.sad = sad
 
 	return nil
@@ -411,32 +429,53 @@ func (s *SubjectAccessDelegation) deleteBindingList(binding interfaces.Binding) 
 		return err
 	}
 
-	deepCopy := s.sad.DeepCopy().Status.Bindings
+	found := false
 
-	if len(deepCopy) == 0 {
-		deepCopy = make(map[string]interfaces.Binding)
-	}
+	if binding.Kind() == role_binding.RoleBindingKind {
 
-	for name, b := range deepCopy {
+		deepCopy := s.sad.DeepCopy().Status.RoleBindings
 
-		if b != nil && binding.Name() == name {
+		for i, name := range deepCopy {
+			if binding.Name() == name {
 
-			deepCopy[name] = nil
-			s.sad.Status.Bindings = deepCopy
+				deepCopy[i] = deepCopy[len(deepCopy)-1]
+				deepCopy = deepCopy[:len(deepCopy)-1]
+				s.sad.Status.RoleBindings = deepCopy
+				found = true
 
-			sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-			if err != nil {
-				return fmt.Errorf("failed to update binding list against API server: %v", err)
+				break
 			}
+		}
 
-			s.sad = sad
+	} else {
 
-			return nil
+		deepCopy := s.sad.DeepCopy().Status.ClusterRoleBindings
 
+		for i, name := range deepCopy {
+			if binding.Name() == name {
+
+				deepCopy[i] = deepCopy[len(deepCopy)-1]
+				deepCopy = deepCopy[:len(deepCopy)-1]
+				s.sad.Status.ClusterRoleBindings = deepCopy
+				found = true
+
+				break
+			}
 		}
 	}
 
-	return fmt.Errorf("failed to find binding '%s' in SAD API object", binding.Name())
+	if !found {
+		return fmt.Errorf("failed to find binding '%s' in SAD API object", binding.Name())
+	}
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update binding list against API server: %v", err)
+	}
+
+	s.sad = sad
+
+	return nil
 }
 
 func (s *SubjectAccessDelegation) updateLocalSAD() error {

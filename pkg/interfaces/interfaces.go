@@ -68,8 +68,8 @@ type Trigger interface {
 
 type Binding interface {
 	Name() string
+	Kind() string
 	RoleRef() *rbacv1.RoleRef
 	CreateRoleBinding() (Binding, error)
 	DeleteRoleBinding() error
-	DeepCopyBinding() Binding
 }
