@@ -63,3 +63,7 @@ func (c *ClusterRoleBinding) Name() string {
 func (c *ClusterRoleBinding) RoleRef() *rbacv1.RoleRef {
 	return &c.clusterRoleBinding.RoleRef
 }
+
+func (c *ClusterRoleBinding) DeepCopyBinding() interfaces.Binding {
+	return c
+}

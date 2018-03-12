@@ -37,8 +37,7 @@ type SubjectAccessDelegation struct {
 	triggers            []interfaces.Trigger
 	deletionTimeStamp   time.Time
 
-	roleBindings    []interfaces.Binding
-	clusterBindings []*rbacv1.RoleBinding
+	roleBindings    map[string]interfaces.Binding
 	bindingSubjects []rbacv1.Subject
 
 	triggered   bool
@@ -63,7 +62,7 @@ func New(controller interfaces.Controller,
 		kubeInformerFactory: kubeInformerFactory,
 		sadclientset:        sadclientset,
 		sad:                 sad,
-		roleBindings:        make([]interfaces.Binding, 0),
+		roleBindings:        make(map[string]interfaces.Binding),
 		bindingSubjects:     make([]rbacv1.Subject, 0),
 		triggered:           false,
 		stopCh:              make(chan struct{}),
@@ -72,7 +71,13 @@ func New(controller interfaces.Controller,
 }
 
 func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
-	for i := 0; i < s.Repeat(); i++ {
+
+	if err := s.updateLocalSAD(); err != nil {
+		return false, err
+	}
+
+	for i := s.sad.Status.Iteration; i < s.Repeat(); i++ {
+
 		s.log.Infof("Subject Access Delegation '%s' (%d/%d)", s.Name(), i+1, s.Repeat())
 
 		s.triggered = false
@@ -86,12 +91,9 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			return false, err
 		}
 		if closed {
-			s.log.Infof("A Trigger was found closed, exiting")
+			s.log.Infof("A Trigger was found closed, exiting.")
 			return true, nil
 		}
-
-		s.log.Infof("All triggers fired!")
-		s.triggered = true
 
 		if err := s.ApplyDelegation(); err != nil {
 			return false, fmt.Errorf("failed to apply delegation: %v", err)
@@ -105,6 +107,16 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		if err := s.DeleteRoleBindings(); err != nil {
 			return false, err
 		}
+
+		if err := s.updateTriggerd(false); err != nil {
+			return false, err
+		}
+
+		if err := s.updateInteration(i + 1); err != nil {
+			return false, err
+
+		}
+
 	}
 
 	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
@@ -163,7 +175,7 @@ func (s *SubjectAccessDelegation) ApplyDelegation() error {
 
 	bindings, err := s.buildRoleBindings()
 	if err != nil {
-		return fmt.Errorf("failed to build rolebindings: %v", err)
+		return fmt.Errorf("failed to build role bindings: %v", err)
 	}
 
 	var result *multierror.Error
@@ -202,7 +214,7 @@ func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 		}
 	}
 
-	s.roleBindings = make([]interfaces.Binding, 0)
+	s.roleBindings = make(map[string]interfaces.Binding)
 
 	return result.ErrorOrNil()
 }
@@ -215,12 +227,26 @@ func (s *SubjectAccessDelegation) createRoleBinding(binding interfaces.Binding) 
 
 	s.log.Infof("Role Binding '%s' Created", binding.Name())
 
-	s.roleBindings = append(s.roleBindings, binding)
+	s.roleBindings[binding.Name()] = binding
+
+	if err := s.updateBindingList(binding); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) error {
+	if b, ok := s.roleBindings[binding.Name()]; !ok || b == nil {
+		s.roleBindings[binding.Name()] = nil
+
+		return fmt.Errorf("failed to find binding '%s' stored locally", binding.Name())
+	}
+
+	if err := s.deleteBindingList(binding); err != nil {
+		return err
+	}
+
 	if err := binding.DeleteRoleBinding(); err != nil {
 		return err
 	}
@@ -232,6 +258,19 @@ func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) 
 
 func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	s.log.Debug("Activating Triggers")
+
+	if err := s.updateLocalSAD(); err != nil {
+		return false, err
+	}
+
+	if s.sad.Status.Triggerd {
+		s.log.Infof("All triggers already triggered.")
+		if err := s.cleanUpBindings(); err != nil {
+			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
+		}
+		return false, nil
+	}
+
 	for _, trigger := range s.triggers {
 		trigger.Activate()
 	}
@@ -239,10 +278,6 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	s.log.Info("Triggers Activated")
 
 	ready := false
-
-	if err := s.updateTriggerd(false); err != nil {
-		return false, err
-	}
 
 	for !ready {
 		if s.waitOnTriggers() {
@@ -257,13 +292,28 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 		}
 	}
 
-	s.log.Info("All triggers ready")
-
 	if err := s.updateTriggerd(true); err != nil {
 		return false, err
 	}
 
+	s.log.Infof("All triggers fired!")
+	s.triggered = true
+
 	return false, nil
+}
+
+func (s *SubjectAccessDelegation) cleanUpBindings() error {
+	var result *multierror.Error
+
+	for _, binding := range s.sad.Status.Bindings {
+		if binding != nil {
+			if err := binding.DeleteRoleBinding(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
+	return result.ErrorOrNil()
 }
 
 func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool) {
@@ -288,7 +338,7 @@ func (s *SubjectAccessDelegation) checkTriggers() (ready bool) {
 }
 
 func (s *SubjectAccessDelegation) BuildTriggers() error {
-	triggers, err := trigger.New(s)
+	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
 	if err != nil {
 		return fmt.Errorf("failed to build triggers: %v", err)
 	}
@@ -298,11 +348,11 @@ func (s *SubjectAccessDelegation) BuildTriggers() error {
 }
 
 func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
-	s.sad.Status.Triggerd = status
-
 	if err := s.updateLocalSAD(); err != nil {
 		return err
 	}
+
+	s.sad.Status.Triggerd = status
 
 	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
 	if err != nil {
@@ -312,6 +362,81 @@ func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
 	s.sad = sad
 
 	return nil
+}
+
+func (s *SubjectAccessDelegation) updateInteration(iteration int) error {
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	s.sad.Status.Iteration = iteration
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update iteration status against API server: %v", err)
+	}
+
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) updateBindingList(binding interfaces.Binding) error {
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	deepCopy := s.sad.DeepCopy().Status.Bindings
+
+	if len(deepCopy) == 0 {
+		deepCopy = make(map[string]interfaces.Binding)
+	}
+
+	deepCopy[binding.Name()] = binding
+
+	s.sad.Status.Bindings = deepCopy
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update binding list against API server: %v", err)
+	}
+
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) deleteBindingList(binding interfaces.Binding) error {
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	deepCopy := s.sad.DeepCopy().Status.Bindings
+
+	if len(deepCopy) == 0 {
+		deepCopy = make(map[string]interfaces.Binding)
+	}
+
+	for name, b := range deepCopy {
+
+		if b != nil && binding.Name() == name {
+
+			deepCopy[name] = nil
+			s.sad.Status.Bindings = deepCopy
+
+			sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+			if err != nil {
+				return fmt.Errorf("failed to update binding list against API server: %v", err)
+			}
+
+			s.sad = sad
+
+			return nil
+
+		}
+	}
+
+	return fmt.Errorf("failed to find binding '%s' in SAD API object", binding.Name())
 }
 
 func (s *SubjectAccessDelegation) updateLocalSAD() error {
@@ -428,26 +553,16 @@ func (s *SubjectAccessDelegation) AddRoleBinding(addBinding interfaces.Binding) 
 
 // This is a bit wrong, although a role ref may be duped and this is fine, the
 // names will be wrong
-func (s *SubjectAccessDelegation) DeleteRoleBinding(delBinding interfaces.Binding) bool {
+func (s *SubjectAccessDelegation) DeleteRoleBinding(delBinding interfaces.Binding) error {
 	if s.triggered {
-		for i, binding := range s.roleBindings {
-			if binding.RoleRef().Name == delBinding.RoleRef().Name && binding.RoleRef().Kind == delBinding.RoleRef().Kind {
 
-				copy(s.roleBindings[i:], s.roleBindings[i+1:])
-				s.roleBindings[len(s.roleBindings)-1] = nil
-				s.roleBindings = s.roleBindings[:len(s.roleBindings)-1]
-
-				if err := s.deleteRoleBinding(binding); err != nil {
-					s.log.Errorf("Tryed to delete role binding but something went very wrong: %v", err)
-				}
-
-				return true
-			}
+		if err := s.deleteRoleBinding(delBinding); err != nil {
+			return fmt.Errorf("error deleting binding: %v", err)
 		}
 
 	}
 
-	return false
+	return nil
 }
 
 // Here we will want to delete all the new bindings THEN delete all the old or
@@ -518,12 +633,12 @@ func (s *SubjectAccessDelegation) OriginSubject() interfaces.OriginSubject {
 	return s.originSubject
 }
 
-func (s *SubjectAccessDelegation) DestinationSubjects() []interfaces.DestinationSubject {
-	return s.destinationSubjects
+func (s *SubjectAccessDelegation) Triggers() []interfaces.Trigger {
+	return s.triggers
 }
 
-func (s *SubjectAccessDelegation) Triggers() []authzv1alpha1.EventTrigger {
-	return s.sad.Spec.EventTriggers
+func (s *SubjectAccessDelegation) DestinationSubjects() []interfaces.DestinationSubject {
+	return s.destinationSubjects
 }
 
 func (s *SubjectAccessDelegation) Repeat() int {

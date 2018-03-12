@@ -6,8 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-
-	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 )
 
 type Controller interface {
@@ -25,17 +23,18 @@ type SubjectAccessDelegation interface {
 	Client() kubernetes.Interface
 	KubeInformerFactory() kubeinformers.SharedInformerFactory
 
-	Triggers() []authzv1alpha1.EventTrigger
+	OriginSubject() OriginSubject
+	DestinationSubjects() []DestinationSubject
+	Triggers() []Trigger
+
 	Delegate() (closed bool, err error)
 	DeleteRoleBindings() error
 	Delete() error
-	OriginSubject() OriginSubject
-	DestinationSubjects() []DestinationSubject
 	ResolveDestinations() error
 
 	AddRoleBinding(addBinding Binding) error
 	UpdateRoleBinding(old, new Binding) error
-	DeleteRoleBinding(delBining Binding) bool
+	DeleteRoleBinding(delBining Binding) error
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
@@ -64,6 +63,7 @@ type Trigger interface {
 	WaitOn() (forcedClosed bool)
 	Delete() error
 	Replicas() int
+	Kind() string
 }
 
 type Binding interface {
@@ -71,4 +71,5 @@ type Binding interface {
 	RoleRef() *rbacv1.RoleRef
 	CreateRoleBinding() (Binding, error)
 	DeleteRoleBinding() error
+	DeepCopyBinding() Binding
 }

@@ -63,3 +63,7 @@ func (r *RoleBinding) Name() string {
 func (r *RoleBinding) RoleRef() *rbacv1.RoleRef {
 	return &r.roleBinding.RoleRef
 }
+
+func (r *RoleBinding) DeepCopyBinding() interfaces.Binding {
+	return r
+}

@@ -27,6 +27,8 @@ type AddNode struct {
 
 var _ interfaces.Trigger = &AddNode{}
 
+const AddNodeKind = "AddNode"
+
 func NewAddNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddNode, error) {
 	nodeTrigger := &AddNode{
 		log:         sad.Log(),
@@ -114,4 +116,8 @@ func (p *AddNode) Delete() error {
 
 func (p *AddNode) Replicas() int {
 	return p.replicas
+}
+
+func (p *AddNode) Kind() string {
+	return AddNodeKind
 }

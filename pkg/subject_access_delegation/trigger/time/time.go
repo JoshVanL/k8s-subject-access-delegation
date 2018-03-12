@@ -11,6 +11,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
+const TimeKind = "Time"
+
 type Time struct {
 	log *logrus.Entry
 
@@ -86,4 +88,8 @@ func (t *Time) TickTock() {
 
 func (t *Time) Replicas() int {
 	return t.replicas
+}
+
+func (t *Time) Kind() string {
+	return TimeKind
 }

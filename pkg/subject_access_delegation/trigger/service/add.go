@@ -10,6 +10,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
+const AddServiceKind = "AddService"
+
 type AddService struct {
 	log *logrus.Entry
 
@@ -114,4 +116,8 @@ func (p *AddService) Delete() error {
 
 func (p *AddService) Replicas() int {
 	return p.replicas
+}
+
+func (p *AddService) Kind() string {
+	return AddServiceKind
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
+const DelPodKind = "DelPod"
+
 type DelPod struct {
 	log *logrus.Entry
 
@@ -113,4 +115,8 @@ func (p *DelPod) Delete() error {
 
 func (p *DelPod) Replicas() int {
 	return p.replicas
+}
+
+func (p *DelPod) Kind() string {
+	return DelPodKind
 }

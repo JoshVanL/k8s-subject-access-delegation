@@ -4,26 +4,17 @@ metadata:
   name: test-sad
   namespace: default
 spec:
-  duration: 3
-  repeat: 3
+  repeat: 40
+  deletionTime: 3s
   originSubject:
     kind: Role
     name: pod-reader
   destinationSubject:
     kind: ServiceAccount
     name: test-sa
----
-apiVersion: authz.k8s.io/v1alpha1
-kind: SubjectAccessDelegation
-metadata:
-  name: test-sad2
-  namespace: default
-spec:
-  duration: 2
-  repeat: 3
-  originSubject:
-    kind: Role
-    name: pod-logs-reader
-  destinationSubject:
-    kind: ServiceAccount
+  destinationSubjects:
+  - kind: ServiceAccount
     name: test-sa
+  triggers:
+  - kind: Time
+    value: 3s

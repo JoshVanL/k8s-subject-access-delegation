@@ -55,8 +55,8 @@ func (u *User) delFuncRoleBinding(obj interface{}) {
 
 	binding := role_binding.NewFromRoleBinding(u.sad, roleBinding)
 
-	if !u.sad.DeleteRoleBinding(binding) {
-		u.log.Errorf("Failed to delete rolebinding '%s'. It did not exist.", binding.Name)
+	if err := u.sad.DeleteRoleBinding(binding); err != nil {
+		u.log.Errorf("Failed to delete rolebinding '%s': %v", binding.Name())
 	}
 }
 
@@ -134,8 +134,8 @@ func (u *User) delFuncClusterRoleBinding(obj interface{}) {
 
 	binding := role_binding.NewFromClusterRoleBinding(u.sad, clusterRoleBinding)
 
-	if !u.sad.DeleteRoleBinding(binding) {
-		u.log.Errorf("Failed to delete cluster rolebinding '%s'. It did not exist.", binding.Name)
+	if err := u.sad.DeleteRoleBinding(binding); err != nil {
+		u.log.Errorf("Failed to delete cluster rolebinding '%s': %v", binding.Name(), err)
 	}
 }
 

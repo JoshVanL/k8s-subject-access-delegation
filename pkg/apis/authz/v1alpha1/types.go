@@ -2,6 +2,8 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 )
 
 // +genclient
@@ -45,6 +47,8 @@ type SubjectAccessDelegationSpec struct {
 type SubjectAccessDelegationStatus struct {
 	Processed bool `json:"processed"`
 	Triggerd  bool
+	Iteration int
+	Bindings  map[string]interfaces.Binding
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
