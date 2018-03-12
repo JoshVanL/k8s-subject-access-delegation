@@ -31,7 +31,6 @@ type EventTrigger struct {
 	Kind     string `json:"kind"`
 	Value    string `json:"value"`
 	Replicas int    `json:"replicas"`
-	Triggerd bool
 }
 
 type SubjectAccessDelegationSpec struct {
@@ -45,6 +44,7 @@ type SubjectAccessDelegationSpec struct {
 
 type SubjectAccessDelegationStatus struct {
 	Processed bool `json:"processed"`
+	Triggerd  bool
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

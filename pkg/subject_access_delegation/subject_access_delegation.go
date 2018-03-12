@@ -8,11 +8,13 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
+	clientset "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
@@ -25,9 +27,10 @@ type SubjectAccessDelegation struct {
 	controller interfaces.Controller
 	log        *logrus.Entry
 
-	sad                 *authzv1alpha1.SubjectAccessDelegation
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	client              kubernetes.Interface
+	sad                 *authzv1alpha1.SubjectAccessDelegation
+	sadclientset        clientset.Interface
 
 	originSubject       interfaces.OriginSubject
 	destinationSubjects []interfaces.DestinationSubject
@@ -45,12 +48,20 @@ type SubjectAccessDelegation struct {
 
 var _ interfaces.SubjectAccessDelegation = &SubjectAccessDelegation{}
 
-func New(controller interfaces.Controller, sad *authzv1alpha1.SubjectAccessDelegation, log *logrus.Entry, kubeInformerFactory kubeinformers.SharedInformerFactory, client kubernetes.Interface, clockOffset time.Duration) *SubjectAccessDelegation {
+func New(controller interfaces.Controller,
+	sad *authzv1alpha1.SubjectAccessDelegation,
+	log *logrus.Entry,
+	kubeInformerFactory kubeinformers.SharedInformerFactory,
+	client kubernetes.Interface,
+	sadclientset clientset.Interface,
+	clockOffset time.Duration) *SubjectAccessDelegation {
+
 	return &SubjectAccessDelegation{
 		controller:          controller,
 		log:                 log,
 		client:              client,
 		kubeInformerFactory: kubeInformerFactory,
+		sadclientset:        sadclientset,
 		sad:                 sad,
 		roleBindings:        make([]interfaces.Binding, 0),
 		bindingSubjects:     make([]rbacv1.Subject, 0),
@@ -229,6 +240,10 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 
 	ready := false
 
+	if err := s.updateTriggerd(false); err != nil {
+		return false, err
+	}
+
 	for !ready {
 		if s.waitOnTriggers() {
 			return true, nil
@@ -243,6 +258,10 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	}
 
 	s.log.Info("All triggers ready")
+
+	if err := s.updateTriggerd(true); err != nil {
+		return false, err
+	}
 
 	return false, nil
 }
@@ -278,6 +297,35 @@ func (s *SubjectAccessDelegation) BuildTriggers() error {
 	return nil
 }
 
+func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
+	s.sad.Status.Triggerd = status
+
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update trigger status against API server: %v", err)
+	}
+
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) updateLocalSAD() error {
+	options := metav1.GetOptions{}
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Get(s.sad.Name, options)
+	if err != nil {
+		return fmt.Errorf("failed to get latest SAD from API server: %v", err)
+	}
+
+	s.sad = sad
+
+	return nil
+}
+
 func (s *SubjectAccessDelegation) GetSubjects() error {
 	var result *multierror.Error
 
@@ -285,7 +333,6 @@ func (s *SubjectAccessDelegation) GetSubjects() error {
 	if err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to resolve origin subject: %v", err))
 	}
-
 	destinationSubjects, err := s.getDestinationSubjects()
 	if err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to resolve destination subjects: %v", err))

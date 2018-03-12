@@ -254,7 +254,7 @@ func (c *Controller) syncHandler(key string) error {
 func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegation) error {
 	c.log.Infof("New Subject Access Delegation '%s'", sad.Name)
 
-	delegation := subject_access_delegation.New(c, sad, c.log, c.kubeInformerFactory, c.kubeclientset, c.clockOffset)
+	delegation := subject_access_delegation.New(c, sad, c.log, c.kubeInformerFactory, c.kubeclientset, c.sadclientset, c.clockOffset)
 	if err := c.appendDelegation(delegation, sad); err != nil {
 		return err
 	}
