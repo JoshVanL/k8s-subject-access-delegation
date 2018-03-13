@@ -269,6 +269,10 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
 		}
 
+		if err := s.updateTimeActivated(0); err != nil {
+			s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
+		}
+
 		return false, nil
 	}
 
@@ -277,6 +281,10 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 	}
 
 	s.log.Info("Triggers Activated")
+
+	if err := s.updateTimeActivated(time.Now().UnixNano()); err != nil {
+		s.log.Errorf("Failed to update API server with non-zero Activated Time: %v", err)
+	}
 
 	ready := false
 
@@ -289,12 +297,16 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 
 		ready = s.checkTriggers()
 		if !ready {
-			s.log.Info("Not all triggers ready at the same time, re-waiting")
+			s.log.Info("Not all triggers ready at the same time, re-waiting.")
 		}
 	}
 
 	if err := s.updateTriggerd(true); err != nil {
 		return false, err
+	}
+
+	if err := s.updateTimeActivated(0); err != nil {
+		s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
 	}
 
 	s.log.Infof("All triggers fired!")
@@ -374,6 +386,23 @@ func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to update trigger status against API server: %v", err)
 	}
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) updateTimeActivated(unixTime int64) error {
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	s.sad.Status.TimeActivated = unixTime
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
+	}
+
 	s.sad = sad
 
 	return nil
@@ -662,6 +691,10 @@ func (s *SubjectAccessDelegation) Name() string {
 
 func (s *SubjectAccessDelegation) originName() string {
 	return s.sad.Spec.OriginSubject.Name
+}
+
+func (s *SubjectAccessDelegation) TimeActivated() int64 {
+	return s.sad.Status.TimeActivated
 }
 
 func (s *SubjectAccessDelegation) originKind() string {

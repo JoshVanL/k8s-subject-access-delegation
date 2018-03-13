@@ -42,6 +42,7 @@ type SubjectAccessDelegation interface {
 	DeleteUid(uid types.UID)
 
 	BindingSubjects() []rbacv1.Subject
+	TimeActivated() int64
 }
 
 type OriginSubject interface {
