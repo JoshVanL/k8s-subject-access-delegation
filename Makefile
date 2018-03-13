@@ -52,8 +52,9 @@ test:
 	go test $$(go list ./pkg/subject_access_delegation/... ./pkg/controller/... ./cmd/...)
 
 go_codegen:
+		#--v 1 --logtostderr
 	$(BINDIR)/deepcopy-gen \
-		--v 1 --logtostderr \
+		--v 0 \
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
 		--output-file-base zz_generated.deepcopy
 	${BINDIR}/client-gen \

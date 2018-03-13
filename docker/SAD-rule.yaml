@@ -1,0 +1,17 @@
+apiVersion: authz.k8s.io/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: example-rule
+  namespace: default
+spec:
+  repeat: 50
+  deletionTime: 7s
+  originSubject:
+    kind: ServiceAccount
+    name: origin-service-account
+  destinationSubjects:
+  - kind: ServiceAccount
+    name: my-service-account
+  triggers:
+  - kind: Time
+    value: 7s

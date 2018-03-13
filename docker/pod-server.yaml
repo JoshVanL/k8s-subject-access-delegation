@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+ name: origin-service-account
+ namespace: default
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+ name: my-service-account
+ namespace: default
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod
+ labels:
+   app: pod-server
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-server-svc
+  labels:
+    app: pod-server
+spec:
+  selector:
+    app: pod-server
+  ports:
+  - port: 8800
+    targetPort: 8800
+    protocol: TCP
+  type: LoadBalancer
