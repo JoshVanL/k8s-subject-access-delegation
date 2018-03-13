@@ -11,11 +11,17 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-func ParseTime(stamp string) (timestamp time.Time, err error) {
+func ParseTime(stamp string) (time.Time, error) {
 	var result *multierror.Error
 
 	args := strings.Split(stamp, " ")
-	t, err := parseTimeArguments(args)
+	t, err := parseDurationAgruments(args)
+	if err == nil {
+		return t, nil
+	}
+	result = multierror.Append(result, err)
+
+	t, err = parseTimeStamp(stamp)
 	if err == nil {
 		return t, nil
 	}
@@ -30,9 +36,84 @@ func ParseTime(stamp string) (timestamp time.Time, err error) {
 	return time.Time{}, result.ErrorOrNil()
 }
 
-func parseTimeArguments(args []string) (timestamp time.Time, err error) {
+func parseTimeStamp(stamp string) (time.Time, error) {
+	if err := matchStr(strings.ToLower(stamp), "^[0-2]?[0-9](:[0-5][0-9])?(pm|am)?$"); err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse for a normal time: %s: %v", stamp, err)
+	}
+
+	if err := matchStr(strings.ToLower(stamp), "^[0-9]?[0-9]:[0-5][0-9]$"); err == nil {
+		split := strings.Split(stamp, ":")
+		hour, err := strconv.Atoi(split[0])
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		minutes, err := strconv.Atoi(split[1])
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		if hour > 23 {
+			return time.Time{}, fmt.Errorf("bad hour: %s", stamp)
+		}
+
+		timestamp := time.Now()
+
+		timestamp = timestamp.Add(time.Hour * time.Duration((hour - time.Now().Hour())))
+		timestamp = timestamp.Add(time.Minute * time.Duration((minutes - time.Now().Minute())))
+
+		if hour < time.Now().Hour() {
+			timestamp = timestamp.Add(time.Hour * 24)
+		}
+
+		if minutes < time.Now().Minute() {
+			timestamp = timestamp.Add(time.Minute * 60)
+		}
+
+		return timestamp, nil
+	}
+
+	if err := matchStr(strings.ToLower(stamp), "^[0-9]?[0-9]:[0-5][0-9](am|pm)$"); err == nil {
+		split := strings.Split(stamp, ":")
+		hour, err := strconv.Atoi(split[0])
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		if hour > 11 {
+			return time.Time{}, fmt.Errorf("bad hour: %s", stamp)
+		}
+
+		minutes, err := strconv.Atoi(split[1][:2])
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		if split[1][2:] == "pm" {
+			hour += 12
+		}
+
+		timestamp := time.Now()
+
+		timestamp = timestamp.Add(time.Hour * time.Duration((hour - time.Now().Hour())))
+		timestamp = timestamp.Add(time.Minute * time.Duration((minutes - time.Now().Minute())))
+
+		if hour < time.Now().Hour() {
+			timestamp = timestamp.Add(time.Hour * 24)
+		}
+
+		if minutes < time.Now().Minute() {
+			timestamp = timestamp.Add(time.Minute * 60)
+		}
+
+		return timestamp, nil
+	}
+
+	return time.Time{}, fmt.Errorf("failed to parse time: %s", stamp)
+}
+
+func parseDurationAgruments(args []string) (time.Time, error) {
 	var result *multierror.Error
-	var parseTime float64
 	total := time.Now()
 
 	for _, arg := range args {
@@ -50,7 +131,7 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
-		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
+		parseTime, err := matchNum(arg, "^[0-9]+(.[0-9]+|)n$")
 		if err == nil {
 			total = total.Add(time.Nanosecond * time.Duration(parseTime))
 			continue
@@ -96,7 +177,7 @@ func parseTimeArguments(args []string) (timestamp time.Time, err error) {
 			continue
 		}
 
-		parseTime, err := matchNum(arg, "^[0-9]+(.[0-9]+|)d$")
+		parseTime, err = matchNum(arg, "^[0-9]+(.[0-9]+|)d$")
 		if err == nil {
 			total = total.Add(time.Hour * time.Duration(parseTime*24))
 			continue
@@ -131,7 +212,7 @@ func matchNum(str, regex string) (num float64, err error) {
 func matchStr(str, regex string) error {
 	r := regexp.MustCompile(regex)
 	match := r.FindStringSubmatch(str)
-	if len(match) != 1 {
+	if len(match) < 1 {
 		return fmt.Errorf("'%s' didn't match regex '%s'", str, regex)
 	}
 

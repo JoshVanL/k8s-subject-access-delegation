@@ -14,4 +14,4 @@ spec:
     name: my-service-account
   triggers:
   - kind: Time
-    value: 6:00pm
+    value: 7s
