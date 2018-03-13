@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	corev1 "k8s.io/api/core/v1"
@@ -99,7 +100,7 @@ func get(podName string) (podP *corev1.Pod, svcP *corev1.Service, err error) {
 // Send back response
 func respond(conn net.Conn, podName string, pod *corev1.Pod, svc *corev1.Service, err error) {
 
-	buff := []byte(fmt.Sprintf("Getting names from pod: %s and service: %v\n", podName, service))
+	buff := []byte(fmt.Sprintf("(%02d:%02d:%02d) Getting names from pod: %s and service: %s\n", time.Now().Hour(), time.Now().Minute(), time.Now().Second(), podName, service))
 
 	if err != nil || pod == nil || svc == nil {
 		//conn.Write([]byte(fmt.Sprintf("Errors: %s\n", err)))

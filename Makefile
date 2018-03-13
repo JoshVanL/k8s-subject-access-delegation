@@ -76,7 +76,7 @@ go_codegen:
         --listers-package "$(PATH_NAME)/pkg/client/listers" \
 		--output-package "$(PATH_NAME)/pkg/client/informers"
 	$(BINDIR)/lister-gen \
-		--v 1 --logtostderr \
+		--v 0 \
 		--input-dirs "$(PATH_NAME)/pkg/apis/authz/v1alpha1" \
 		--output-file-base zz_generated.lister
 
