@@ -105,20 +105,20 @@ func TestServiceAccount_RoleRefs_Nil(t *testing.T) {
 	}
 }
 
-//func TestServiceAccount_RoleRefs_Error(t *testing.T) {
-//	s := newFakeServiceAccount(t)
-//	defer s.ctrl.Finish()
-//
-//	s.fakeClient.EXPECT().Rbac().Times(1).Return(s.fakeRbac)
-//	s.fakeRbac.EXPECT().RoleBindings(s.namespace).Times(1).Return(s.fakeRoleBindingsInterface)
-//	s.fakeRoleBindingsInterface.EXPECT().List(gomock.Any()).Return(nil, errors.New("this is an error"))
-//
-//	_, err := s.RoleRefs()
-//	if err == nil {
-//		t.Error("expected error but got none - returned error")
-//	}
-//}
-//
+func TestServiceAccount_ServiceAccountObject_Success(t *testing.T) {
+	s := newFakeServiceAccount(t)
+	defer s.ctrl.Finish()
+
+	//s.fakeClient.EXPECT().Rbac().Times(1).Return(s.fakeRbac)
+	//s.fakeRbac.EXPECT().RoleBindings(s.namespace).Times(1).Return(s.fakeRoleBindingsInterface)
+	s.fakeRoleBindingsInterface.EXPECT().List(gomock.Any()).Return(nil, errors.New("this is an error"))
+
+	_, err := s.RoleRefs()
+	if err == nil {
+		t.Error("expected error but got none - returned error")
+	}
+}
+
 //func TestServiceAccount_RoleRefs_Successful_None(t *testing.T) {
 //	s := newFakeServiceAccount(t)
 //	defer s.ctrl.Finish()
@@ -258,8 +258,6 @@ func TestServiceAccount_RoleRefs_Nil(t *testing.T) {
 //		},
 //	}
 //
-//	subjects = append(subjects, rbacv1.Subject{
-//		Kind: "ServiceAccount",
 //		Name: "me",
 //	})
 //
