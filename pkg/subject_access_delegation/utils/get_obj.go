@@ -119,6 +119,28 @@ func GetServiceAccountObject(obj interface{}) (*corev1.ServiceAccount, error) {
 	return service, nil
 }
 
+func GetEndPointsObject(obj interface{}) (*corev1.Endpoints, error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, errors.New("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, errors.New("error decoding object tombstone, invalid type")
+		}
+	}
+
+	endpoint, ok := object.(*corev1.Endpoints)
+	if !ok {
+		return nil, errors.New("failed to covert object to EndPoints type")
+	}
+
+	return endpoint, nil
+}
+
 func GetRoleBindingObject(obj interface{}) (*rbacv1.RoleBinding, error) {
 	var object metav1.Object
 	var ok bool

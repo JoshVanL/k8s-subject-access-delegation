@@ -7,6 +7,7 @@ import (
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/end_points"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/secret"
@@ -148,6 +149,30 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 				break
 			}
 			triggers = append(triggers, updateServiceAccountTrigger)
+
+		case end_points.AddEndPointsKind:
+			addEndPointsTrigger, err := end_points.NewAddEndPoints(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add EndPoints Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, addEndPointsTrigger)
+
+		case end_points.DelEndPointsKind:
+			delEndPointsTrigger, err := end_points.NewDelEndPoints(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Del EndPoints Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, delEndPointsTrigger)
+
+		case end_points.UpdateEndPointsKind:
+			updateEndPointsTrigger, err := end_points.NewUpdateEndPoints(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update EndPoints Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updateEndPointsTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))
