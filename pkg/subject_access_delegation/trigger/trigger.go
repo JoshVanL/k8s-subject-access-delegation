@@ -43,6 +43,14 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 			}
 			triggers = append(triggers, delNodeTrigger)
 
+		case node.UpdateNodeKind:
+			updateNodeTrigger, err := node.NewUpdateNode(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update Node Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updateNodeTrigger)
+
 		case service.AddServiceKind:
 			addServiceTrigger, err := service.NewAddService(sad, &trigger)
 			if err != nil {
@@ -59,6 +67,14 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 			}
 			triggers = append(triggers, delServiceTrigger)
 
+		case service.UpdateServiceKind:
+			updateServiceTrigger, err := service.NewUpdateService(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update Service Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updateServiceTrigger)
+
 		case pod.AddPodKind:
 			addPodTrigger, err := pod.NewAddPod(sad, &trigger)
 			if err != nil {
@@ -74,6 +90,14 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 				break
 			}
 			triggers = append(triggers, delPodTrigger)
+
+		case pod.UpdatePodKind:
+			updatePodTrigger, err := pod.NewUpdatePod(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update Pod Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updatePodTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))
