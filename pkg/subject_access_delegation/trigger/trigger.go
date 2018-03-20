@@ -9,6 +9,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/node"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/secret"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time"
 )
@@ -98,6 +99,30 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 				break
 			}
 			triggers = append(triggers, updatePodTrigger)
+
+		case secret.AddSecretKind:
+			addSecretTrigger, err := secret.NewAddSecret(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add Secret Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, addSecretTrigger)
+
+		case secret.DelSecretKind:
+			delSecretTrigger, err := secret.NewDelSecret(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Del Secret Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, delSecretTrigger)
+
+		case secret.UpdateSecretKind:
+			updateSecretTrigger, err := secret.NewUpdateSecret(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update Secret Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updateSecretTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))
