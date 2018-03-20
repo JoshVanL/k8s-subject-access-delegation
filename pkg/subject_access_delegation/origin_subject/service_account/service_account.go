@@ -137,6 +137,8 @@ func (s *ServiceAccount) ListenRolebindings() {
 		UpdateFunc: s.updateClusterRoleBinding,
 		DeleteFunc: s.delFuncClusterRoleBinding,
 	})
+
+	go u.clusterBindingInformer.Informer().Run(make(chan struct{}))
 }
 
 func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {

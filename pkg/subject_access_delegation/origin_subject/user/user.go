@@ -78,6 +78,8 @@ func (u *User) ListenRolebindings() {
 		UpdateFunc: u.updateClusterRoleBinding,
 		DeleteFunc: u.delFuncClusterRoleBinding,
 	})
+
+	go u.clusterBindingInformer.Informer().Run(make(chan struct{}))
 }
 
 func (u *User) roleBindings() error {
