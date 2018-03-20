@@ -91,6 +91,28 @@ func GetServiceObject(obj interface{}) (*corev1.Service, error) {
 
 	service, ok := object.(*corev1.Service)
 	if !ok {
+		return nil, errors.New("failed to covert object to Service type")
+	}
+
+	return service, nil
+}
+
+func GetServiceAccountObject(obj interface{}) (*corev1.ServiceAccount, error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, errors.New("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, errors.New("error decoding object tombstone, invalid type")
+		}
+	}
+
+	service, ok := object.(*corev1.ServiceAccount)
+	if !ok {
 		return nil, errors.New("failed to covert object to ServiceAccount type")
 	}
 

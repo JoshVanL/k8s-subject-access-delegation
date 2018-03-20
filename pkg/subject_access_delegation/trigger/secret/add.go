@@ -43,7 +43,6 @@ func NewAddSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1
 	}
 
 	secretTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		//TODO: Fix this
 		AddFunc: secretTrigger.addFunc,
 	})
 

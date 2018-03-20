@@ -11,6 +11,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/pod"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/secret"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/service_account"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger/time"
 )
 
@@ -123,6 +124,30 @@ func New(sad interfaces.SubjectAccessDelegation, sadTriggers []authzv1alpha1.Eve
 				break
 			}
 			triggers = append(triggers, updateSecretTrigger)
+
+		case service_account.AddServiceAccountKind:
+			addServiceAccountTrigger, err := service_account.NewAddServiceAccount(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Add ServiceAccount Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, addServiceAccountTrigger)
+
+		case service_account.DelServiceAccountKind:
+			delServiceAccountTrigger, err := service_account.NewDelServiceAccount(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Del ServiceAccount Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, delServiceAccountTrigger)
+
+		case service_account.UpdateServiceAccountKind:
+			updateServiceAccountTrigger, err := service_account.NewUpdateServiceAccount(sad, &trigger)
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("failed to add new Update ServiceAccount Tigger: %v", err))
+				break
+			}
+			triggers = append(triggers, updateServiceAccountTrigger)
 
 		default:
 			result = multierror.Append(result, fmt.Errorf("Subject Access Delegation does not support Trigger Kind '%s'", trigger.Kind))
