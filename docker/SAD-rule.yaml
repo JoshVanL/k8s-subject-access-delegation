@@ -5,7 +5,6 @@ metadata:
   namespace: default
 spec:
   repeat: 1000
-  deletionTime: 3s
   originSubject:
     kind: ServiceAccount
     name: origin-service-account
@@ -13,5 +12,8 @@ spec:
   - kind: ServiceAccount
     name: my-service-account
   triggers:
+  - kind: Time
+    value: 3s
+  deletionTriggers:
   - kind: Time
     value: 3s

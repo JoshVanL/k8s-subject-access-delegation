@@ -34,19 +34,20 @@ type EventTrigger struct {
 }
 
 type SubjectAccessDelegationSpec struct {
-	DeletionTime string `json:"deletionTime"`
-	Repeat       int    `json:"repeat"`
+	Repeat int `json:"repeat"`
 
 	OriginSubject       OriginSubject        `json:"originSubject"`
 	DestinationSubjects []DestinationSubject `json:"destinationSubjects"`
 	EventTriggers       []EventTrigger       `json:"triggers"`
+	DeletionTriggers    []EventTrigger       `json:"deletionTriggers"`
 }
 
 type SubjectAccessDelegationStatus struct {
-	Processed     bool `json:"processed"`
-	Triggerd      bool
-	Iteration     int
-	TimeActivated int64
+	Processed        bool `json:"processed"`
+	Triggerd         bool
+	DeletionTriggerd bool
+	Iteration        int
+	TimeActivated    int64
 
 	RoleBindings        []string
 	ClusterRoleBindings []string

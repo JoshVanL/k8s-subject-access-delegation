@@ -147,6 +147,11 @@ func (in *SubjectAccessDelegationSpec) DeepCopyInto(out *SubjectAccessDelegation
 		*out = make([]EventTrigger, len(*in))
 		copy(*out, *in)
 	}
+	if in.DeletionTriggers != nil {
+		in, out := &in.DeletionTriggers, &out.DeletionTriggers
+		*out = make([]EventTrigger, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
