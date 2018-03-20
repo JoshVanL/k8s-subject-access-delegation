@@ -4,8 +4,8 @@ metadata:
   name: example-rule
   namespace: default
 spec:
-  repeat: 50
-  deletionTime: 7s
+  repeat: 1000
+  deletionTime: 3s
   originSubject:
     kind: ServiceAccount
     name: origin-service-account
@@ -14,4 +14,4 @@ spec:
     name: my-service-account
   triggers:
   - kind: Time
-    value: 7s
+    value: 3s

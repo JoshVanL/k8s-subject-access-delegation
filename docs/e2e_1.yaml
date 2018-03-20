@@ -15,3 +15,5 @@ spec:
   triggers:
   - kind: AddPod
     value: nginx
+  - kind: Time
+    value: 3h

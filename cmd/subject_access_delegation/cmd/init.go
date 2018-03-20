@@ -25,6 +25,7 @@ const FlagApiServerURL = "api-url"
 const FlagKubeConfig = "kube-config"
 const FlagWorkers = "worker-threads"
 const FlagLogLevel = "log-level"
+const FlagLogToFile = "log-file"
 const FlagNTPHosts = "ntp-hosts"
 const FlagMasterURL = "master-url"
 const FlagInClusterConfig = "in-cluster-config"
@@ -35,7 +36,10 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var result *multierror.Error
 
-		log := LogLevel(cmd)
+		log, err := LogFile(cmd)
+		if err != nil {
+			result = multierror.Append(result, err)
+		}
 
 		hosts, err := cmd.Flags().GetStringSlice(FlagNTPHosts)
 		if err != nil {
@@ -100,6 +104,7 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.PersistentFlags().IntP(FlagLogLevel, "l", 1, "Set the log level of output. 0-Fatal 1-Info 2-Debug")
+	RootCmd.PersistentFlags().StringP(FlagLogToFile, "f", "tty", "Set the file to log to. If set to tty then log to console.")
 	RootCmd.PersistentFlags().StringP(FlagApiServerURL, "u", "http://127.0.0.1:8001", "Set URL of Kubernetes API")
 	RootCmd.PersistentFlags().StringP(FlagKubeConfig, "c", "~/.kube/config", "Path to kube config")
 	RootCmd.PersistentFlags().IntP(FlagWorkers, "w", 2, "Number of worker threads for controller")
@@ -157,7 +162,33 @@ func KubeConfig(cmd *cobra.Command) (*rest.Config, error) {
 	return config, nil
 }
 
-func LogLevel(cmd *cobra.Command) *logrus.Entry {
+func LogFile(cmd *cobra.Command) (*logrus.Entry, error) {
+
+	log := LogLevel(cmd)
+
+	logfile, err := cmd.Flags().GetString(FlagLogToFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse flag log file: %v", err)
+	}
+
+	if logfile != "tty" {
+		file, err := homedir.Expand(logfile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to expand log file directory ('%s'): %v", logfile, err)
+		}
+
+		f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0755)
+		if err != nil {
+			return nil, fmt.Errorf("unable to open log file: %v", err)
+		}
+
+		log.Out = f
+	}
+
+	return logrus.NewEntry(log), nil
+}
+
+func LogLevel(cmd *cobra.Command) *logrus.Logger {
 	logger := logrus.New()
 
 	i, err := cmd.PersistentFlags().GetInt("log-level")
@@ -176,5 +207,5 @@ func LogLevel(cmd *cobra.Command) *logrus.Entry {
 		logger.Level = logrus.DebugLevel
 	}
 
-	return logrus.NewEntry(logger)
+	return logger
 }
