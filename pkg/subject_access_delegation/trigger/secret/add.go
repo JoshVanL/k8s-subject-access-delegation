@@ -1,6 +1,8 @@
 package secret
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type AddSecret struct {
 var _ interfaces.Trigger = &AddSecret{}
 
 func NewAddSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddSecret, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	secretTrigger := &AddSecret{
 		log:         sad.Log(),
 		sad:         sad,
@@ -60,7 +67,13 @@ func (s *AddSecret) addFunc(obj interface{}) {
 		s.log.Error("failed to get secret, received nil object")
 	}
 
-	if secret.Name != s.secretName || s.sad.SeenUid(secret.UID) {
+	match, err := utils.MatchName(secret.Name, s.secretName)
+	if err != nil {
+		s.log.Error("failed to match secret name: %v", err)
+		return
+	}
+
+	if !match || s.sad.SeenUid(secret.UID) {
 		return
 	}
 
@@ -99,7 +112,7 @@ func (s *AddSecret) watchChannels() (forceClose bool) {
 func (s *AddSecret) Activate() {
 	s.log.Debug("Add Secret Trigger Activated")
 
-	go s.informer.Informer().Run(make(chan struct{}))
+	go s.informer.Informer().Run(s.stopCh)
 
 	return
 }

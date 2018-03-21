@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type DelService struct {
 var _ interfaces.Trigger = &DelService{}
 
 func NewDelService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*DelService, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	serviceTrigger := &DelService{
 		log:         sad.Log(),
 		sad:         sad,
@@ -60,7 +67,13 @@ func (p *DelService) delFunc(obj interface{}) {
 		p.log.Error("failed to get service, received nil object")
 	}
 
-	if service.Name != p.serviceName || p.sad.DeletedUid(service.UID) {
+	match, err := utils.MatchName(service.Name, p.serviceName)
+	if err != nil {
+		p.log.Error("failed to match service name: %v", err)
+		return
+	}
+
+	if !match || p.sad.DeletedUid(service.UID) {
 		return
 	}
 
@@ -99,7 +112,7 @@ func (p *DelService) watchChannels() (forceClose bool) {
 func (p *DelService) Activate() {
 	p.log.Debug("Del Service Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.stopCh)
 
 	return
 }

@@ -1,6 +1,8 @@
 package secret
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type DelSecret struct {
 var _ interfaces.Trigger = &DelSecret{}
 
 func NewDelSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*DelSecret, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	secretTrigger := &DelSecret{
 		log:         sad.Log(),
 		sad:         sad,
@@ -60,7 +67,13 @@ func (s *DelSecret) delFunc(obj interface{}) {
 		s.log.Error("failed to get secret, received nil object")
 	}
 
-	if secret.Name != s.secretName || s.sad.DeletedUid(secret.UID) {
+	match, err := utils.MatchName(secret.Name, s.secretName)
+	if err != nil {
+		s.log.Error("failed to match secret name: %v", err)
+		return
+	}
+
+	if !match || s.sad.DeletedUid(secret.UID) {
 		return
 	}
 
@@ -99,7 +112,7 @@ func (s *DelSecret) watchChannels() (forceClose bool) {
 func (s *DelSecret) Activate() {
 	s.log.Debug("Del Secret Trigger Activated")
 
-	go s.informer.Informer().Run(make(chan struct{}))
+	go s.informer.Informer().Run(s.stopCh)
 
 	return
 }

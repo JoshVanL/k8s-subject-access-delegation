@@ -1,6 +1,8 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type UpdateNode struct {
 var _ interfaces.Trigger = &UpdateNode{}
 
 func NewUpdateNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*UpdateNode, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	nodeTrigger := &UpdateNode{
 		log:         sad.Log(),
 		sad:         sad,
@@ -66,7 +73,13 @@ func (n *UpdateNode) updateFunc(oldObj, newObj interface{}) {
 		n.log.Error("failed to get node, received nil object")
 	}
 
-	if old.Name != n.nodeName || n.sad.DeletedUid(new.UID) {
+	match, err := utils.MatchName(old.Name, n.nodeName)
+	if err != nil {
+		n.log.Error("failed to match node name: %v", err)
+		return
+	}
+
+	if !match || n.sad.DeletedUid(new.UID) {
 		return
 	}
 
@@ -105,7 +118,7 @@ func (n *UpdateNode) watchChannels() (forceClose bool) {
 func (n *UpdateNode) Activate() {
 	n.log.Debug("Del Node Trigger Activated")
 
-	go n.informer.Informer().Run(make(chan struct{}))
+	go n.informer.Informer().Run(n.stopCh)
 
 	return
 }

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type AddService struct {
 var _ interfaces.Trigger = &AddService{}
 
 func NewAddService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddService, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	serviceTrigger := &AddService{
 		log:         sad.Log(),
 		sad:         sad,
@@ -61,7 +68,13 @@ func (p *AddService) addFunc(obj interface{}) {
 		p.log.Error("failed to get service, received nil object")
 	}
 
-	if service.Name != p.serviceName || p.sad.SeenUid(service.UID) {
+	match, err := utils.MatchName(service.Name, p.serviceName)
+	if err != nil {
+		p.log.Error("failed to match service name: %v", err)
+		return
+	}
+
+	if !match || p.sad.SeenUid(service.UID) {
 		return
 	}
 
@@ -100,7 +113,7 @@ func (p *AddService) watchChannels() (forceClose bool) {
 func (p *AddService) Activate() {
 	p.log.Debug("Add Service Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.stopCh)
 
 	return
 }

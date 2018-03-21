@@ -1,6 +1,8 @@
 package service_account
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type AddServiceAccount struct {
 var _ interfaces.Trigger = &AddServiceAccount{}
 
 func NewAddServiceAccount(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddServiceAccount, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	serviceAccountTrigger := &AddServiceAccount{
 		log:                sad.Log(),
 		sad:                sad,
@@ -60,7 +67,13 @@ func (s *AddServiceAccount) addFunc(obj interface{}) {
 		s.log.Error("failed to get serviceAccount, received nil object")
 	}
 
-	if serviceAccount.Name != s.serviceAccountName || s.sad.SeenUid(serviceAccount.UID) {
+	match, err := utils.MatchName(serviceAccount.Name, s.serviceAccountName)
+	if err != nil {
+		s.log.Error("failed to match service account name: %v", err)
+		return
+	}
+
+	if !match || s.sad.SeenUid(serviceAccount.UID) {
 		return
 	}
 
@@ -99,7 +112,7 @@ func (s *AddServiceAccount) watchChannels() (forceClose bool) {
 func (s *AddServiceAccount) Activate() {
 	s.log.Debug("Add ServiceAccount Trigger Activated")
 
-	go s.informer.Informer().Run(make(chan struct{}))
+	go s.informer.Informer().Run(s.stopCh)
 
 	return
 }

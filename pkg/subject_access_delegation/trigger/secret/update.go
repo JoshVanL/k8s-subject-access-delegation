@@ -1,6 +1,8 @@
 package secret
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type UpdateSecret struct {
 var _ interfaces.Trigger = &UpdateSecret{}
 
 func NewUpdateSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*UpdateSecret, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	secretTrigger := &UpdateSecret{
 		log:         sad.Log(),
 		sad:         sad,
@@ -66,7 +73,13 @@ func (s *UpdateSecret) updateFunc(oldObj, newObj interface{}) {
 		s.log.Error("failed to get secret, received nil object")
 	}
 
-	if old.Name != s.secretName || s.sad.DeletedUid(old.UID) {
+	match, err := utils.MatchName(old.Name, s.secretName)
+	if err != nil {
+		s.log.Error("failed to match secret name: %v", err)
+		return
+	}
+
+	if !match || s.sad.DeletedUid(old.UID) {
 		return
 	}
 
