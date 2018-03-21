@@ -1,6 +1,8 @@
 package pod
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type AddPod struct {
 var _ interfaces.Trigger = &AddPod{}
 
 func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddPod, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	podTrigger := &AddPod{
 		log:         sad.Log(),
 		sad:         sad,
@@ -61,7 +68,13 @@ func (p *AddPod) addFunc(obj interface{}) {
 		p.log.Error("failed to get pod, received nil object")
 	}
 
-	if pod.Name != p.podName || p.sad.SeenUid(pod.UID) {
+	match, err := utils.MatchName(pod.Name, p.podName)
+	if err != nil {
+		p.log.Error("failed to match pod name: %v", err)
+		return
+	}
+
+	if !match || p.sad.SeenUid(pod.UID) {
 		return
 	}
 
@@ -100,7 +113,7 @@ func (p *AddPod) watchChannels() (forceClose bool) {
 func (p *AddPod) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.stopCh)
 
 	return
 }

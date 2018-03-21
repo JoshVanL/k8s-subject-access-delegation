@@ -1,6 +1,8 @@
 package end_points
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ type UpdateEndPoints struct {
 var _ interfaces.Trigger = &UpdateEndPoints{}
 
 func NewUpdateEndPoints(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*UpdateEndPoints, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	endPointsTrigger := &UpdateEndPoints{
 		log:           sad.Log(),
 		sad:           sad,
@@ -66,7 +73,13 @@ func (n *UpdateEndPoints) updateFunc(oldObj, newObj interface{}) {
 		n.log.Error("failed to get endPoints, received nil object")
 	}
 
-	if old.Name != n.endPointsName || n.sad.DeletedUid(new.UID) {
+	match, err := utils.MatchName(old.Name, n.endPointsName)
+	if err != nil {
+		n.log.Error("failed to match endpoints name: %v", err)
+		return
+	}
+
+	if !match || n.sad.DeletedUid(new.UID) {
 		return
 	}
 
@@ -105,7 +118,7 @@ func (n *UpdateEndPoints) watchChannels() (forceClose bool) {
 func (n *UpdateEndPoints) Activate() {
 	n.log.Debug("Del EndPoints Trigger Activated")
 
-	go n.informer.Informer().Run(make(chan struct{}))
+	go n.informer.Informer().Run(n.stopCh)
 
 	return
 }

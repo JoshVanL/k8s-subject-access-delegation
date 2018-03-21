@@ -139,15 +139,15 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 func (s *SubjectAccessDelegation) initDelegation() error {
 	var result *multierror.Error
 
+	if err := s.BuildTriggers(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
 	if err := s.BuildDeletionTriggers(); err != nil {
 		result = multierror.Append(result, err)
 	}
 
 	if err := s.GetSubjects(); err != nil {
-		result = multierror.Append(result, err)
-	}
-
-	if err := s.BuildTriggers(); err != nil {
 		result = multierror.Append(result, err)
 	}
 

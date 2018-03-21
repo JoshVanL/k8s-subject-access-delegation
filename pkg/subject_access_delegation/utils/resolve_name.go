@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -20,7 +19,7 @@ func MatchName(name, regex string) (bool, error) {
 	regex = format(regex)
 
 	if !ValidName(name) {
-		return false, errors.New("not a valid name '%s'. Must contain only alphanumerics, '-', '.' and '*'")
+		return false, fmt.Errorf("not a valid name '%s'. Must contain only alphanumerics, '-', '.' and '*'", name)
 	}
 
 	r, err := regexp.Compile(regex)

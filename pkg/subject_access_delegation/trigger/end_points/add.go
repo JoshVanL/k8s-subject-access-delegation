@@ -1,6 +1,8 @@
 package end_points
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	informer "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +32,11 @@ var _ interfaces.Trigger = &AddEndPoints{}
 const AddEndPointsKind = "AddEndPoints"
 
 func NewAddEndPoints(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (*AddEndPoints, error) {
+
+	if !utils.ValidName(trigger.Value) {
+		return nil, fmt.Errorf("not a valid name '%s', must contain only alphanumerics, '-', '.' and '*'", trigger.Value)
+	}
+
 	endPointsTrigger := &AddEndPoints{
 		log:           sad.Log(),
 		sad:           sad,
@@ -61,7 +68,13 @@ func (n *AddEndPoints) addFunc(obj interface{}) {
 		n.log.Error("failed to get endPoints, received nil object")
 	}
 
-	if endPoints.Name != n.endPointsName || n.sad.SeenUid(endPoints.UID) {
+	match, err := utils.MatchName(endPoints.Name, n.endPointsName)
+	if err != nil {
+		n.log.Error("failed to match endpoints name: %v", err)
+		return
+	}
+
+	if !match || n.sad.SeenUid(endPoints.UID) {
 		return
 	}
 
@@ -100,7 +113,7 @@ func (n *AddEndPoints) watchChannels() (forceClose bool) {
 func (n *AddEndPoints) Activate() {
 	n.log.Debug("Add EndPoints Trigger Activated")
 
-	go n.informer.Informer().Run(make(chan struct{}))
+	go n.informer.Informer().Run(n.stopCh)
 
 	return
 }
