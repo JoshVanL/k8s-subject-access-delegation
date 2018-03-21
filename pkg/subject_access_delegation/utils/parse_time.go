@@ -80,7 +80,7 @@ func parseTimeStamp(stamp string) (time.Time, error) {
 			return time.Time{}, err
 		}
 
-		if hour > 11 {
+		if hour > 12 {
 			return time.Time{}, fmt.Errorf("bad hour: %s", stamp)
 		}
 
