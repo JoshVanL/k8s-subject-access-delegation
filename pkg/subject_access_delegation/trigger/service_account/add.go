@@ -112,7 +112,7 @@ func (s *AddServiceAccount) watchChannels() (forceClose bool) {
 func (s *AddServiceAccount) Activate() {
 	s.log.Debug("Add ServiceAccount Trigger Activated")
 
-	go s.informer.Informer().Run(s.stopCh)
+	go s.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

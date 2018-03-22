@@ -92,28 +92,22 @@ func (p *AddPod) addFunc(obj interface{}) {
 func (p *AddPod) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
-	if p.watchChannels() {
+	select {
+	case <-p.stopCh:
 		p.log.Debug("Add Pod Trigger was force closed")
 		return true
+
+	case <-p.completedCh:
 	}
 
 	p.log.Debug("Add Pod Trigger completed")
 	return false
 }
 
-func (p *AddPod) watchChannels() (forceClose bool) {
-	select {
-	case <-p.stopCh:
-		return true
-	case <-p.completedCh:
-		return false
-	}
-}
-
 func (p *AddPod) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
 
-	go p.informer.Informer().Run(p.stopCh)
+	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

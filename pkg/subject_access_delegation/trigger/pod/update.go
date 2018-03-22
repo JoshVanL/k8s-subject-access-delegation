@@ -118,7 +118,7 @@ func (p *UpdatePod) watchChannels() (forceClose bool) {
 func (p *UpdatePod) Activate() {
 	p.log.Debug("Update Pod Trigger Activated")
 
-	go p.informer.Informer().Run(p.stopCh)
+	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

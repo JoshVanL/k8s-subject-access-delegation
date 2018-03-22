@@ -5,7 +5,6 @@ metadata:
   namespace: default
 spec:
   repeat: 1
-  deletionTime: 5s
   originSubject:
     kind: Role
     name: pod-reader
@@ -17,3 +16,6 @@ spec:
   triggers:
   - kind: AddPod
     value: nginx2
+  deletionTriggers:
+  - kind: Time
+    value: 5s

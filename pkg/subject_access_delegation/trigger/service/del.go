@@ -112,7 +112,7 @@ func (p *DelService) watchChannels() (forceClose bool) {
 func (p *DelService) Activate() {
 	p.log.Debug("Del Service Trigger Activated")
 
-	go p.informer.Informer().Run(p.stopCh)
+	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

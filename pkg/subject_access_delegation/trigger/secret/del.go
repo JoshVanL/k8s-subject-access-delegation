@@ -112,7 +112,7 @@ func (s *DelSecret) watchChannels() (forceClose bool) {
 func (s *DelSecret) Activate() {
 	s.log.Debug("Del Secret Trigger Activated")
 
-	go s.informer.Informer().Run(s.stopCh)
+	go s.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

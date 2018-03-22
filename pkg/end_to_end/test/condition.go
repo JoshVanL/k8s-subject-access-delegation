@@ -65,5 +65,5 @@ func (s *StringCondition) Expected(stdout []string) string {
 }
 
 func gotNothing(expected string, stdout []string) string {
-	return fmt.Sprintf("expected='%s', got(all)=%s", expected, strings.Join(stdout, "\n"))
+	return fmt.Sprintf("expected='%s', got(all)=\n%s", expected, strings.Join(stdout, "\n"))
 }

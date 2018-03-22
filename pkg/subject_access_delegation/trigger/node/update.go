@@ -118,7 +118,7 @@ func (n *UpdateNode) watchChannels() (forceClose bool) {
 func (n *UpdateNode) Activate() {
 	n.log.Debug("Del Node Trigger Activated")
 
-	go n.informer.Informer().Run(n.stopCh)
+	go n.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

@@ -157,7 +157,7 @@ func (s *SubjectAccessDelegation) initDelegation() error {
 }
 
 func (s *SubjectAccessDelegation) BuildDeletionTriggers() error {
-	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
+	triggers, err := trigger.New(s, s.sad.Spec.DeletionTriggers)
 	if err != nil {
 		return fmt.Errorf("failed to build deletion triggers: %v", err)
 	}

@@ -113,7 +113,7 @@ func (p *AddNode) watchChannels() (forceClose bool) {
 func (p *AddNode) Activate() {
 	p.log.Debug("Add Node Trigger Activated")
 
-	go p.informer.Informer().Run(p.stopCh)
+	go p.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

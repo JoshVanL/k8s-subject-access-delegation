@@ -115,7 +115,7 @@ testing_blocks:
       - "create"
       - "-f"
       - "docs/nginx_pod3.yaml"
-      delay:      1
+      delay:      2
     - program: "kubectl"
       arguments:
       - "get"

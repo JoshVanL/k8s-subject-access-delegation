@@ -112,7 +112,7 @@ func (n *DelEndPoints) watchChannels() (forceClose bool) {
 func (n *DelEndPoints) Activate() {
 	n.log.Debug("Del EndPoints Trigger Activated")
 
-	go n.informer.Informer().Run(n.stopCh)
+	go n.informer.Informer().Run(make(chan struct{}))
 
 	return
 }

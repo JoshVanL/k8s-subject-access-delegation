@@ -112,7 +112,7 @@ func (s *DelServiceAccount) watchChannels() (forceClose bool) {
 func (s *DelServiceAccount) Activate() {
 	s.log.Debug("Del ServiceAccount Trigger Activated")
 
-	go s.informer.Informer().Run(s.stopCh)
+	go s.informer.Informer().Run(make(chan struct{}))
 
 	return
 }
