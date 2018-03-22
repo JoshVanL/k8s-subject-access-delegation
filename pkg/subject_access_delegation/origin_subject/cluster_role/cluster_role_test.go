@@ -18,7 +18,7 @@ type fakeClusterRole struct {
 
 	fakeClient               *mocks.MockInterface
 	fakeRbac                 *mocks.MockRbacV1Interface
-	fakeClusterRoleInterface *mocks.MockRoleInterface
+	fakeClusterRoleInterface *mocks.MockClusterRoleInterface
 }
 
 func newFakeClusterRole(t *testing.T) *fakeClusterRole {
@@ -31,11 +31,11 @@ func newFakeClusterRole(t *testing.T) *fakeClusterRole {
 
 	r.fakeClient = mocks.NewMockInterface(r.ctrl)
 	r.fakeRbac = mocks.NewMockRbacV1Interface(r.ctrl)
-	r.fakeClusterRoleInterface = mocks.NewMockRoleInterface(r.ctrl)
+	r.fakeClusterRoleInterface = mocks.NewMockClusterRoleInterface(r.ctrl)
 	r.ClusterRole.client = r.fakeClient
 
 	r.fakeClient.EXPECT().Rbac().Times(1).Return(r.fakeRbac)
-	r.fakeRbac.EXPECT().ClusterRoles().Times(1).Return(r.ClusterRole)
+	r.fakeRbac.EXPECT().ClusterRoles().Times(1).Return(r.fakeClusterRoleInterface)
 
 	return r
 }
@@ -88,12 +88,12 @@ func TestPod_ResolveOrigin_ClusterRoleRefs(t *testing.T) {
 			Name: r.name,
 		}}
 
-	refs, err := r.RoleRefs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	refs, clusterRefs := r.RoleRefs()
+	if len(refs) != 0 {
+		t.Errorf("expected no role refs, got=%+v", refs)
 	}
 
-	if !reflect.DeepEqual(refs, roleRefs) {
+	if !reflect.DeepEqual(clusterRefs, roleRefs) {
 		t.Errorf("unexpected role refs exp=%+v got=%+v", roleRefs, refs)
 	}
 }
