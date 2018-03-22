@@ -43,6 +43,7 @@ type SubjectAccessDelegation interface {
 
 	BindingSubjects() []rbacv1.Subject
 	TimeActivated() int64
+	TimeFired() int64
 }
 
 type OriginSubject interface {

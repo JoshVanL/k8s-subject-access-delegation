@@ -8,17 +8,25 @@ import (
 func Test_avg(t *testing.T) {
 	var times []time.Duration
 
+	client := &NTPClient{}
+
 	for i := 1; i <= 5; i++ {
 		times = append(times, time.Duration(i))
 	}
 
-	foo := &NTPClient{}
-	offset, err := foo.averageOffSet(times)
+	offset, err := client.averageOffSet(times)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Errorf("unexpected error: %v", err)
 	}
 	if offset != 3 {
 		t.Errorf("expected offset=3 got=%d", offset)
 	}
 
+	offset, err = client.averageOffSet([]time.Duration{5, 0, 10})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if offset != 5 {
+		t.Errorf("expected offset=5 got=%d", offset)
+	}
 }

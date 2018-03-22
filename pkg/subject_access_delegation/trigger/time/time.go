@@ -29,9 +29,18 @@ var _ interfaces.Trigger = &Time{}
 
 func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTrigger) (timeTrigger *Time, err error) {
 
-	timestamp, err := utils.ParseTime(trigger.Value)
+	timestamp, isDuration, err := utils.ParseTime(trigger.Value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new time trigger: %v", err)
+	}
+
+	if isDuration {
+		if sad.TimeFired() > 0 {
+			timestamp = timestamp.Add(time.Duration(sad.TimeFired()-time.Now().Unix()) * time.Second)
+
+		} else if sad.TimeActivated() > 0 {
+			timestamp = timestamp.Add(time.Duration(sad.TimeActivated()-time.Now().Unix()) * time.Second)
+		}
 	}
 
 	sad.Log().Debugf("%+v", timestamp)

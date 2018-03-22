@@ -48,6 +48,7 @@ type SubjectAccessDelegationStatus struct {
 	DeletionTriggerd bool
 	Iteration        int
 	TimeActivated    int64
+	TimeFired        int64
 
 	RoleBindings        []string
 	ClusterRoleBindings []string
