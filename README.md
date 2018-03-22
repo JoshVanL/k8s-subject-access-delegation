@@ -50,8 +50,9 @@ place. Triggers come as two different kinds:
 ## Deletion Triggers
 Like the activation triggers, for a rule's permission to be removed the
 deletion triggers must be satisfied. They also come in the form of:
-* Time
-* Event
+
+* **Time**
+* **Event**
 
 ## Metadata and Spec
 The Subject Access Delegation will also take several other attributes:
