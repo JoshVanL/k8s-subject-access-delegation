@@ -12,40 +12,39 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/mocks"
 )
 
-type fakeRole struct {
-	*Role
+type fakeClusterRole struct {
+	*ClusterRole
 	ctrl *gomock.Controller
 
-	fakeClient        *mocks.MockInterface
-	fakeRbac          *mocks.MockRbacV1Interface
-	fakeRoleInterface *mocks.MockRoleInterface
+	fakeClient               *mocks.MockInterface
+	fakeRbac                 *mocks.MockRbacV1Interface
+	fakeClusterRoleInterface *mocks.MockRoleInterface
 }
 
-func newFakeRole(t *testing.T) *fakeRole {
-	r := &fakeRole{
+func newFakeClusterRole(t *testing.T) *fakeClusterRole {
+	r := &fakeClusterRole{
 		ctrl: gomock.NewController(t),
-		Role: &Role{
-			namespace: "fakeNamespace",
-			name:      "fakeName",
+		ClusterRole: &ClusterRole{
+			name: "fakeName",
 		},
 	}
 
 	r.fakeClient = mocks.NewMockInterface(r.ctrl)
 	r.fakeRbac = mocks.NewMockRbacV1Interface(r.ctrl)
-	r.fakeRoleInterface = mocks.NewMockRoleInterface(r.ctrl)
-	r.Role.client = r.fakeClient
+	r.fakeClusterRoleInterface = mocks.NewMockRoleInterface(r.ctrl)
+	r.ClusterRole.client = r.fakeClient
 
 	r.fakeClient.EXPECT().Rbac().Times(1).Return(r.fakeRbac)
-	r.fakeRbac.EXPECT().Roles(r.Role.namespace).Times(1).Return(r.fakeRoleInterface)
+	r.fakeRbac.EXPECT().ClusterRoles().Times(1).Return(r.ClusterRole)
 
 	return r
 }
 
 func TestPod_ResolveOrigin_Nil(t *testing.T) {
-	r := newFakeRole(t)
+	r := newFakeClusterRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
+	r.fakeClusterRoleInterface.EXPECT().Get(r.ClusterRole.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
 
 	if err := r.ResolveOrigin(); err == nil {
 		t.Error("expected error but got none - role is nil")
@@ -53,10 +52,10 @@ func TestPod_ResolveOrigin_Nil(t *testing.T) {
 }
 
 func TestPod_ResolveOrigin_Error(t *testing.T) {
-	r := newFakeRole(t)
+	r := newFakeClusterRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, errors.New("this is an error"))
+	r.fakeClusterRoleInterface.EXPECT().Get(r.ClusterRole.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.ClusterRole{}, errors.New("this is an error"))
 
 	if err := r.ResolveOrigin(); err == nil {
 		t.Error("expected error but got none - returned error")
@@ -64,28 +63,28 @@ func TestPod_ResolveOrigin_Error(t *testing.T) {
 }
 
 func TestPod_ResolveOrigin_Successful(t *testing.T) {
-	r := newFakeRole(t)
+	r := newFakeClusterRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, nil)
+	r.fakeClusterRoleInterface.EXPECT().Get(r.ClusterRole.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.ClusterRole{}, nil)
 
 	if err := r.ResolveOrigin(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
-func TestPod_ResolveOrigin_RoleRefs(t *testing.T) {
-	r := newFakeRole(t)
+func TestPod_ResolveOrigin_ClusterRoleRefs(t *testing.T) {
+	r := newFakeClusterRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, nil)
+	r.fakeClusterRoleInterface.EXPECT().Get(r.ClusterRole.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.ClusterRole{}, nil)
 	if err := r.ResolveOrigin(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
 	roleRefs := []*rbacv1.RoleRef{
 		&rbacv1.RoleRef{
-			Kind: "Role",
+			Kind: "ClusterRole",
 			Name: r.name,
 		}}
 
