@@ -47,6 +47,12 @@ place. Triggers come as two different kinds:
 * **Event**: Some event that needs to take place within the cluster for the
   trigger to be satisfied. For example a pod being created or terminated.
 
+## Deletion Triggers
+Like the activation triggers, for a rule's permission to be removed the
+deletion triggers must be satisfied. They also come in the form of:
+* Time
+* Event
+
 ## Metadata and Spec
 The Subject Access Delegation will also take several other attributes:
 
@@ -55,8 +61,6 @@ The Subject Access Delegation will also take several other attributes:
 * **Namespace**: Namespace the delegation is active in.
 * **Repeat**: How many times the delegation should be repeated. Default value of
   one.
-* **Delegation Time**: Time for when the delegation should be removed. Default
-  is never.
 
 An example of a rule is as follows. Here `Remote-Employee1` and
 `Remote-Employee2` will take on the permissions of the user `Employee` at 6:00pm
@@ -70,10 +74,9 @@ name: my-subject-access-delegation
 namespace: dev-namespace
 spec:
 repeat: 365
-deletionTime: 14h
 originSubject:
-kind: User
-name: Employee
+  kind: User
+  name: Employee
 destinationSubjects:
 - kind: User
   name: Remote-Employee1
@@ -82,6 +85,9 @@ destinationSubjects:
 triggers:
 - kind: Time
   value: 6:00pm
+deletionTriggers:
+- kind: Time
+  value: 14h
 ```
 
 ## Notes
@@ -89,9 +95,8 @@ triggers:
 passed NTP server URLs.
 - Permissions on destination subjects are dynamic in accordance to changes to
   the origin subject's within active rules.
-
-## Coming Features
-- Regular expressions for value strings.
-- Deletion via event triggers.
-- Failure recovery.
-- Further event trigger options.
+- Event trigger names accept regular expressions, namely '\*' that are resolved
+  during runtime.
+- The controller will attempt failure recovery if for whatever reason the
+  controller exits or crashes. This means a state re-sync with all rules in the
+  API server.
