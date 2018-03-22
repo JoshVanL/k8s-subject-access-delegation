@@ -15,7 +15,7 @@ spec:
     name: test-group2
   triggers:
   - kind: AddPod
-    value: nginx3
+    value: "*"
   deletionTriggers:
   - kind: Time
     value: 5s

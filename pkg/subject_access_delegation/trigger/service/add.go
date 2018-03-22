@@ -74,7 +74,7 @@ func (p *AddService) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.SeenUid(service.UID) {
+	if !match || p.sad.SeenUid(service.UID) || p.completed {
 		return
 	}
 

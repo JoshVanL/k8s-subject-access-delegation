@@ -74,7 +74,7 @@ func (n *AddEndPoints) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || n.sad.SeenUid(endPoints.UID) {
+	if !match || n.sad.SeenUid(endPoints.UID) || n.completed {
 		return
 	}
 

@@ -73,7 +73,7 @@ func (p *DelNode) delFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.DeletedUid(node.UID) {
+	if !match || p.sad.DeletedUid(node.UID) || p.completed {
 		return
 	}
 

@@ -73,7 +73,7 @@ func (s *DelServiceAccount) delFunc(obj interface{}) {
 		return
 	}
 
-	if !match || s.sad.DeletedUid(serviceAccount.UID) {
+	if !match || s.sad.DeletedUid(serviceAccount.UID) || s.completed {
 		return
 	}
 

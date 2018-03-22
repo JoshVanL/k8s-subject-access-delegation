@@ -236,7 +236,7 @@ func Test_ParseTime_Human_Read_NoError(t *testing.T) {
 	test_stamp(stamp, corrTime, t)
 
 	corrTime = time.Now().Add(time.Hour).Add(time.Minute)
-	stamp = fmt.Sprintf("%d:%02d", time.Now().Hour()+1, time.Now().Minute()+1)
+	stamp = fmt.Sprintf("%d:%02d", ((time.Now().Hour() + 1) % 24), ((time.Now().Minute() + 1) % 60))
 	test_stamp(stamp, corrTime, t)
 
 	corrTime = time.Now().Add(time.Hour).Add(time.Minute)
@@ -247,7 +247,7 @@ func Test_ParseTime_Human_Read_NoError(t *testing.T) {
 	if hur >= 12 {
 		hur -= 12
 	}
-	stamp = fmt.Sprintf("%d:%02dpm", hur+1, time.Now().Minute()+1)
+	stamp = fmt.Sprintf("%d:%02dpm", hur+1, ((time.Now().Minute() + 1) % 60))
 	test_stamp(stamp, corrTime, t)
 
 	return

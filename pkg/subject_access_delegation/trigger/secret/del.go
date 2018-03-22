@@ -73,7 +73,7 @@ func (s *DelSecret) delFunc(obj interface{}) {
 		return
 	}
 
-	if !match || s.sad.DeletedUid(secret.UID) {
+	if !match || s.sad.DeletedUid(secret.UID) || s.completed {
 		return
 	}
 

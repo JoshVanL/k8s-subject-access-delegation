@@ -73,7 +73,7 @@ func (p *DelService) delFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.DeletedUid(service.UID) {
+	if !match || p.sad.DeletedUid(service.UID) || p.completed {
 		return
 	}
 

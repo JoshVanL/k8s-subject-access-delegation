@@ -73,7 +73,7 @@ func (s *AddSecret) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || s.sad.SeenUid(secret.UID) {
+	if !match || s.sad.SeenUid(secret.UID) || s.completed {
 		return
 	}
 

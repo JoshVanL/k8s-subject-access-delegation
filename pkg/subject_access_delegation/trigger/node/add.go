@@ -74,7 +74,7 @@ func (p *AddNode) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.SeenUid(node.UID) {
+	if !match || p.sad.SeenUid(node.UID) || p.completed {
 		return
 	}
 

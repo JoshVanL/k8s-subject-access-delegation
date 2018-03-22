@@ -73,7 +73,7 @@ func (s *AddServiceAccount) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || s.sad.SeenUid(serviceAccount.UID) {
+	if !match || s.sad.SeenUid(serviceAccount.UID) || s.completed {
 		return
 	}
 

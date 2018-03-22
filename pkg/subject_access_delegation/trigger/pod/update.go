@@ -79,7 +79,7 @@ func (p *UpdatePod) updateFunc(oldObj, newObj interface{}) {
 		return
 	}
 
-	if !match || p.sad.DeletedUid(old.UID) {
+	if !match || p.sad.DeletedUid(old.UID) || p.completed {
 		return
 	}
 

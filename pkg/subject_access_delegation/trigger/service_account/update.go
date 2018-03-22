@@ -79,7 +79,7 @@ func (s *UpdateServiceAccount) updateFunc(oldObj, newObj interface{}) {
 		return
 	}
 
-	if !match || s.sad.DeletedUid(old.UID) {
+	if !match || s.sad.DeletedUid(old.UID) || s.completed {
 		return
 	}
 

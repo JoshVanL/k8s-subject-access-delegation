@@ -79,7 +79,7 @@ func (n *UpdateEndPoints) updateFunc(oldObj, newObj interface{}) {
 		return
 	}
 
-	if !match || n.sad.DeletedUid(new.UID) {
+	if !match || n.sad.DeletedUid(new.UID) || n.completed {
 		return
 	}
 

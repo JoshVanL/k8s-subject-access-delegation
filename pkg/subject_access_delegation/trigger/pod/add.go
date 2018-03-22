@@ -74,7 +74,7 @@ func (p *AddPod) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.SeenUid(pod.UID) {
+	if !match || p.sad.SeenUid(pod.UID) || p.completed {
 		return
 	}
 

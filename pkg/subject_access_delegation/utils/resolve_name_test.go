@@ -6,7 +6,7 @@ import (
 
 func Test_ValidName(t *testing.T) {
 	invalidNames := []string{"%&^", "-hello", "hello-", "hello.", ".hello"}
-	validNames := []string{"hello", "h12345ello", "*hello", "1234*", "*-hello", "*-h.*"}
+	validNames := []string{"hello", "h12345ello", "*hello", "1234*", "*-hello", "*-h.*", "h", "*"}
 
 	for _, name := range invalidNames {
 		testValidName(name, false, t)

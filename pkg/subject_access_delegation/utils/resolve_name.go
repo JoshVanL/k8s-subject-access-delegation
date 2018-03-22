@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	valid = regexp.MustCompile(`^([0-9a-zA-Z]|\*)+(\.|\-|\*|[0-9a-zA-Z])*([0-9a-zA-Z]|\*)+$`)
+	valid = regexp.MustCompile(`^([0-9a-zA-Z]|\*)+((\.|\-|\*|[0-9a-zA-Z])*([0-9a-zA-Z]|\*)+)*$`)
 )
 
 func ValidName(name string) bool {

@@ -73,7 +73,7 @@ func (n *DelEndPoints) delFunc(obj interface{}) {
 		return
 	}
 
-	if !match || n.sad.DeletedUid(endPoints.UID) {
+	if !match || n.sad.DeletedUid(endPoints.UID) || n.completed {
 		return
 	}
 
