@@ -1,13 +1,13 @@
 # Subject Access Delegation
 
-Subject Access Delegation is a CLI tool used to automate the life cycle of RBAC
+Subject Access Delegation is a tool used to automate the life cycle of RBAC
 permissions in Kubernetes clusters. A controller listens to user written rules,
 which once are met, will execute some defined RBAC event. This is achieved
 through a controller listening to new rules, stored as objects in the API server
-of a `subjectaccessdelegation` resource type.
+of a `subjectaccessdelegation` custom resource type.
 
 Rules are broken into 3 main groups; **Origin Subject**, **Destination
-Subject** and **Triggers**. Once all the triggers have been met within the
+Subjects** and **Triggers**. Once all the triggers have been met within the
 rule, destination subjects will then take on the permissions of whatever the
 origin subject holds by means of replicating appropriate Role Bindings and
 Cluster Role Bindings.
@@ -45,7 +45,7 @@ place. Triggers come as two different kinds:
 * **Time**: A short hand or full time stamp string. Simply a time till the
   trigger will be satisfied.
 * **Event**: Some event that needs to take place within the cluster for the
-  trigger to be satisfied. For example a pod being created or terminated.
+  trigger to be satisfied. For example, a pod being created or terminated.
 
 ## Deletion Triggers
 Like the activation triggers, for a rule's permission to be removed the
@@ -96,8 +96,7 @@ deletionTriggers:
 passed NTP server URLs.
 - Permissions on destination subjects are dynamic in accordance to changes to
   the origin subject's within active rules.
-- Event trigger names accept regular expressions, namely '\*' that are resolved
-  during runtime.
+- Event trigger names accepts wildcards (\*) that are resolved during runtime.
 - The controller will attempt failure recovery if for whatever reason the
   controller exits or crashes. This means a state re-sync with all rules in the
   API server.
