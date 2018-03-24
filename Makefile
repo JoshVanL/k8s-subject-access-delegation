@@ -7,9 +7,13 @@ BINDIR ?= bin
 GOPATH ?= $HOME/go
 PKGDIR = pkg/subject_access_delegation
 MOCKDIR = $(PKGDIR)/mocks
-CLIENTGo = k8s.io/client-go/kubernetes
-CLIENTGoCore = $(CLIENTGo)/typed/core/v1
-CLIENTGoRbac = $(CLIENTGo)/typed/rbac/v1
+CLIENTGo = k8s.io/client-go
+CLIENTK8sGo = $(CLIENTGo)/kubernetes/typed
+CLIENTInfsGo = $(CLIENTGo)/informers
+CLIENTGoCore = $(CLIENTK8sGo)/core/v1
+CLIENTGoRbac = $(CLIENTK8sGo)/rbac/v1
+CLIENTGoInf = $(CLIENTInfsGo)/rbac/v1
+CLIENTGoCache = $(CLIENTGo)/tools/cache
 
 # A list of all types.go files in pkg/apis
 TYPES_FILES = $(shell find pkg/apis -name types.go)
@@ -109,5 +113,8 @@ go_mock:
 	# mockgen only supports embedded interfaces in reflector mode
 	$(BINDIR)/mockgen $(CLIENTGoCore) CoreV1Interface,ServiceAccountInterface,PodInterface > $(MOCKDIR)/core_v1.go
 	$(BINDIR)/mockgen $(CLIENTGoRbac) RoleBindingInterface,ClusterRoleBindingInterface,RoleInterface,ClusterRoleInterface,RbacV1Interface > $(MOCKDIR)/rbac_v1.go
+	$(BINDIR)/mockgen $(CLIENTGoInf) RoleBindingInformer,ClusterRoleBindingInformer > $(MOCKDIR)/informers.go
+	$(BINDIR)/mockgen $(CLIENTGoCache) SharedIndexInformer > $(MOCKDIR)/cache.go
 	find $(MOCKDIR)/ -type f -exec sed -i 's/mock_v1/mocks/g' {} +
+	find $(MOCKDIR)/ -type f -exec sed -i 's/mock_cache/mocks/g' {} +
 	find $(MOCKDIR)/ -type f -exec sed -i 's/github.com\/joshvanl\/k8s-subject-access-delegation\/vendor\///g' {} +
