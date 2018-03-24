@@ -247,6 +247,7 @@ func TestUser_ResolveDestination(t *testing.T) {
 	u.fakeClusterBindingInformer.EXPECT().Informer().AnyTimes().Return(u.fakeSharedIndexInformer)
 
 	u.fakeSharedIndexInformer.EXPECT().AddEventHandler(gomock.Any()).Times(2)
+	u.fakeSharedIndexInformer.EXPECT().Run(gomock.Any()).Times(1)
 
 	if err := u.ResolveOrigin(); err != nil {
 		t.Errorf("expected nil, go non-nil?!: %v", err)
