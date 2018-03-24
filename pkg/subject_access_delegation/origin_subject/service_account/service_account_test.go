@@ -293,7 +293,7 @@ func TestServiceAccount_ResolveDestination_Success(t *testing.T) {
 	u.fakeClusterBindingInformer.EXPECT().Informer().AnyTimes().Return(u.fakeSharedIndexInformer)
 
 	u.fakeSharedIndexInformer.EXPECT().AddEventHandler(gomock.Any()).Times(2)
-	u.fakeSharedIndexInformer.EXPECT().Run(gomock.Any()).Times(1)
+	u.fakeSharedIndexInformer.EXPECT().Run(gomock.Any()).AnyTimes()
 
 	if err := u.ResolveOrigin(); err != nil {
 		t.Errorf("unexpected error: %v", err)
