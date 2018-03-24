@@ -74,7 +74,7 @@ func TestPod_ResolveOrigin_Successful(t *testing.T) {
 	r := newFakeRole(t)
 	defer r.ctrl.Finish()
 
-	aRole := &rbacv1.Role{}
+	aRole := new(rbacv1.Role)
 	aRole.Name = "me"
 
 	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(aRole, nil)
