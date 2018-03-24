@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/types"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/mocks"
 )
@@ -31,7 +30,6 @@ var (
 					Name: "notme",
 				},
 			},
-			//UID: types.UID("1"),
 		},
 		&rbacv1.RoleBinding{
 			RoleRef: rbacv1.RoleRef{
@@ -44,7 +42,6 @@ var (
 					Name: "notme",
 				},
 			},
-			//UID: types.UID("2"),
 		},
 	}
 	someClusterBindings = []*rbacv1.ClusterRoleBinding{
@@ -63,7 +60,6 @@ var (
 					Name: "notme",
 				},
 			},
-			//UID: types.UID("3"),
 		},
 		&rbacv1.ClusterRoleBinding{
 			RoleRef: rbacv1.RoleRef{
@@ -75,7 +71,6 @@ var (
 					Name: "notme",
 				},
 			},
-			//UID: types.UID("4"),
 		},
 	}
 
