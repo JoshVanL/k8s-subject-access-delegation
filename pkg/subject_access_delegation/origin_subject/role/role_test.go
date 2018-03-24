@@ -2,7 +2,6 @@ package role
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -41,6 +40,21 @@ func newFakeRole(t *testing.T) *fakeRole {
 	return r
 }
 
+func TestPod_ResolveOrigin_Error(t *testing.T) {
+	r := newFakeRole(t)
+	defer r.ctrl.Finish()
+
+	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(nil, errors.New("an error"))
+
+	if err := r.ResolveOrigin(); err == nil {
+		t.Error("expected error but got none - role is nil")
+	}
+
+	if r.role != nil {
+		t.Errorf("expected role to be nil, got=%+v", r.role)
+	}
+}
+
 func TestPod_ResolveOrigin_Nil(t *testing.T) {
 	r := newFakeRole(t)
 	defer r.ctrl.Finish()
@@ -48,18 +62,11 @@ func TestPod_ResolveOrigin_Nil(t *testing.T) {
 	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(nil, nil)
 
 	if err := r.ResolveOrigin(); err == nil {
-		t.Error("expected error but got none - role is nil")
-	}
-}
-
-func TestPod_ResolveOrigin_Error(t *testing.T) {
-	r := newFakeRole(t)
-	defer r.ctrl.Finish()
-
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, errors.New("this is an error"))
-
-	if err := r.ResolveOrigin(); err == nil {
 		t.Error("expected error but got none - returned error")
+	}
+
+	if r.role != nil {
+		t.Errorf("expected role to be nil, got=%+v", r.role)
 	}
 }
 
@@ -67,34 +74,52 @@ func TestPod_ResolveOrigin_Successful(t *testing.T) {
 	r := newFakeRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, nil)
+	aRole := &rbacv1.Role{}
+	aRole.Name = "me"
+
+	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(aRole, nil)
 
 	if err := r.ResolveOrigin(); err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+
+	if r.role.Name != "me" {
+		t.Errorf("unexpected role name, expected=me, got=%s", r.role.Name)
 	}
 }
 
-func TestPod_ResolveOrigin_RoleRefs(t *testing.T) {
+func TestPod_RoleRefs(t *testing.T) {
 	r := newFakeRole(t)
 	defer r.ctrl.Finish()
 
-	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(&rbacv1.Role{}, nil)
+	aRole := &rbacv1.Role{}
+	aRole.Name = "me"
+
+	r.fakeRoleInterface.EXPECT().Get(r.Role.name, metav1.GetOptions{}).Times(1).Return(aRole, nil)
+
 	if err := r.ResolveOrigin(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	roleRefs := []*rbacv1.RoleRef{
-		&rbacv1.RoleRef{
-			Kind: "Role",
-			Name: r.name,
-		}}
-
-	refs, err := r.RoleRefs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	if r.role.Name != "me" {
+		t.Errorf("unexpected role name, expected=me, got=%s", r.role.Name)
 	}
 
-	if !reflect.DeepEqual(refs, roleRefs) {
-		t.Errorf("unexpected role refs exp=%+v got=%+v", roleRefs, refs)
+	refs, clusterRefs := r.RoleRefs()
+	if len(clusterRefs) != 0 {
+		t.Errorf("unexpected cluster role refsL %+v", clusterRefs)
+	}
+
+	if len(refs) != 1 {
+		t.Errorf("unexpected number of refs: %+v", refs)
+		return
+	}
+
+	if refs[0].Name != "fakeName" {
+		t.Errorf("unexpected role ref name, expected=fakeName, got=%s", refs[0].Name)
+	}
+
+	if refs[0].Kind != "Role" {
+		t.Errorf("unexpected role ref kind, expected=Role, got=%s", refs[0].Kind)
 	}
 }
