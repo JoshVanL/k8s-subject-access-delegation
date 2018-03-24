@@ -32,11 +32,11 @@ func newFakeGroup(t *testing.T) *fakeGroup {
 	return u
 }
 
-func TestGroup_ResolveDestination_Nil(t *testing.T) {
+func TestGroup_ResolveDestination(t *testing.T) {
 	u := newFakeGroup(t)
 	defer u.ctrl.Finish()
 
 	if err := u.ResolveDestination(); err != nil {
-		t.Errorf("expected no error but got one?!: %v", err)
+		t.Errorf("unexpected error: %v", err)
 	}
 }

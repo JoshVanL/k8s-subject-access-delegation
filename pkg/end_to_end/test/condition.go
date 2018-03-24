@@ -16,7 +16,7 @@ type Condition interface {
 type SplitStringCondition struct {
 	Line  int    `yaml:"line"`
 	Split int    `yaml:"split"`
-	Match string `yaml:"match:`
+	Match string `yaml:"match"`
 }
 
 type StringCondition struct {

@@ -37,6 +37,6 @@ func TestUser_ResolveDestination(t *testing.T) {
 	defer u.ctrl.Finish()
 
 	if err := u.ResolveDestination(); err != nil {
-		t.Errorf("expected errro to always be nil, it's not?!: %v", err)
+		t.Errorf("unexpected error: %v", err)
 	}
 }
