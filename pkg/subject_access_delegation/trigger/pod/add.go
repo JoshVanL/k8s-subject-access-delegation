@@ -74,7 +74,7 @@ func (p *AddPod) addFunc(obj interface{}) {
 		return
 	}
 
-	if !match || p.sad.SeenUid(pod.UID) || p.completed {
+	if !match || p.completed {
 		return
 	}
 
@@ -92,6 +92,10 @@ func (p *AddPod) addFunc(obj interface{}) {
 func (p *AddPod) WaitOn() (forceClosed bool) {
 	p.log.Debug("Trigger waiting")
 
+	if p.completed {
+		return false
+	}
+
 	select {
 	case <-p.stopCh:
 		p.log.Debug("Add Pod Trigger was force closed")
@@ -107,7 +111,7 @@ func (p *AddPod) WaitOn() (forceClosed bool) {
 func (p *AddPod) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.completedCh)
 
 	return
 }

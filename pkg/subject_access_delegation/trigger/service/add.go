@@ -113,7 +113,7 @@ func (p *AddService) watchChannels() (forceClose bool) {
 func (p *AddService) Activate() {
 	p.log.Debug("Add Service Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.completedCh)
 
 	return
 }

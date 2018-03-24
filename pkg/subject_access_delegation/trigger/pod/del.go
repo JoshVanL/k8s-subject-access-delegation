@@ -112,7 +112,7 @@ func (p *DelPod) watchChannels() (forceClose bool) {
 func (p *DelPod) Activate() {
 	p.log.Debug("Del Pod Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.completedCh)
 
 	return
 }

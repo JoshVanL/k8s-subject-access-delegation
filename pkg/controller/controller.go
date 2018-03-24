@@ -272,6 +272,8 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		if !closed {
 			c.manuallyDeleteSad(sad)
 		}
+
+		return
 	}()
 
 	return nil

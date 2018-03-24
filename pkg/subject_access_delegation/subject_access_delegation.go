@@ -622,7 +622,7 @@ func (s *SubjectAccessDelegation) updateLocalSAD() error {
 		return fmt.Errorf("failed to get latest SAD from API server: %v", err)
 	}
 
-	s.sad = sad
+	s.sad = sad.DeepCopy()
 
 	return nil
 }
@@ -830,7 +830,7 @@ func (s *SubjectAccessDelegation) Repeat() int {
 }
 
 func (s *SubjectAccessDelegation) KubeInformerFactory() kubeinformers.SharedInformerFactory {
-	return s.kubeInformerFactory
+	return kubeinformers.NewSharedInformerFactory(s.client, time.Second*30)
 }
 
 func (s *SubjectAccessDelegation) SeenUid(uid types.UID) bool {

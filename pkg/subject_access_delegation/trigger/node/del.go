@@ -112,7 +112,7 @@ func (p *DelNode) watchChannels() (forceClose bool) {
 func (p *DelNode) Activate() {
 	p.log.Debug("Del Node Trigger Activated")
 
-	go p.informer.Informer().Run(make(chan struct{}))
+	go p.informer.Informer().Run(p.completedCh)
 
 	return
 }

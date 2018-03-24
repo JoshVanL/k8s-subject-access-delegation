@@ -16,6 +16,10 @@ func ValidName(name string) bool {
 
 func MatchName(name, regex string) (bool, error) {
 
+	if regex == "*" {
+		return true, nil
+	}
+
 	regex = format(regex)
 
 	if !ValidName(name) {

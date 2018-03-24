@@ -118,7 +118,7 @@ func (s *UpdateSecret) watchChannels() (forceClose bool) {
 func (s *UpdateSecret) Activate() {
 	s.log.Debug("Update Secret Trigger Activated")
 
-	go s.informer.Informer().Run(make(chan struct{}))
+	go s.informer.Informer().Run(s.completedCh)
 
 	return
 }
