@@ -8,11 +8,14 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
+
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/mocks"
 )
 
 type fakeTime struct {
 	*Time
-	ctrl *gomock.Controller
+	ctrl    *gomock.Controller
+	fakeSad *mocks.MockSubjectAccessDelegation
 }
 
 func newFakeTime(t *testing.T) *fakeTime {
@@ -23,8 +26,13 @@ func newFakeTime(t *testing.T) *fakeTime {
 			timestamp: time.Now(),
 			completed: false,
 			log:       logrus.NewEntry(logrus.New()),
+			uid:       0,
 		},
 	}
+
+	g.fakeSad = mocks.NewMockSubjectAccessDelegation(g.ctrl)
+
+	g.sad = g.fakeSad
 
 	g.Time.log.Level = logrus.ErrorLevel
 
@@ -46,6 +54,8 @@ func TestTime_Successful(t *testing.T) {
 
 	g.Time.timestamp = time.Now().Add(time.Millisecond)
 	g.Activate()
+
+	g.fakeSad.EXPECT().UpdateTriggerFired(0, true).Return(nil).Times(1)
 
 	if g.WaitOn() {
 		t.Error("expected time trigger to not be force closed, it was")
@@ -84,6 +94,8 @@ func TestTime_DoubleActivate(t *testing.T) {
 
 	g.timestamp = time.Now().Add(time.Nanosecond)
 	g.Activate()
+
+	g.fakeSad.EXPECT().UpdateTriggerFired(0, true).Return(nil).Times(2)
 
 	if g.WaitOn() {
 		t.Error("expected time trigger to not be force closed, it was")
