@@ -42,7 +42,6 @@ type SubjectAccessDelegation interface {
 	DeleteUid(uid types.UID)
 
 	UpdateTriggerFired(uid int, fired bool) error
-	UpdateDeletationTriggerFired(uid int, fired bool) error
 
 	BindingSubjects() []rbacv1.Subject
 	TimeActivated() int64

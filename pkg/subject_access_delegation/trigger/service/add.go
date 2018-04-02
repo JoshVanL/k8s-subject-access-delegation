@@ -20,6 +20,7 @@ type AddService struct {
 	sad         interfaces.SubjectAccessDelegation
 	serviceName string
 	replicas    int
+	uid         int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewAddService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Services(),
 	}
 
@@ -98,6 +100,11 @@ func (p *AddService) WaitOn() (forceClosed bool) {
 	}
 
 	p.log.Debug("Add Service Trigger completed")
+
+	if err := p.sad.UpdateTriggerFired(p.uid, true); err != nil {
+		p.log.Errorf("error updating add service trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -112,6 +119,7 @@ func (p *AddService) watchChannels() (forceClose bool) {
 
 func (p *AddService) Activate() {
 	p.log.Debug("Add Service Trigger Activated")
+	p.completed = false
 
 	go p.informer.Informer().Run(p.completedCh)
 

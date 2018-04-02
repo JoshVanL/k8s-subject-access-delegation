@@ -20,6 +20,7 @@ type UpdatePod struct {
 	sad      interfaces.SubjectAccessDelegation
 	podName  string
 	replicas int
+	uid      int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewUpdatePod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Pods(),
 	}
 
@@ -103,6 +105,11 @@ func (p *UpdatePod) WaitOn() (forceClosed bool) {
 	}
 
 	p.log.Debug("Update Pod Trigger completed")
+
+	if err := p.sad.UpdateTriggerFired(p.uid, true); err != nil {
+		p.log.Errorf("error updating update pod trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -117,6 +124,7 @@ func (p *UpdatePod) watchChannels() (forceClose bool) {
 
 func (p *UpdatePod) Activate() {
 	p.log.Debug("Update Pod Trigger Activated")
+	p.completed = false
 
 	go p.informer.Informer().Run(p.completedCh)
 

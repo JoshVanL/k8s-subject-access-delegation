@@ -20,6 +20,7 @@ type UpdateNode struct {
 	sad      interfaces.SubjectAccessDelegation
 	nodeName string
 	replicas int
+	uid      int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewUpdateNode(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Nodes(),
 	}
 
@@ -103,6 +105,11 @@ func (n *UpdateNode) WaitOn() (forceClosed bool) {
 	}
 
 	n.log.Debug("Del Node Trigger completed")
+
+	if err := n.sad.UpdateTriggerFired(n.uid, true); err != nil {
+		n.log.Errorf("error updating update node trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -117,6 +124,7 @@ func (n *UpdateNode) watchChannels() (forceClose bool) {
 
 func (n *UpdateNode) Activate() {
 	n.log.Debug("Del Node Trigger Activated")
+	n.completed = false
 
 	go n.informer.Informer().Run(n.completedCh)
 

@@ -26,6 +26,21 @@ func (s *SubjectAccessDelegation) BuildDeletionTriggers() error {
 	return nil
 }
 
+func (s *SubjectAccessDelegation) BuildTriggers() error {
+	for i := range s.sad.Spec.EventTriggers {
+		s.sad.Spec.EventTriggers[i].UID = triggerUID
+		triggerUID++
+	}
+
+	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
+	if err != nil {
+		return fmt.Errorf("failed to build triggers: %v", err)
+	}
+
+	s.triggers = triggers
+	return nil
+}
+
 func (s *SubjectAccessDelegation) ActivateDeletionTriggers() (bool, error) {
 	s.log.Debug("Activating Deletion Triggers")
 
@@ -33,7 +48,15 @@ func (s *SubjectAccessDelegation) ActivateDeletionTriggers() (bool, error) {
 		return false, err
 	}
 
-	if s.sad.Status.DeletionTriggerd {
+	allFired := true
+	for _, trigger := range s.deletionTriggers {
+		if !trigger.Completed() {
+			trigger.Activate()
+			allFired = false
+		}
+	}
+
+	if allFired {
 		s.log.Infof("All deletion triggers already triggered.")
 		if err := s.cleanUpBindings(); err != nil {
 			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
@@ -44,10 +67,6 @@ func (s *SubjectAccessDelegation) ActivateDeletionTriggers() (bool, error) {
 		}
 
 		return false, nil
-	}
-
-	for _, trigger := range s.deletionTriggers {
-		trigger.Activate()
 	}
 
 	s.log.Info("Deletion Triggers Activated")
@@ -91,7 +110,17 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 		return false, err
 	}
 
-	if s.sad.Status.Triggerd {
+	allFired := true
+	for _, trigger := range s.triggers {
+		if !trigger.Completed() {
+			trigger.Activate()
+			allFired = false
+		}
+	}
+
+	if allFired {
+		s.triggered = true
+
 		s.log.Infof("All triggers already triggered.")
 		if err := s.cleanUpBindings(); err != nil {
 			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
@@ -102,10 +131,6 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 		}
 
 		return false, nil
-	}
-
-	for _, trigger := range s.triggers {
-		trigger.Activate()
 	}
 
 	s.log.Info("Triggers Activated")
@@ -185,21 +210,6 @@ func (s *SubjectAccessDelegation) checkDeletionTriggers() (ready bool) {
 	return true
 }
 
-func (s *SubjectAccessDelegation) BuildTriggers() error {
-	for i := range s.sad.Spec.EventTriggers {
-		s.sad.Spec.EventTriggers[i].UID = triggerUID
-		triggerUID++
-	}
-
-	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
-	if err != nil {
-		return fmt.Errorf("failed to build triggers: %v", err)
-	}
-
-	s.triggers = triggers
-	return nil
-}
-
 func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
 	if err := s.updateLocalSAD(); err != nil {
 		return err
@@ -221,43 +231,39 @@ func (s *SubjectAccessDelegation) UpdateTriggerFired(uid int, fired bool) error 
 		return err
 	}
 
+	found := false
+
 	for i, trigger := range s.sad.Spec.EventTriggers {
 		if trigger.UID == uid {
 			s.sad.Spec.EventTriggers[i].Triggered = fired
 
-			sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-			if err != nil {
-				return fmt.Errorf("failed to update trigger status against API server: %v", err)
-			}
-			s.sad = sad
-
-			return nil
+			found = true
+			break
 		}
 	}
 
-	return fmt.Errorf("failed to find trigger with SAD UID: %d", uid)
-}
+	if !found {
+		for i, trigger := range s.sad.Spec.DeletionTriggers {
+			if trigger.UID == uid {
+				s.sad.Spec.DeletionTriggers[i].Triggered = fired
 
-func (s *SubjectAccessDelegation) UpdateDeletationTriggerFired(uid int, fired bool) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	for i, trigger := range s.sad.Spec.DeletionTriggers {
-		if trigger.UID == uid {
-			s.sad.Spec.DeletionTriggers[i].Triggered = fired
-
-			sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-			if err != nil {
-				return fmt.Errorf("failed to update trigger status against API server: %v", err)
+				found = true
+				break
 			}
-			s.sad = sad
-
-			return nil
 		}
 	}
 
-	return fmt.Errorf("failed to find trigger with SAD UID: %d", uid)
+	if !found {
+		return fmt.Errorf("failed to find trigger with SAD UID: %d", uid)
+	}
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update trigger status against API server: %v", err)
+	}
+	s.sad = sad
+
+	return nil
 }
 
 func (s *SubjectAccessDelegation) updateDeletionTriggerd(status bool) error {

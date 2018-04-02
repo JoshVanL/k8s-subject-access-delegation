@@ -20,6 +20,7 @@ type AddPod struct {
 	sad      interfaces.SubjectAccessDelegation
 	podName  string
 	replicas int
+	uid      int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,8 +46,9 @@ func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.Ev
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
 		informer:    sad.KubeInformerFactory().Core().V1().Pods(),
+		uid:         trigger.UID,
 	}
 
 	podTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -105,11 +107,17 @@ func (p *AddPod) WaitOn() (forceClosed bool) {
 	}
 
 	p.log.Debug("Add Pod Trigger completed")
+
+	if err := p.sad.UpdateTriggerFired(p.uid, true); err != nil {
+		p.log.Errorf("error updating add pod trigger status: %v", err)
+	}
+
 	return false
 }
 
 func (p *AddPod) Activate() {
 	p.log.Debug("Add Pod Trigger Activated")
+	p.completed = false
 
 	go p.informer.Informer().Run(p.completedCh)
 

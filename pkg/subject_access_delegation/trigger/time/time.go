@@ -19,6 +19,7 @@ type Time struct {
 	sad       interfaces.SubjectAccessDelegation
 	timestamp time.Time
 	replicas  int
+	uid       int
 
 	StopCh    chan struct{}
 	tickerCh  <-chan time.Time
@@ -51,12 +52,14 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 		replicas:  trigger.Replicas,
 		StopCh:    make(chan struct{}),
 		timestamp: timestamp,
-		completed: false,
+		completed: trigger.Triggered,
+		uid:       trigger.UID,
 	}, nil
 }
 
 func (t *Time) Activate() {
 	t.log.Debug("Time Trigger activated")
+	t.completed = false
 	t.TickTock()
 }
 
@@ -69,6 +72,11 @@ func (t *Time) WaitOn() (forceClosed bool) {
 	}
 
 	t.log.Debug("Time Trigger time expired")
+
+	if err := t.sad.UpdateTriggerFired(t.uid, true); err != nil {
+		t.log.Errorf("error updating time trigger status: %v", err)
+	}
+
 	return false
 }
 

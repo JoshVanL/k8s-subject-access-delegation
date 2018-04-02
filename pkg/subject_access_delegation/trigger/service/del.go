@@ -20,6 +20,7 @@ type DelService struct {
 	sad         interfaces.SubjectAccessDelegation
 	serviceName string
 	replicas    int
+	uid         int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewDelService(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Services(),
 	}
 
@@ -97,6 +99,11 @@ func (p *DelService) WaitOn() (forceClosed bool) {
 	}
 
 	p.log.Debug("Del Service Trigger completed")
+
+	if err := p.sad.UpdateTriggerFired(p.uid, true); err != nil {
+		p.log.Errorf("error updating delete service trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -111,6 +118,7 @@ func (p *DelService) watchChannels() (forceClose bool) {
 
 func (p *DelService) Activate() {
 	p.log.Debug("Del Service Trigger Activated")
+	p.completed = false
 
 	go p.informer.Informer().Run(p.completedCh)
 

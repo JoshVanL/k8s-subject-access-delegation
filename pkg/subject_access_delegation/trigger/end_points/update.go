@@ -20,6 +20,7 @@ type UpdateEndPoints struct {
 	sad           interfaces.SubjectAccessDelegation
 	endPointsName string
 	replicas      int
+	uid           int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,8 +46,9 @@ func NewUpdateEndPoints(sad interfaces.SubjectAccessDelegation, trigger *authzv1
 		stopCh:        make(chan struct{}),
 		completedCh:   make(chan struct{}),
 		count:         0,
-		completed:     false,
+		completed:     trigger.Triggered,
 		informer:      sad.KubeInformerFactory().Core().V1().Endpoints(),
+		uid:           trigger.UID,
 	}
 
 	endPointsTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -103,6 +105,11 @@ func (n *UpdateEndPoints) WaitOn() (forceClosed bool) {
 	}
 
 	n.log.Debug("Del EndPoints Trigger completed")
+
+	if err := n.sad.UpdateTriggerFired(n.uid, true); err != nil {
+		n.log.Errorf("error updating update end points trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -117,6 +124,7 @@ func (n *UpdateEndPoints) watchChannels() (forceClose bool) {
 
 func (n *UpdateEndPoints) Activate() {
 	n.log.Debug("Del EndPoints Trigger Activated")
+	n.completed = false
 
 	go n.informer.Informer().Run(n.completedCh)
 

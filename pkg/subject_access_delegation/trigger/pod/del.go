@@ -20,6 +20,7 @@ type DelPod struct {
 	sad      interfaces.SubjectAccessDelegation
 	podName  string
 	replicas int
+	uid      int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewDelPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.Ev
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Pods(),
 	}
 
@@ -97,6 +99,11 @@ func (p *DelPod) WaitOn() (forceClosed bool) {
 	}
 
 	p.log.Debug("Del Pod Trigger completed")
+
+	if err := p.sad.UpdateTriggerFired(p.uid, true); err != nil {
+		p.log.Errorf("error updating delete pod trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -111,6 +118,7 @@ func (p *DelPod) watchChannels() (forceClose bool) {
 
 func (p *DelPod) Activate() {
 	p.log.Debug("Del Pod Trigger Activated")
+	p.completed = false
 
 	go p.informer.Informer().Run(p.completedCh)
 

@@ -20,6 +20,7 @@ type UpdateSecret struct {
 	sad        interfaces.SubjectAccessDelegation
 	secretName string
 	replicas   int
+	uid        int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewUpdateSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alp
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Secrets(),
 	}
 
@@ -103,6 +105,11 @@ func (s *UpdateSecret) WaitOn() (forceClosed bool) {
 	}
 
 	s.log.Debug("Update Secret Trigger completed")
+
+	if err := s.sad.UpdateTriggerFired(s.uid, true); err != nil {
+		s.log.Errorf("error updating delete secret trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -117,6 +124,7 @@ func (s *UpdateSecret) watchChannels() (forceClose bool) {
 
 func (s *UpdateSecret) Activate() {
 	s.log.Debug("Update Secret Trigger Activated")
+	s.completed = false
 
 	go s.informer.Informer().Run(s.completedCh)
 

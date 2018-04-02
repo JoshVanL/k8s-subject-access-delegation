@@ -20,6 +20,7 @@ type AddSecret struct {
 	sad        interfaces.SubjectAccessDelegation
 	secretName string
 	replicas   int
+	uid        int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewAddSecret(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1
 		stopCh:      make(chan struct{}),
 		completedCh: make(chan struct{}),
 		count:       0,
-		completed:   false,
+		completed:   trigger.Triggered,
+		uid:         trigger.UID,
 		informer:    sad.KubeInformerFactory().Core().V1().Secrets(),
 	}
 
@@ -97,6 +99,11 @@ func (s *AddSecret) WaitOn() (forceClosed bool) {
 	}
 
 	s.log.Debug("Add Secret Trigger completed")
+
+	if err := s.sad.UpdateTriggerFired(s.uid, true); err != nil {
+		s.log.Errorf("error updating add secret trigger status: %v", err)
+	}
+
 	return false
 }
 
@@ -111,6 +118,7 @@ func (s *AddSecret) watchChannels() (forceClose bool) {
 
 func (s *AddSecret) Activate() {
 	s.log.Debug("Add Secret Trigger Activated")
+	s.completed = false
 
 	go s.informer.Informer().Run(s.completedCh)
 

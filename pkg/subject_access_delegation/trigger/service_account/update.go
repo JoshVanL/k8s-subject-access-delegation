@@ -20,6 +20,7 @@ type UpdateServiceAccount struct {
 	sad                interfaces.SubjectAccessDelegation
 	serviceAccountName string
 	replicas           int
+	uid                int
 
 	stopCh      chan struct{}
 	completedCh chan struct{}
@@ -45,7 +46,8 @@ func NewUpdateServiceAccount(sad interfaces.SubjectAccessDelegation, trigger *au
 		stopCh:             make(chan struct{}),
 		completedCh:        make(chan struct{}),
 		count:              0,
-		completed:          false,
+		completed:          trigger.Triggered,
+		uid:                trigger.UID,
 		informer:           sad.KubeInformerFactory().Core().V1().ServiceAccounts(),
 	}
 
@@ -103,6 +105,10 @@ func (s *UpdateServiceAccount) WaitOn() (forceClosed bool) {
 	}
 
 	s.log.Debug("Update ServiceAccount Trigger completed")
+
+	if err := s.sad.UpdateTriggerFired(s.uid, true); err != nil {
+		s.log.Errorf("error updating update Service Account trigger status: %v", err)
+	}
 	return false
 }
 
@@ -117,6 +123,7 @@ func (s *UpdateServiceAccount) watchChannels() (forceClose bool) {
 
 func (s *UpdateServiceAccount) Activate() {
 	s.log.Debug("Update ServiceAccount Trigger Activated")
+	s.completed = false
 
 	go s.informer.Informer().Run(s.completedCh)
 
