@@ -45,12 +45,10 @@ type SubjectAccessDelegationSpec struct {
 }
 
 type SubjectAccessDelegationStatus struct {
-	Processed        bool `json:"processed"`
-	Triggerd         bool
-	DeletionTriggerd bool
-	Iteration        int
-	TimeActivated    int64
-	TimeFired        int64
+	Processed     bool `json:"processed"`
+	Iteration     int
+	TimeActivated int64
+	TimeFired     int64
 
 	RoleBindings        []string
 	ClusterRoleBindings []string

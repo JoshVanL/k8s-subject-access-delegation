@@ -117,14 +117,6 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			return false, err
 		}
 
-		if err := s.updateTriggerd(false); err != nil {
-			return false, err
-		}
-
-		if err := s.updateDeletionTriggerd(false); err != nil {
-			return false, err
-		}
-
 		if err := s.updateInteration(i + 1); err != nil {
 			return false, err
 
@@ -270,40 +262,6 @@ func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	s.sad = sad
 
 	return result.ErrorOrNil()
-}
-
-func (s *SubjectAccessDelegation) updateTimeActivated(unixTime int64) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	s.sad.Status.TimeActivated = unixTime
-
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
-		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
-	}
-
-	s.sad = sad
-
-	return nil
-}
-
-func (s *SubjectAccessDelegation) updateTimeFired(unixTime int64) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	s.sad.Status.TimeFired = unixTime
-
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
-		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
-	}
-
-	s.sad = sad
-
-	return nil
 }
 
 func (s *SubjectAccessDelegation) updateInteration(iteration int) error {

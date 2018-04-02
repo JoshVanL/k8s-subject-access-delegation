@@ -90,10 +90,6 @@ func (s *SubjectAccessDelegation) ActivateDeletionTriggers() (bool, error) {
 		}
 	}
 
-	if err := s.updateDeletionTriggerd(true); err != nil {
-		return false, err
-	}
-
 	if err := s.updateTimeFired(0); err != nil {
 		s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
 	}
@@ -154,10 +150,6 @@ func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
 		}
 	}
 
-	if err := s.updateTriggerd(true); err != nil {
-		return false, err
-	}
-
 	if err := s.updateTimeActivated(0); err != nil {
 		s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
 	}
@@ -210,22 +202,6 @@ func (s *SubjectAccessDelegation) checkDeletionTriggers() (ready bool) {
 	return true
 }
 
-func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	s.sad.Status.Triggerd = status
-
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
-		return fmt.Errorf("failed to update trigger status against API server: %v", err)
-	}
-	s.sad = sad
-
-	return nil
-}
-
 func (s *SubjectAccessDelegation) UpdateTriggerFired(uid int, fired bool) error {
 	if err := s.updateLocalSAD(); err != nil {
 		return err
@@ -266,17 +242,35 @@ func (s *SubjectAccessDelegation) UpdateTriggerFired(uid int, fired bool) error 
 	return nil
 }
 
-func (s *SubjectAccessDelegation) updateDeletionTriggerd(status bool) error {
+func (s *SubjectAccessDelegation) updateTimeActivated(unixTime int64) error {
 	if err := s.updateLocalSAD(); err != nil {
 		return err
 	}
 
-	s.sad.Status.DeletionTriggerd = status
+	s.sad.Status.TimeActivated = unixTime
 
 	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
 	if err != nil {
-		return fmt.Errorf("failed to update trigger status against API server: %v", err)
+		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
 	}
+
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) updateTimeFired(unixTime int64) error {
+	if err := s.updateLocalSAD(); err != nil {
+		return err
+	}
+
+	s.sad.Status.TimeFired = unixTime
+
+	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
+	if err != nil {
+		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
+	}
+
 	s.sad = sad
 
 	return nil

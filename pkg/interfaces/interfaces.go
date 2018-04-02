@@ -23,6 +23,7 @@ type SubjectAccessDelegation interface {
 	Client() kubernetes.Interface
 	KubeInformerFactory() kubeinformers.SharedInformerFactory
 
+	ResolveDestinations() error
 	OriginSubject() OriginSubject
 	DestinationSubjects() []DestinationSubject
 	Triggers() []Trigger
@@ -30,11 +31,11 @@ type SubjectAccessDelegation interface {
 	Delegate() (closed bool, err error)
 	DeleteRoleBindings() error
 	Delete() error
-	ResolveDestinations() error
 
 	AddRoleBinding(addBinding Binding) error
 	UpdateRoleBinding(old, new Binding) error
 	DeleteRoleBinding(delBining Binding) error
+	BindingSubjects() []rbacv1.Subject
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
@@ -42,8 +43,6 @@ type SubjectAccessDelegation interface {
 	DeleteUid(uid types.UID)
 
 	UpdateTriggerFired(uid int, fired bool) error
-
-	BindingSubjects() []rbacv1.Subject
 	TimeActivated() int64
 	TimeFired() int64
 }
