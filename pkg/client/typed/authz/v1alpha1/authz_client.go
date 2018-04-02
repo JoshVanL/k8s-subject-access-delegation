@@ -28,7 +28,7 @@ type AuthzV1alpha1Interface interface {
 	SubjectAccessDelegationsGetter
 }
 
-// AuthzV1alpha1Client is used to interact with features provided by the authz.k8s.io group.
+// AuthzV1alpha1Client is used to interact with features provided by the authz.sad group.
 type AuthzV1alpha1Client struct {
 	restClient rest.Interface
 }

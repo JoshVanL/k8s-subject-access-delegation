@@ -1,4 +1,4 @@
 // +k8s:deepcopy-gen=package,register
-// +groupName=authz.k8s.io
+// +groupName=authz.sad
 
 package v1alpha1
