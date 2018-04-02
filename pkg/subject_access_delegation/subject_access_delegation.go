@@ -19,7 +19,6 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/destination_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/origin_subject"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/role_binding"
-	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/trigger"
 )
 
 type SubjectAccessDelegation struct {
@@ -45,7 +44,9 @@ type SubjectAccessDelegation struct {
 	clockOffset time.Duration
 }
 
-var _ interfaces.SubjectAccessDelegation = &SubjectAccessDelegation{}
+var (
+	_ interfaces.SubjectAccessDelegation = &SubjectAccessDelegation{}
+)
 
 func New(controller interfaces.Controller,
 	sad *authzv1alpha1.SubjectAccessDelegation,
@@ -156,74 +157,6 @@ func (s *SubjectAccessDelegation) initDelegation() error {
 	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) BuildDeletionTriggers() error {
-	triggers, err := trigger.New(s, s.sad.Spec.DeletionTriggers)
-	if err != nil {
-		return fmt.Errorf("failed to build deletion triggers: %v", err)
-	}
-
-	s.deletionTriggers = triggers
-	return nil
-}
-
-func (s *SubjectAccessDelegation) ActivateDeletionTriggers() (bool, error) {
-	s.log.Debug("Activating Deletion Triggers")
-
-	if err := s.updateLocalSAD(); err != nil {
-		return false, err
-	}
-
-	if s.sad.Status.DeletionTriggerd {
-		s.log.Infof("All deletion triggers already triggered.")
-		if err := s.cleanUpBindings(); err != nil {
-			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
-		}
-
-		if err := s.updateTimeFired(0); err != nil {
-			s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
-		}
-
-		return false, nil
-	}
-
-	for _, trigger := range s.deletionTriggers {
-		trigger.Activate()
-	}
-
-	s.log.Info("Deletion Triggers Activated")
-
-	if err := s.updateTimeFired(time.Now().Unix()); err != nil {
-		s.log.Errorf("Failed to update API server with non-zero Activated Time: %v", err)
-	}
-
-	ready := false
-
-	for !ready {
-		if s.waitOnDeletionTriggers() {
-			return true, nil
-		}
-
-		s.log.Info("All deletion triggers have been satisfied, checking still true")
-
-		ready = s.checkDeletionTriggers()
-		if !ready {
-			s.log.Info("Not all deletion triggers ready at the same time, re-waiting.")
-		}
-	}
-
-	if err := s.updateDeletionTriggerd(true); err != nil {
-		return false, err
-	}
-
-	if err := s.updateTimeFired(0); err != nil {
-		s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
-	}
-
-	s.log.Infof("All deletion triggers fired!")
-
-	return false, nil
-}
-
 func (s *SubjectAccessDelegation) ApplyDelegation() error {
 	s.log.Infof("Applying Subject Access Delegation '%s'", s.Name())
 
@@ -310,65 +243,6 @@ func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) 
 	return nil
 }
 
-func (s *SubjectAccessDelegation) ActivateTriggers() (closed bool, err error) {
-	s.log.Debug("Activating Triggers")
-
-	if err := s.updateLocalSAD(); err != nil {
-		return false, err
-	}
-
-	if s.sad.Status.Triggerd {
-		s.log.Infof("All triggers already triggered.")
-		if err := s.cleanUpBindings(); err != nil {
-			s.log.Errorf("Failed to clean up any remaining bingings: %v", err)
-		}
-
-		if err := s.updateTimeActivated(0); err != nil {
-			s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
-		}
-
-		return false, nil
-	}
-
-	for _, trigger := range s.triggers {
-		trigger.Activate()
-	}
-
-	s.log.Info("Triggers Activated")
-
-	if err := s.updateTimeActivated(time.Now().Unix()); err != nil {
-		s.log.Errorf("Failed to update API server with non-zero Activated Time: %v", err)
-	}
-
-	ready := false
-
-	for !ready {
-		if s.waitOnTriggers() {
-			return true, nil
-		}
-
-		s.log.Info("All triggers have been satisfied, checking still true")
-
-		ready = s.checkTriggers()
-		if !ready {
-			s.log.Info("Not all triggers ready at the same time, re-waiting.")
-		}
-	}
-
-	if err := s.updateTriggerd(true); err != nil {
-		return false, err
-	}
-
-	if err := s.updateTimeActivated(0); err != nil {
-		s.log.Errorf("Failed to update API server with 0 Activated Time: %v", err)
-	}
-
-	s.log.Infof("All triggers fired!")
-	s.triggered = true
-
-	return false, nil
-}
-
 func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	var result *multierror.Error
 
@@ -396,90 +270,6 @@ func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	s.sad = sad
 
 	return result.ErrorOrNil()
-}
-
-func (s *SubjectAccessDelegation) waitOnTriggers() (closed bool) {
-	for _, trigger := range s.triggers {
-		if trigger.WaitOn() {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s *SubjectAccessDelegation) waitOnDeletionTriggers() (closed bool) {
-	for _, trigger := range s.deletionTriggers {
-		if trigger.WaitOn() {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s *SubjectAccessDelegation) checkTriggers() (ready bool) {
-	for _, trigger := range s.triggers {
-		ready := trigger.Completed()
-		if !ready {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (s *SubjectAccessDelegation) checkDeletionTriggers() (ready bool) {
-	for _, trigger := range s.deletionTriggers {
-		ready := trigger.Completed()
-		if !ready {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (s *SubjectAccessDelegation) BuildTriggers() error {
-	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
-	if err != nil {
-		return fmt.Errorf("failed to build triggers: %v", err)
-	}
-
-	s.triggers = triggers
-	return nil
-}
-
-func (s *SubjectAccessDelegation) updateTriggerd(status bool) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	s.sad.Status.Triggerd = status
-
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
-		return fmt.Errorf("failed to update trigger status against API server: %v", err)
-	}
-	s.sad = sad
-
-	return nil
-}
-
-func (s *SubjectAccessDelegation) updateDeletionTriggerd(status bool) error {
-	if err := s.updateLocalSAD(); err != nil {
-		return err
-	}
-
-	s.sad.Status.DeletionTriggerd = status
-
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
-		return fmt.Errorf("failed to update trigger status against API server: %v", err)
-	}
-	s.sad = sad
-
-	return nil
 }
 
 func (s *SubjectAccessDelegation) updateTimeActivated(unixTime int64) error {
