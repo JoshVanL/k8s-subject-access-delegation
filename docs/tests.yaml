@@ -21,7 +21,7 @@ testing_blocks:
       - "create"
       - "-f"
       - "docs/pod-role-service-account.yaml"
-      delay: 2
+      delay: 1
 
   - name: "test 1"
     commands:
@@ -119,7 +119,7 @@ testing_blocks:
       - "create"
       - "-f"
       - "docs/nginx_pod3.yaml"
-      delay: 3
+      delay: 2
     - program: "kubectl"
       arguments:
       - "get"
@@ -137,7 +137,36 @@ testing_blocks:
       - "delete"
       - "-f"
       - "docs/nginx_pod3.yaml"
+      delay: 3
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "rolebindings"
+      delay: 5
+
+  - name: "Single Binding"
+    commands:
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/e2e_4.yaml"
       delay: 1
+    - program: "kubectl"
+      arguments:
+      - "create"
+      - "-f"
+      - "docs/nginx_pod.yaml"
+      delay: 2
+    - program: "kubectl"
+      arguments:
+      - "get"
+      - "rolebindings"
+      delay: 3
+      split_string_conditions:
+      - line: 3
+        split: 0
+        match: "test-group-test-sa-default-pod-logs-reader"
 
   - name: "Cleaning up"
     commands:

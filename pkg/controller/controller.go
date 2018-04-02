@@ -389,10 +389,10 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 
 	crd := &apiextv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "subjectaccessdelegations.authz.k8s.io",
+			Name: "subjectaccessdelegations.authz.sad",
 		},
 		Spec: apiextv1beta1.CustomResourceDefinitionSpec{
-			Group:   "authz.k8s.io",
+			Group:   "authz.sad",
 			Version: "v1alpha1",
 			Names: apiextv1beta1.CustomResourceDefinitionNames{
 				Plural:     "subjectaccessdelegations",
@@ -421,7 +421,7 @@ func (c *Controller) EnsureCRD(clientset apiextcs.Interface) error {
 	// Ensure that the custom resource definition has been created before continuing
 	for trys := 0; trys < 3; trys++ {
 
-		crd, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("subjectaccessdelegations.authz.k8s.io", metav1.GetOptions{})
+		crd, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("subjectaccessdelegations.authz.sad", metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				c.log.Infof("Custom resource not yet found, retrying (%d/3)..", trys+1)

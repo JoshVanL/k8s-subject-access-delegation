@@ -74,14 +74,14 @@ var RootCmd = &cobra.Command{
 			log.Fatalf("error building API extension clientset: %v", err)
 		}
 
-		exampleClient, err := clientset.NewForConfig(cfg)
+		sadClient, err := clientset.NewForConfig(cfg)
 		if err != nil {
-			log.Fatalf("error building example clientset: %v", err)
+			log.Fatalf("error building subject access delegation clientset: %v", err)
 		}
 
 		kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-		exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-		controller := controller.NewController(kubeClient, exampleClient, kubeInformerFactory, exampleInformerFactory, hosts, log)
+		sadInformerFactory := informers.NewSharedInformerFactory(sadClient, time.Second*30)
+		controller := controller.NewController(kubeClient, sadClient, kubeInformerFactory, sadInformerFactory, hosts, log)
 
 		if err := controller.EnsureCRD(apiextClientSet); err != nil {
 			fmt.Printf("Failed to ensure custom resource definition: %v", err)
@@ -92,7 +92,7 @@ var RootCmd = &cobra.Command{
 		stopCh := signals.RunSignalHandler(log)
 
 		go kubeInformerFactory.Start(stopCh)
-		go exampleInformerFactory.Start(stopCh)
+		go sadInformerFactory.Start(stopCh)
 
 		if err = controller.Run(workerThreads, stopCh); err != nil {
 			fmt.Printf("Error running controller: %v\n", err)

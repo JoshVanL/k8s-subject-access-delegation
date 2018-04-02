@@ -1,5 +1,5 @@
 package authz
 
 const (
-	GroupName = "authz.k8s.io"
+	GroupName = "authz.sad"
 )

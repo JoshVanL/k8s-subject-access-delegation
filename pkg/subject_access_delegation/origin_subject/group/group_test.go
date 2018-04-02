@@ -173,7 +173,7 @@ func TestGroup_RoleBindings_ErrorBinding(t *testing.T) {
 	options := metav1.ListOptions{}
 
 	u.fakeClient.EXPECT().Rbac().Times(1).Return(u.fakeRbac)
-	u.fakeRbac.EXPECT().RoleBindings(gomock.Any()).Return(u.fakeRoleBindingsInterface)
+	u.fakeRbac.EXPECT().RoleBindings(gomock.Any()).Times(1).Return(u.fakeRoleBindingsInterface)
 	u.fakeRoleBindingsInterface.EXPECT().List(options).Times(1).Return(nil, errors.New("this is an error"))
 
 	if err := u.roleBindings(); err == nil {
