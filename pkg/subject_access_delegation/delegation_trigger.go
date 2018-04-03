@@ -17,6 +17,10 @@ func (s *SubjectAccessDelegation) BuildDeletionTriggers() error {
 		triggerUID++
 	}
 
+	if err := s.updateRemoteSAD(); err != nil {
+		return fmt.Errorf("failed to update trigger status against API server: %v", err)
+	}
+
 	triggers, err := trigger.New(s, s.sad.Spec.DeletionTriggers)
 	if err != nil {
 		return fmt.Errorf("failed to build deletion triggers: %v", err)
@@ -30,6 +34,10 @@ func (s *SubjectAccessDelegation) BuildTriggers() error {
 	for i := range s.sad.Spec.EventTriggers {
 		s.sad.Spec.EventTriggers[i].UID = triggerUID
 		triggerUID++
+	}
+
+	if err := s.updateRemoteSAD(); err != nil {
+		return fmt.Errorf("failed to update trigger status against API server: %v", err)
 	}
 
 	triggers, err := trigger.New(s, s.sad.Spec.EventTriggers)
@@ -233,11 +241,9 @@ func (s *SubjectAccessDelegation) UpdateTriggerFired(uid int, fired bool) error 
 		return fmt.Errorf("failed to find trigger with SAD UID: %d", uid)
 	}
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update trigger status against API server: %v", err)
 	}
-	s.sad = sad
 
 	return nil
 }
@@ -249,12 +255,9 @@ func (s *SubjectAccessDelegation) updateTimeActivated(unixTime int64) error {
 
 	s.sad.Status.TimeActivated = unixTime
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
 	}
-
-	s.sad = sad
 
 	return nil
 }
@@ -266,12 +269,9 @@ func (s *SubjectAccessDelegation) updateTimeFired(unixTime int64) error {
 
 	s.sad.Status.TimeFired = unixTime
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update trigger activated time against API server: %v", err)
 	}
-
-	s.sad = sad
 
 	return nil
 }

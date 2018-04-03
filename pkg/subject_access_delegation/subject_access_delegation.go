@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 	clientset "github.com/joshvanl/k8s-subject-access-delegation/pkg/client/clientset/versioned"
@@ -73,11 +74,16 @@ func New(controller interfaces.Controller,
 
 func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
-	if err := s.updateLocalSAD(); err != nil {
-		return false, err
+	s.sad.Status.Processed = true
+	if err := s.updateRemoteSAD(); err != nil {
+		return false, fmt.Errorf("failed to set SAD Processed to true: %v", err)
 	}
 
 	for i := s.sad.Status.Iteration; i < s.Repeat(); i++ {
+
+		if err := s.updateLocalSAD(); err != nil {
+			return false, err
+		}
 
 		s.log.Infof("Subject Access Delegation '%s' (%d/%d)", s.Name(), i+1, s.Repeat())
 
@@ -255,11 +261,9 @@ func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	s.sad.Status.RoleBindings = make([]string, 0)
 	s.sad.Status.ClusterRoleBindings = make([]string, 0)
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to update trigger status against API server: %v", err))
 	}
-	s.sad = sad
 
 	return result.ErrorOrNil()
 }
@@ -271,12 +275,9 @@ func (s *SubjectAccessDelegation) updateInteration(iteration int) error {
 
 	s.sad.Status.Iteration = iteration
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update iteration status against API server: %v", err)
 	}
-
-	s.sad = sad
 
 	return nil
 }
@@ -300,11 +301,9 @@ func (s *SubjectAccessDelegation) updateBindingList(binding interfaces.Binding) 
 
 	}
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update binding list against API server: %v", err)
 	}
-	s.sad = sad
 
 	return nil
 }
@@ -353,12 +352,9 @@ func (s *SubjectAccessDelegation) deleteBindingList(binding interfaces.Binding) 
 		return fmt.Errorf("failed to find binding '%s' in SAD API object", binding.Name())
 	}
 
-	sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(s.sad)
-	if err != nil {
+	if err := s.updateRemoteSAD(); err != nil {
 		return fmt.Errorf("failed to update binding list against API server: %v", err)
 	}
-
-	s.sad = sad
 
 	return nil
 }
@@ -370,7 +366,36 @@ func (s *SubjectAccessDelegation) updateLocalSAD() error {
 		return fmt.Errorf("failed to get latest SAD from API server: %v", err)
 	}
 
-	s.sad = sad.DeepCopy()
+	s.sad = sad
+
+	return nil
+}
+
+func (s *SubjectAccessDelegation) updateRemoteSAD() error {
+	options := metav1.GetOptions{}
+
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		sad, err := s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Get(s.sad.Name, options)
+		if err != nil {
+			return fmt.Errorf("failed to get latest sad object for updating: %v", err)
+		}
+
+		sad.Spec = s.sad.Spec
+		sad.Status = s.sad.Status
+
+		_, err = s.sadclientset.Authz().SubjectAccessDelegations(s.Namespace()).Update(sad)
+		if err != nil {
+			return fmt.Errorf("failed to update SAD in API server: %v", err)
+		}
+
+		s.sad = sad
+
+		return nil
+	})
+
+	if retryErr != nil {
+		return fmt.Errorf("failed to update SAD: %v", retryErr)
+	}
 
 	return nil
 }

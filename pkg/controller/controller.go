@@ -237,15 +237,11 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	if !sad.Status.Processed {
+	if _, ok := c.delegations[sad.Name]; !ok && !sad.Status.Processed {
 		if err := c.ProcessDelegation(sad); err != nil {
 			c.log.Errorf("Failed to process Subject Access Delegation: %v", err)
 			return err
 		}
-	}
-
-	if err := c.updateSadStatus(sad); err != nil {
-		return err
 	}
 
 	return nil
@@ -286,13 +282,6 @@ func (c *Controller) manuallyDeleteSad(sad *authzv1alpha1.SubjectAccessDelegatio
 		c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
 		return
 	}
-}
-
-func (c *Controller) updateSadStatus(sad *authzv1alpha1.SubjectAccessDelegation) error {
-	sadCopy := sad.DeepCopy()
-	sadCopy.Status.Processed = true
-	_, err := c.sadclientset.AuthzV1alpha1().SubjectAccessDelegations(sad.Namespace).Update(sadCopy)
-	return err
 }
 
 func (c *Controller) enqueueSad(obj interface{}) {
