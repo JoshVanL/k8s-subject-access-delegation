@@ -1,13 +1,23 @@
 builds:
   - binary: k8s_subject_access_delegation
+    main: ./cmd/subject_access_delegation
+    env:
+      - CGO_ENABLED=0
     goos:
       - linux
       - darwin
     goarch:
       - amd64
+    flags: -tags netgo
   - binary: end_to_end_testing
+    main: ./cmd/end_to_end
+    env:
+      - CGO_ENABLED=0
     goos:
       - linux
       - darwin
     goarch:
       - amd64
+    flags: -tags netgo
+archive:
+  format: binary
