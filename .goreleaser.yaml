@@ -1,0 +1,13 @@
+builds:
+  - binary: k8s_subject_access_delegation
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+  - binary: end_to_end_testing
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
