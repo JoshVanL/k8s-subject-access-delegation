@@ -108,11 +108,13 @@ func (n *DelEndPoints) WaitOn() (forceClosed bool) {
 }
 
 func (n *DelEndPoints) watchChannels() (forceClose bool) {
-	select {
-	case <-n.stopCh:
-		return true
-	case <-n.completedCh:
-		return false
+	for {
+		select {
+		case <-n.stopCh:
+			return true
+		case <-n.completedCh:
+			return false
+		}
 	}
 }
 

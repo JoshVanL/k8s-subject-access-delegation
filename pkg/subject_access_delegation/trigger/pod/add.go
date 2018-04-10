@@ -98,12 +98,14 @@ func (p *AddPod) WaitOn() (forceClosed bool) {
 		return false
 	}
 
-	select {
-	case <-p.stopCh:
-		p.log.Debug("Add Pod Trigger was force closed")
-		return true
+	for {
+		select {
+		case <-p.stopCh:
+			p.log.Debug("Add Pod Trigger was force closed")
+			return true
 
-	case <-p.completedCh:
+		case <-p.completedCh:
+		}
 	}
 
 	p.log.Debug("Add Pod Trigger completed")

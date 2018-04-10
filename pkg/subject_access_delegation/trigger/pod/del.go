@@ -108,11 +108,13 @@ func (p *DelPod) WaitOn() (forceClosed bool) {
 }
 
 func (p *DelPod) watchChannels() (forceClose bool) {
-	select {
-	case <-p.stopCh:
-		return true
-	case <-p.completedCh:
-		return false
+	for {
+		select {
+		case <-p.stopCh:
+			return true
+		case <-p.completedCh:
+			return false
+		}
 	}
 }
 

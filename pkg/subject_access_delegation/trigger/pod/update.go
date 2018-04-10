@@ -114,11 +114,13 @@ func (p *UpdatePod) WaitOn() (forceClosed bool) {
 }
 
 func (p *UpdatePod) watchChannels() (forceClose bool) {
-	select {
-	case <-p.stopCh:
-		return true
-	case <-p.completedCh:
-		return false
+	for {
+		select {
+		case <-p.stopCh:
+			return true
+		case <-p.completedCh:
+			return false
+		}
 	}
 }
 

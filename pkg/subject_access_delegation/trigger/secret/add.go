@@ -108,11 +108,13 @@ func (s *AddSecret) WaitOn() (forceClosed bool) {
 }
 
 func (s *AddSecret) watchChannels() (forceClose bool) {
-	select {
-	case <-s.stopCh:
-		return true
-	case <-s.completedCh:
-		return false
+	for {
+		select {
+		case <-s.stopCh:
+			return true
+		case <-s.completedCh:
+			return false
+		}
 	}
 }
 

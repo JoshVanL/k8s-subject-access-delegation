@@ -261,9 +261,7 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
 		}
 
-		if err := delegation.DeleteRoleBindings(); err != nil {
-			c.log.Errorf("Error deleting rolebindings for Subject Access Delegation '%s': %v", delegation.Name(), err)
-		}
+		delegation.DeleteRoleBindings()
 
 		if !closed {
 			c.manuallyDeleteSad(sad)

@@ -108,11 +108,13 @@ func (p *DelService) WaitOn() (forceClosed bool) {
 }
 
 func (p *DelService) watchChannels() (forceClose bool) {
-	select {
-	case <-p.stopCh:
-		return true
-	case <-p.completedCh:
-		return false
+	for {
+		select {
+		case <-p.stopCh:
+			return true
+		case <-p.completedCh:
+			return false
+		}
 	}
 }
 

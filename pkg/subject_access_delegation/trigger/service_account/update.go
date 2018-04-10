@@ -113,11 +113,13 @@ func (s *UpdateServiceAccount) WaitOn() (forceClosed bool) {
 }
 
 func (s *UpdateServiceAccount) watchChannels() (forceClose bool) {
-	select {
-	case <-s.stopCh:
-		return true
-	case <-s.completedCh:
-		return false
+	for {
+		select {
+		case <-s.stopCh:
+			return true
+		case <-s.completedCh:
+			return false
+		}
 	}
 }
 

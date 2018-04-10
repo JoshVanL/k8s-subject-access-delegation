@@ -109,11 +109,13 @@ func (n *AddEndPoints) WaitOn() (forceClosed bool) {
 }
 
 func (n *AddEndPoints) watchChannels() (forceClose bool) {
-	select {
-	case <-n.stopCh:
-		return true
-	case <-n.completedCh:
-		return false
+	for {
+		select {
+		case <-n.stopCh:
+			return true
+		case <-n.completedCh:
+			return false
+		}
 	}
 }
 

@@ -47,14 +47,15 @@ func New(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.EventTri
 	sad.Log().Debugf("%+v", timestamp)
 
 	return &Time{
-		log:       sad.Log(),
-		sad:       sad,
-		replicas:  trigger.Replicas,
-		StopCh:    make(chan struct{}),
-		timestamp: timestamp,
-		completed: trigger.Triggered,
-		uid:       trigger.UID,
-	}, nil
+			log:       sad.Log(),
+			sad:       sad,
+			replicas:  trigger.Replicas,
+			StopCh:    make(chan struct{}),
+			timestamp: timestamp,
+			completed: trigger.Triggered,
+			uid:       trigger.UID,
+		},
+		nil
 }
 
 func (t *Time) Activate() {
@@ -81,32 +82,26 @@ func (t *Time) WaitOn() (forceClosed bool) {
 }
 
 func (t *Time) watchChannels() (forceClose bool) {
-	select {
-	case <-t.StopCh:
-		return true
-	case <-t.tickerCh:
-		t.completed = true
-		return false
+	for {
+		select {
+		case <-t.StopCh:
+			return true
+		case <-t.tickerCh:
+			t.completed = true
+			return false
+		}
 	}
 }
 
-func (t *Time) Completed() bool {
-	return t.completed
-}
+func (t *Time) Completed() bool { return t.completed }
 
 func (t *Time) Delete() error {
 	close(t.StopCh)
 	return nil
 }
 
-func (t *Time) TickTock() {
-	t.tickerCh = time.After(time.Until(t.timestamp))
-}
+func (t *Time) TickTock() { t.tickerCh = time.After(time.Until(t.timestamp)) }
 
-func (t *Time) Replicas() int {
-	return t.replicas
-}
+func (t *Time) Replicas() int { return t.replicas }
 
-func (t *Time) Kind() string {
-	return TimeKind
-}
+func (t *Time) Kind() string { return TimeKind }

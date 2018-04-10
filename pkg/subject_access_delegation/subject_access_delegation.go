@@ -98,7 +98,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			return false, err
 		}
 		if closed {
-			s.log.Infof("A Trigger was found closed, exiting.")
+			s.log.Debugf("A Trigger was found closed, exiting.")
 			return true, nil
 		}
 
@@ -115,7 +115,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			return false, err
 		}
 		if closed {
-			s.log.Infof("A Trigger was found closed, exiting.")
+			s.log.Debugf("A Trigger was found closed, exiting.")
 			return true, nil
 		}
 
@@ -244,6 +244,20 @@ func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) 
 func (s *SubjectAccessDelegation) cleanUpBindings() error {
 	var result *multierror.Error
 
+	if err := s.deleteAllBindings(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	if err := s.updateRemoteSAD(); err != nil {
+		result = multierror.Append(result, fmt.Errorf("failed to update trigger status against API server: %v", err))
+	}
+
+	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) deleteAllBindings() error {
+	var result *multierror.Error
+
 	options := &metav1.DeleteOptions{}
 
 	for _, binding := range s.sad.Status.RoleBindings {
@@ -260,10 +274,6 @@ func (s *SubjectAccessDelegation) cleanUpBindings() error {
 
 	s.sad.Status.RoleBindings = make([]string, 0)
 	s.sad.Status.ClusterRoleBindings = make([]string, 0)
-
-	if err := s.updateRemoteSAD(); err != nil {
-		result = multierror.Append(result, fmt.Errorf("failed to update trigger status against API server: %v", err))
-	}
 
 	return result.ErrorOrNil()
 }
@@ -475,10 +485,21 @@ func (s *SubjectAccessDelegation) ResolveDestinations() error {
 }
 
 func (s *SubjectAccessDelegation) Delete() error {
-	s.log.Debugf("Attempting to delete delegation '%s' triggers", s.Name())
-
 	var result *multierror.Error
+
+	s.log.Debugf("Attempting to delete delegation '%s' bindings", s.Name())
+	if err := s.deleteAllBindings(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	s.log.Debugf("Attempting to delete delegation '%s' triggers", s.Name())
 	for _, trigger := range s.triggers {
+		if err := trigger.Delete(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	for _, trigger := range s.deletionTriggers {
 		if err := trigger.Delete(); err != nil {
 			result = multierror.Append(result, err)
 		}

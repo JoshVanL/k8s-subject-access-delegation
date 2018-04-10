@@ -11,3 +11,4 @@ end_to_end_testing_linux_amd64
 end_to_end_testing_darwin_amd64
 docker/server
 docker/client
+dist/

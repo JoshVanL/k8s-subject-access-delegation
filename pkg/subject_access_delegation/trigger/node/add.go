@@ -109,11 +109,13 @@ func (p *AddNode) WaitOn() (forceClosed bool) {
 }
 
 func (p *AddNode) watchChannels() (forceClose bool) {
-	select {
-	case <-p.stopCh:
-		return true
-	case <-p.completedCh:
-		return false
+	for {
+		select {
+		case <-p.stopCh:
+			return true
+		case <-p.completedCh:
+			return false
+		}
 	}
 }
 
