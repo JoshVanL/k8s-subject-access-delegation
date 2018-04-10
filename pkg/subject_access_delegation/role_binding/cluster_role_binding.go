@@ -32,9 +32,16 @@ func NewClusterRoleBinding(sad interfaces.SubjectAccessDelegation, roleRef *rbac
 }
 
 func NewFromClusterRoleBinding(sad interfaces.SubjectAccessDelegation, roleBinding *rbacv1.ClusterRoleBinding) interfaces.Binding {
+	name := fmt.Sprintf("%s-%s-%s-%s", sad.Name(), sad.OriginSubject().Name(), sad.Namespace(), roleBinding.RoleRef.Name)
+
+	newBinding := new(rbacv1.ClusterRoleBinding)
+	newBinding.Name = name
+	newBinding.RoleRef = roleBinding.DeepCopy().RoleRef
+	newBinding.Subjects = sad.BindingSubjects()
+
 	return &ClusterRoleBinding{
 		sad:                sad,
-		clusterRoleBinding: roleBinding,
+		clusterRoleBinding: newBinding,
 	}
 }
 

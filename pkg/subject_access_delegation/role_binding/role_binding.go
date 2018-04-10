@@ -32,9 +32,17 @@ func NewRoleBinding(sad interfaces.SubjectAccessDelegation, roleRef *rbacv1.Role
 }
 
 func NewFromRoleBinding(sad interfaces.SubjectAccessDelegation, roleBinding *rbacv1.RoleBinding) interfaces.Binding {
+	name := fmt.Sprintf("%s-%s-%s-%s", sad.Name(), sad.OriginSubject().Name(), sad.Namespace(), roleBinding.RoleRef.Name)
+
+	newBinding := new(rbacv1.RoleBinding)
+	newBinding.Name = name
+	newBinding.Namespace = roleBinding.Namespace
+	newBinding.RoleRef = roleBinding.DeepCopy().RoleRef
+	newBinding.Subjects = sad.BindingSubjects()
+
 	return &RoleBinding{
 		sad:         sad,
-		roleBinding: roleBinding,
+		roleBinding: newBinding,
 	}
 }
 

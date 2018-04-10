@@ -76,7 +76,6 @@ func (s *ServiceAccount) RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs
 }
 
 func (s *ServiceAccount) roleBindings() error {
-	// make this more efficient
 	options := metav1.ListOptions{}
 
 	bindingsList, err := s.client.Rbac().RoleBindings(s.Namespace()).List(options)
@@ -94,16 +93,16 @@ func (s *ServiceAccount) roleBindings() error {
 	s.uids = make(map[types.UID]bool)
 
 	for _, binding := range bindingsList.Items {
+		s.uids[binding.UID] = true
 		if s.bindingContainsSubject(binding.DeepCopy()) {
 			s.bindings = append(s.bindings, binding.DeepCopy())
-			s.uids[binding.UID] = true
 		}
 	}
 
 	for _, binding := range clusterBindingsList.Items {
+		s.uids[binding.UID] = true
 		if s.clusterBindingContainsSubject(binding.DeepCopy()) {
 			s.clusterBindings = append(s.clusterBindings, binding.DeepCopy())
-			s.uids[binding.UID] = true
 		}
 	}
 
@@ -140,6 +139,7 @@ func (s *ServiceAccount) ListenRolebindings() {
 		DeleteFunc: s.delFuncClusterRoleBinding,
 	})
 
+	go s.bindingInformer.Informer().Run(s.stopCh)
 	go s.clusterBindingInformer.Informer().Run(s.stopCh)
 }
 

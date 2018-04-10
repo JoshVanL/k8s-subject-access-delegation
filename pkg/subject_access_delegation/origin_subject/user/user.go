@@ -81,6 +81,7 @@ func (u *User) ListenRolebindings() {
 		DeleteFunc: u.delFuncClusterRoleBinding,
 	})
 
+	go u.bindingInformer.Informer().Run(u.stopCh)
 	go u.clusterBindingInformer.Informer().Run(u.stopCh)
 }
 

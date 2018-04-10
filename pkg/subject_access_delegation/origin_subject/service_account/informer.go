@@ -19,11 +19,11 @@ func (s *ServiceAccount) addFuncRoleBinding(obj interface{}) {
 	}
 
 	// if we arn't referenced or we've seen this binding before, return
-	if s.bindingContainsSubject(roleBinding) || s.seenUID(roleBinding.UID) {
+	if !s.bindingContainsSubject(roleBinding) || s.seenUID(roleBinding.UID) {
 		return
 	}
 
-	s.log.Infof("A new rolebinding referencing '%s' has been added. Updating SAD", s.Name())
+	s.log.Debugf("A new rolebinding referencing '%s' has been added. Updating SAD: %s", s.Name(), roleBinding.Name)
 
 	s.addUID(roleBinding.UID)
 	s.bindings = append(s.bindings, roleBinding)
@@ -47,7 +47,7 @@ func (s *ServiceAccount) delFuncRoleBinding(obj interface{}) {
 		return
 	}
 
-	s.log.Infof("A RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
+	s.log.Debugf("A RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
 
 	if !s.deleteRoleBinding(roleBinding.UID) {
 		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
@@ -78,7 +78,7 @@ func (s *ServiceAccount) updateRoleBinding(oldObj, newObj interface{}) {
 		return
 	}
 
-	s.log.Infof("A RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
+	s.log.Debugf("A RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
 
 	if !s.deleteRoleBinding(oldRoleBinding.UID) {
 		s.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
@@ -106,7 +106,7 @@ func (s *ServiceAccount) addFuncClusterRoleBinding(obj interface{}) {
 		return
 	}
 
-	s.log.Infof("A new cluster rolebinding referencing '%s' has been added. Updating SAD", s.Name())
+	s.log.Debugf("A new cluster rolebinding referencing '%s' has been added. Updating SAD", s.Name())
 
 	s.addUID(clusterRoleBinding.UID)
 	s.clusterBindings = append(s.clusterBindings, clusterRoleBinding)
@@ -130,7 +130,7 @@ func (s *ServiceAccount) delFuncClusterRoleBinding(obj interface{}) {
 		return
 	}
 
-	s.log.Infof("A Cluster RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
+	s.log.Debugf("A Cluster RoleBinding referencing '%s' has been deleted. Updating SAD", s.Name())
 
 	if !s.deleteClusterRoleBinding(clusterRoleBinding.UID) {
 		s.log.Errorf("Didn't find the deleted cluster rolbinding in SAD references. Something has gone very wrong.")
@@ -161,7 +161,7 @@ func (s *ServiceAccount) updateClusterRoleBinding(oldObj, newObj interface{}) {
 		return
 	}
 
-	s.log.Infof("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
+	s.log.Debugf("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", s.Name())
 
 	s.addUID(newClusterRoleBinding.UID)
 	s.clusterBindings = append(s.clusterBindings, newClusterRoleBinding)

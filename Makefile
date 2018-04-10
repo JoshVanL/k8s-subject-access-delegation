@@ -96,6 +96,9 @@ build_darwin_sad:
 build_darwin_end2end:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-w -X main.version=$(CI_COMMIT_TAG) -X main.commit=$(CI_COMMIT_SHA) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)' -o end_to_end_testing_darwin_amd64 ./cmd/end_to_end
 
+build_quick:
+	go build -o k8s_sad ./cmd/subject_access_delegation
+
 go_build_bins:
 	mkdir -p $(BINDIR)
 	go build -o $(BINDIR)/deepcopy-gen ./vendor/k8s.io/code-generator/cmd/deepcopy-gen

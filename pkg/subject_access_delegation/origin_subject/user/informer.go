@@ -19,11 +19,11 @@ func (u *User) addFuncRoleBinding(obj interface{}) {
 	}
 
 	// if we arn't referenced or we've seen this binding before, return
-	if u.bindingContainsSubject(roleBinding) || u.seenUID(roleBinding.UID) {
+	if !u.bindingContainsSubject(roleBinding) || u.seenUID(roleBinding.UID) {
 		return
 	}
 
-	u.log.Infof("A new rolebinding referencing '%s' has been added. Updating SAD", u.Name())
+	u.log.Debugf("A new rolebinding referencing '%s' has been added. Updating SAD", u.Name())
 
 	u.addUID(roleBinding.UID)
 	u.bindings = append(u.bindings, roleBinding)
@@ -47,7 +47,7 @@ func (u *User) delFuncRoleBinding(obj interface{}) {
 		return
 	}
 
-	u.log.Infof("A RoleBinding referencing '%s' has been deleted. Updating SAD", u.Name())
+	u.log.Debugf("A RoleBinding referencing '%s' has been deleted. Updating SAD", u.Name())
 
 	if !u.deleteRoleBinding(roleBinding.UID) {
 		u.log.Errorf("Didn't find the deleted rolbinding in SAD references. Something has gone very wrong.")
@@ -78,7 +78,7 @@ func (u *User) updateRoleBinding(oldObj, newObj interface{}) {
 		return
 	}
 
-	u.log.Info("A RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
+	u.log.Debugf("A RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
 
 	u.addUID(newRoleBinding.UID)
 	u.bindings = append(u.bindings, newRoleBinding)
@@ -102,7 +102,7 @@ func (u *User) addFuncClusterRoleBinding(obj interface{}) {
 		return
 	}
 
-	u.log.Infof("A new cluster rolebinding referencing '%s' has been added. Updating SAD", u.Name())
+	u.log.Debugf("A new cluster rolebinding referencing '%s' has been added. Updating SAD", u.Name())
 
 	u.addUID(clusterRoleBinding.UID)
 	u.clusterBindings = append(u.clusterBindings, clusterRoleBinding)
@@ -126,7 +126,7 @@ func (u *User) delFuncClusterRoleBinding(obj interface{}) {
 		return
 	}
 
-	u.log.Infof("A Cluster RoleBinding referencing '%s' has been deleted. Updating SAD", u.Name())
+	u.log.Debugf("A Cluster RoleBinding referencing '%s' has been deleted. Updating SAD", u.Name())
 
 	if !u.deleteClusterRoleBinding(clusterRoleBinding.UID) {
 		u.log.Errorf("Didn't find the deleted cluster rolbinding in SAD references. Something has gone very wrong.")
@@ -157,7 +157,7 @@ func (u *User) updateClusterRoleBinding(oldObj, newObj interface{}) {
 		return
 	}
 
-	u.log.Info("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
+	u.log.Debugf("A Cluster RoleBinding referencing '%s' has been updated. Updating SAD", u.Name())
 
 	u.addUID(newClusterRoleBinding.UID)
 	u.clusterBindings = append(u.clusterBindings, newClusterRoleBinding)

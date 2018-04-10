@@ -12,3 +12,4 @@ end_to_end_testing_darwin_amd64
 docker/server
 docker/client
 dist/
+k8s_sad
