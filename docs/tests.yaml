@@ -2,59 +2,35 @@ testing_blocks:
   - name: "Initiating startup"
     commands:
     - program: "minikube"
-      arguments:
-      - "start"
-      - "--extra-config=apiserver.Authorization.Mode=RBAC"
-      - "--memory=1024"
-      - "--vm-driver=none"
+      arguments: "start --extra-config=apiserver.Authorization.Mode=RBAC --memory=1024 --vm-driver=none"
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "all"
+      arguments: "get all"
     - program: "./k8s_subject_access_delegation_linux_amd64"
-      arguments:
-      - "-l"
-      - "2"
+      arguments: "--log-level=2"
       background: true
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/pod-role-service-account.yaml"
+      arguments: "create -f docs/pod-role-service-account.yaml"
       delay: 1
 
   - name: "test 1"
     commands:
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/e2e_1.yaml"
+      arguments: "create -f docs/e2e_1.yaml"
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/nginx_pod.yaml"
+      arguments: "create -f docs/nginx_pod.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 1
       split_string_conditions:
       - line: 1
         split: 0
         match: "test-pod-add-pod-reader-default-pod-reader"
     - program: "kubectl"
-      arguments:
-      - "delete"
-      - "-f"
-      - "docs/nginx_pod.yaml"
+      arguments: "delete -f docs/nginx_pod.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 5
       string_conditions:
           - line: 0
@@ -63,20 +39,12 @@ testing_blocks:
   - name: "test 2"
     commands:
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/e2e_2.yaml"
+      arguments: "create -f docs/e2e_2.yaml"
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/nginx_pod2.yaml"
+      arguments: "create -f docs/nginx_pod2.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "describe"
-      - "rolebindings"
+      arguments: "describe rolebindings"
       delay: 1
       split_string_conditions:
       - line: 9
@@ -86,15 +54,10 @@ testing_blocks:
         split: 1
         match: "test-user2"
     - program: "kubectl"
-      arguments:
-      - "delete"
-      - "-f"
-      - "docs/nginx_pod2.yaml"
+      arguments: "delete -f docs/nginx_pod2.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 5
       string_conditions:
           - line: 0
@@ -103,27 +66,16 @@ testing_blocks:
   - name: "test 3"
     commands:
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/rolebinding.yaml"
+      arguments: "create -f docs/rolebinding.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/e2e_3.yaml"
+      arguments: "create -f docs/e2e_3.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/nginx_pod3.yaml"
+      arguments: "create -f docs/nginx_pod3.yaml"
       delay: 2
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 3
       split_string_conditions:
       - line: 3
@@ -133,43 +85,60 @@ testing_blocks:
         split: 0
         match: "test-group-test-sa-default-pod-reader"
     - program: "kubectl"
-      arguments:
-      - "delete"
-      - "-f"
-      - "docs/nginx_pod3.yaml"
+      arguments: "delete -f docs/nginx_pod3.yaml"
       delay: 3
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 5
 
   - name: "Single Binding"
     commands:
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/e2e_4.yaml"
+      arguments: "create -f docs/e2e_4.yaml"
       delay: 1
     - program: "kubectl"
-      arguments:
-      - "create"
-      - "-f"
-      - "docs/nginx_pod.yaml"
+      arguments: "create -f docs/nginx_pod.yaml"
       delay: 2
     - program: "kubectl"
-      arguments:
-      - "get"
-      - "rolebindings"
+      arguments: "get rolebindings"
       delay: 3
       split_string_conditions:
       - line: 3
         split: 0
         match: "test-group-test-sa-default-pod-logs-reader"
+    - program: "kubectl"
+      arguments: "delete -f docs/e2e_4.yaml"
+      delay: 3
+
+  - name: "Dynamic Permission"
+    commands:
+    - program: "kubectl"
+      arguments: "delete rolebindings --all"
+      delay: 1
+    - program: "kubectl"
+      arguments: "create -f docs/rolebinding.yaml"
+      delay: 2
+    - program: "kubectl"
+      arguments: "delete rolebinding pod-logs-reader"
+      delay: 2
+    - program: "kubectl"
+      arguments: "create -f docs/e2e_4.yaml"
+      delay: 4
+    - program: "kubectl"
+      arguments: "create -f docs/rolebinding.yaml"
+      delay: 3
+    - program: "kubectl"
+      arguments: "get rolebindings"
+      delay: 3
+      split_string_conditions:
+      - line: 3
+        split: 0
+        match: "test-group-test-sa-default-pod-logs-reader"
+      - line: 4
+        split: 0
+        match: "test-group-test-sa-default-pod-reader"
 
   - name: "Cleaning up"
     commands:
     - program: "minikube"
-      arguments:
-      - "delete"
+      arguments: "delete"

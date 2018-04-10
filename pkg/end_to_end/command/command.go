@@ -20,7 +20,7 @@ type Command struct {
 	scanStderr *bufio.Scanner
 
 	name string
-	args []string
+	args string
 	cmd  *exec.Cmd
 
 	complete chan struct{}
@@ -28,12 +28,14 @@ type Command struct {
 	stderrCh chan string
 }
 
-func New(name string, args []string) (*Command, error) {
+func New(name string, args string) (*Command, error) {
 	var result *multierror.Error
+	a := strings.Split(args, " ")
+
 	command := &Command{
 		name:     name,
 		args:     args,
-		cmd:      exec.Command(name, args...),
+		cmd:      exec.Command(name, a...),
 		complete: make(chan struct{}),
 		stdoutCh: make(chan string),
 		stderrCh: make(chan string),
@@ -89,7 +91,9 @@ func (c *Command) Run() error {
 	wg.Wait()
 
 	if err := c.cmd.Wait(); err != nil {
-		result = multierror.Append(result, err)
+		if _, ok := err.(*exec.ExitError); !ok {
+			result = multierror.Append(result, err)
+		}
 	}
 
 	close(c.complete)
@@ -124,5 +128,5 @@ func (c *Command) Kill() error {
 }
 
 func (c *Command) String() string {
-	return fmt.Sprintf("%s %s", c.name, strings.Join(c.args, " "))
+	return fmt.Sprintf("%s %s", c.name, c.args)
 }

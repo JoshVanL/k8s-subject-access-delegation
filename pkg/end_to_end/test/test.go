@@ -28,8 +28,8 @@ type TestBlock struct {
 
 type Command struct {
 	Command   *command.Command
-	Program   string   `yaml:"program"`
-	Arguments []string `yaml:"arguments"`
+	Program   string `yaml:"program"`
+	Arguments string `yaml:"arguments"`
 
 	Background  bool                   `yaml:"background"`
 	Delay       int                    `yaml:"delay"`
