@@ -98,14 +98,9 @@ func (p *AddPod) WaitOn() (forceClosed bool) {
 		return false
 	}
 
-	for {
-		select {
-		case <-p.stopCh:
-			p.log.Debug("Add Pod Trigger was force closed")
-			return true
-
-		case <-p.completedCh:
-		}
+	if p.watchChannels() {
+		p.log.Debug("Add Pod Trigger was force closed")
+		return true
 	}
 
 	p.log.Debug("Add Pod Trigger completed")
@@ -115,6 +110,19 @@ func (p *AddPod) WaitOn() (forceClosed bool) {
 	}
 
 	return false
+}
+
+func (p *AddPod) watchChannels() bool {
+	for {
+		select {
+		case <-p.stopCh:
+			p.log.Debug("Add Pod Trigger was force closed")
+			return true
+
+		case <-p.completedCh:
+			return false
+		}
+	}
 }
 
 func (p *AddPod) Activate() {
