@@ -52,7 +52,6 @@ func NewAddPod(sad interfaces.SubjectAccessDelegation, trigger *authzv1alpha1.Ev
 	}
 
 	podTrigger.informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		//TODO: Fix this
 		AddFunc: podTrigger.addFunc,
 	})
 

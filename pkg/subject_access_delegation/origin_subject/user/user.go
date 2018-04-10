@@ -25,6 +25,7 @@ type User struct {
 
 	bindings        []*rbacv1.RoleBinding
 	clusterBindings []*rbacv1.ClusterRoleBinding
+	stopCh          chan struct{}
 
 	bindingInformer        informer.RoleBindingInformer
 	clusterBindingInformer informer.ClusterRoleBindingInformer
@@ -41,6 +42,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *User {
 		name:                   name,
 		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
 		clusterBindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
+		stopCh:                 make(chan struct{}),
 	}
 }
 
@@ -79,7 +81,7 @@ func (u *User) ListenRolebindings() {
 		DeleteFunc: u.delFuncClusterRoleBinding,
 	})
 
-	go u.clusterBindingInformer.Informer().Run(make(chan struct{}))
+	go u.clusterBindingInformer.Informer().Run(u.stopCh)
 }
 
 func (u *User) roleBindings() error {
@@ -147,4 +149,7 @@ func (u *User) Name() string {
 
 func (u *User) Kind() string {
 	return rbacv1.UserKind
+}
+func (u *User) Delete() {
+	close(u.stopCh)
 }

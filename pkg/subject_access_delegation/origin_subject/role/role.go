@@ -76,3 +76,6 @@ func (o *Role) Name() string {
 func (o *Role) Kind() string {
 	return RoleKind
 }
+
+func (o *Role) Delete() {
+}

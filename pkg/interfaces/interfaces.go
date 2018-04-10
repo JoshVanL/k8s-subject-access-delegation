@@ -52,6 +52,7 @@ type OriginSubject interface {
 	RoleRefs() (roleRefs []*rbacv1.RoleRef, clusterRoleRefs []*rbacv1.RoleRef)
 	Name() string
 	Kind() string
+	Delete()
 }
 
 type DestinationSubject interface {

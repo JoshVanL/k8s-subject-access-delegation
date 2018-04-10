@@ -22,6 +22,7 @@ type Group struct {
 	namespace string
 	name      string
 	uids      map[types.UID]bool
+	stopCh    chan struct{}
 
 	bindings        []*rbacv1.RoleBinding
 	clusterBindings []*rbacv1.ClusterRoleBinding
@@ -41,6 +42,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *Group {
 		name:                   name,
 		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
 		clusterBindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
+		stopCh:                 make(chan struct{}),
 	}
 }
 
@@ -79,7 +81,7 @@ func (g *Group) ListenRolebindings() {
 		DeleteFunc: g.delFuncClusterRoleBinding,
 	})
 
-	go g.clusterBindingInformer.Informer().Run(make(chan struct{}))
+	go g.clusterBindingInformer.Informer().Run(g.stopCh)
 }
 
 func (g *Group) roleBindings() error {
@@ -147,4 +149,8 @@ func (g *Group) Name() string {
 
 func (g *Group) Kind() string {
 	return rbacv1.GroupKind
+}
+
+func (g *Group) Delete() {
+	close(g.stopCh)
 }

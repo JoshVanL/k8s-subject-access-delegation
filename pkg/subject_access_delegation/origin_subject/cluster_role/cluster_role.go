@@ -71,3 +71,6 @@ func (c *ClusterRole) Name() string {
 func (c *ClusterRole) Kind() string {
 	return ClusterRoleKind
 }
+
+func (c *ClusterRole) Delete() {
+}

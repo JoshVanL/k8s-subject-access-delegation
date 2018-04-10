@@ -492,6 +492,9 @@ func (s *SubjectAccessDelegation) Delete() error {
 		result = multierror.Append(result, err)
 	}
 
+	s.log.Debugf("Attempting to delete delegation '%s' Origin Subject", s.Name())
+	s.OriginSubject().Delete()
+
 	s.log.Debugf("Attempting to delete delegation '%s' triggers", s.Name())
 	for _, trigger := range s.triggers {
 		if err := trigger.Delete(); err != nil {

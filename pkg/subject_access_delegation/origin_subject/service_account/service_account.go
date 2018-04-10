@@ -28,6 +28,7 @@ type ServiceAccount struct {
 	bindings        []*rbacv1.RoleBinding
 	clusterBindings []*rbacv1.ClusterRoleBinding
 	uids            map[types.UID]bool
+	stopCh          chan struct{}
 
 	bindingInformer        informer.RoleBindingInformer
 	clusterBindingInformer informer.ClusterRoleBindingInformer
@@ -44,6 +45,7 @@ func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
 		name:                   name,
 		bindingInformer:        sad.KubeInformerFactory().Rbac().V1().RoleBindings(),
 		clusterBindingInformer: sad.KubeInformerFactory().Rbac().V1().ClusterRoleBindings(),
+		stopCh:                 make(chan struct{}),
 	}
 }
 
@@ -138,7 +140,7 @@ func (s *ServiceAccount) ListenRolebindings() {
 		DeleteFunc: s.delFuncClusterRoleBinding,
 	})
 
-	go s.clusterBindingInformer.Informer().Run(make(chan struct{}))
+	go s.clusterBindingInformer.Informer().Run(s.stopCh)
 }
 
 func (s *ServiceAccount) bindingContainsSubject(binding *rbacv1.RoleBinding) bool {
@@ -171,4 +173,8 @@ func (s *ServiceAccount) Name() string {
 
 func (s *ServiceAccount) Kind() string {
 	return rbacv1.ServiceAccountKind
+}
+
+func (s *ServiceAccount) Delete() {
+	close(s.stopCh)
 }
