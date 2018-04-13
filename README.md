@@ -68,27 +68,68 @@ An example of a rule is as follows. Here `Remote-Employee1` and
 for 14 hours every day for 365 days.
 
 ```yaml
-apiVersion: authz.k8s.io/v1alpha1
+apiVersion: authz.sad/v1alpha1
 kind: SubjectAccessDelegation
-metadata:
-name: my-subject-access-delegation
+  metadata:
+  name: my-subject-access-delegation
 namespace: dev-namespace
 spec:
-repeat: 365
-originSubject:
-  kind: User
-  name: Employee
-destinationSubjects:
-- kind: User
-  name: Remote-Employee1
-- kind: User
-  name: Remote-Employee2
-triggers:
-- kind: Time
-  value: 6:00pm
-deletionTriggers:
-- kind: Time
-  value: 14h
+  repeat: 365
+  originSubject:
+    kind: User
+    name: Employee
+  destinationSubjects:
+  - kind: User
+    name: Remote-Employee1
+  - kind: User
+    name: Remote-Employee2
+  triggers:
+  - kind: Time
+    value: 6:00pm
+  deletionTriggers:
+  - kind: Time
+    value: 14h
+```
+
+## Available Trigger Kinds
+- Time: Accepts values in the form ##:##(am|pm), forever, never, now, #(days|d),
+  #(minutes|m), #(seconds|s), #(nanoseconds|n).
+
+```yaml
+  triggers:
+  - kind: Time
+    value: 4h 2m
+```
+
+- Event: Add, Delete and Update verbs are available for the following
+  resource types:
+    - AddNode
+    - DelNode
+    - UpdateNode
+    - DelPod
+    - UpdatePodKind
+    - AddPod
+    - AddService
+    - UpdateService
+    - DelService
+    - AddSecret
+    - DelSecret
+    - UpdateSecretKind
+    - AddServiceAccount
+    - UpdateServiceAccountKind
+    - DelServiceAccount
+    - AddEndPoints
+    - DelEndPoints
+    - UpdateEndPoints
+    - AddDeployment
+    - DelDeployment
+    - UpdateDeployment
+
+```yaml
+  triggers:
+  - kind: AddPod
+    replicas: 1
+    value: tiller*
 ```
 
 ## Notes
