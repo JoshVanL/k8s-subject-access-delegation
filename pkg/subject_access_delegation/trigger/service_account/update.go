@@ -12,7 +12,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-const UpdateServiceAccountKind = "UpdateServiceAccountKind"
+const UpdateServiceAccountKind = "UpdateServiceAccount"
 
 type UpdateServiceAccount struct {
 	log *logrus.Entry
@@ -141,10 +141,6 @@ func (s *UpdateServiceAccount) Delete() error {
 	return nil
 }
 
-func (s *UpdateServiceAccount) Replicas() int {
-	return s.replicas
-}
+func (s *UpdateServiceAccount) Replicas() int { return s.replicas }
 
-func (s *UpdateServiceAccount) Kind() string {
-	return UpdateServiceAccountKind
-}
+func (s *UpdateServiceAccount) Kind() string { return UpdateServiceAccountKind }

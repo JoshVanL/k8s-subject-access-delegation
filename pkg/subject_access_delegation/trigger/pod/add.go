@@ -133,19 +133,13 @@ func (p *AddPod) Activate() {
 	return
 }
 
-func (p *AddPod) Completed() bool {
-	return p.completed
-}
+func (p *AddPod) Completed() bool { return p.completed }
 
 func (p *AddPod) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *AddPod) Replicas() int {
-	return p.replicas
-}
+func (p *AddPod) Replicas() int { return p.replicas }
 
-func (p *AddPod) Kind() string {
-	return AddPodKind
-}
+func (p *AddPod) Kind() string { return AddPodKind }

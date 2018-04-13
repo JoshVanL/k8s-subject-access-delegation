@@ -12,7 +12,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-const UpdateSecretKind = "UpdateSecretKind"
+const UpdateSecretKind = "UpdateSecret"
 
 type UpdateSecret struct {
 	log *logrus.Entry
@@ -133,19 +133,13 @@ func (s *UpdateSecret) Activate() {
 	return
 }
 
-func (s *UpdateSecret) Completed() bool {
-	return s.completed
-}
+func (s *UpdateSecret) Completed() bool { return s.completed }
 
 func (s *UpdateSecret) Delete() error {
 	close(s.stopCh)
 	return nil
 }
 
-func (s *UpdateSecret) Replicas() int {
-	return s.replicas
-}
+func (s *UpdateSecret) Replicas() int { return s.replicas }
 
-func (s *UpdateSecret) Kind() string {
-	return UpdateSecretKind
-}
+func (s *UpdateSecret) Kind() string { return UpdateSecretKind }

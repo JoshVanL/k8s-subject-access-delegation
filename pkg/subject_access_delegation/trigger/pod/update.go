@@ -12,7 +12,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
-const UpdatePodKind = "UpdatePodKind"
+const UpdatePodKind = "UpdatePod"
 
 type UpdatePod struct {
 	log *logrus.Entry
@@ -133,19 +133,13 @@ func (p *UpdatePod) Activate() {
 	return
 }
 
-func (p *UpdatePod) Completed() bool {
-	return p.completed
-}
+func (p *UpdatePod) Completed() bool { return p.completed }
 
 func (p *UpdatePod) Delete() error {
 	close(p.stopCh)
 	return nil
 }
 
-func (p *UpdatePod) Replicas() int {
-	return p.replicas
-}
+func (p *UpdatePod) Replicas() int { return p.replicas }
 
-func (p *UpdatePod) Kind() string {
-	return UpdatePodKind
-}
+func (p *UpdatePod) Kind() string { return UpdatePodKind }
