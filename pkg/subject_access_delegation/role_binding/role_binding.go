@@ -46,15 +46,22 @@ func NewFromRoleBinding(sad interfaces.SubjectAccessDelegation, roleBinding *rba
 	}
 }
 
-func (r *RoleBinding) CreateRoleBinding() (interfaces.Binding, error) {
+func (r *RoleBinding) CreateRoleBinding() (interfaces.Binding, bool, error) {
+	options := metav1.GetOptions{}
+
+	b, err := r.sad.Client().Rbac().RoleBindings(r.sad.Namespace()).Get(r.Name(), options)
+	if err != nil && b != nil && b.UID != "" {
+		return nil, true, nil
+	}
+
 	binding, err := r.sad.Client().Rbac().RoleBindings(r.sad.Namespace()).Create(r.roleBinding)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	r.roleBinding = binding
 
-	return r, nil
+	return r, false, nil
 }
 
 func (r *RoleBinding) DeleteRoleBinding() error {

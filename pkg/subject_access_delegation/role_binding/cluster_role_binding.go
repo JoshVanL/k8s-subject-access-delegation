@@ -45,15 +45,22 @@ func NewFromClusterRoleBinding(sad interfaces.SubjectAccessDelegation, roleBindi
 	}
 }
 
-func (c *ClusterRoleBinding) CreateRoleBinding() (interfaces.Binding, error) {
+func (c *ClusterRoleBinding) CreateRoleBinding() (interfaces.Binding, bool, error) {
+	options := metav1.GetOptions{}
+
+	b, err := c.sad.Client().Rbac().ClusterRoleBindings().Get(c.Name(), options)
+	if err != nil && b != nil && b.UID != "" {
+		return nil, true, nil
+	}
+
 	binding, err := c.sad.Client().Rbac().ClusterRoleBindings().Create(c.clusterRoleBinding)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cluster role binding: %v", err)
+		return nil, false, fmt.Errorf("failed to create cluster role binding: %v", err)
 	}
 
 	c.clusterRoleBinding = binding
 
-	return c, nil
+	return c, false, nil
 }
 
 func (c *ClusterRoleBinding) DeleteRoleBinding() error {

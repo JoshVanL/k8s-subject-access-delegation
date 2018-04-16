@@ -3,6 +3,7 @@ package subject_access_delegation
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -106,21 +107,39 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			return false, fmt.Errorf("failed to apply delegation: %v", err)
 		}
 
-		if err := s.BuildDeletionTriggers(); err != nil {
-			return false, err
+		skip := false
+		for _, trigger := range s.sad.Spec.DeletionTriggers {
+			if trigger.Kind == "Time" && strings.ToLower(trigger.Value) == "forever" {
+				skip = true
+				break
+			}
 		}
 
-		closed, err = s.ActivateDeletionTriggers()
-		if err != nil {
-			return false, err
-		}
-		if closed {
-			s.log.Debugf("A Trigger was found closed, exiting.")
-			return true, nil
-		}
+		if !skip {
+			if err := s.BuildDeletionTriggers(); err != nil {
+				return false, err
+			}
 
-		if err := s.DeleteRoleBindings(); err != nil {
-			return false, err
+			closed, err = s.ActivateDeletionTriggers()
+			if err != nil {
+				return false, err
+			}
+			if closed {
+				s.log.Debugf("A Trigger was found closed, exiting.")
+				return true, nil
+			}
+
+			if err := s.DeleteRoleBindings(); err != nil {
+				return false, err
+			}
+
+			// if it's the last iteration, wait here 'forver' till deletion
+		} else {
+			if i == s.Repeat()-1 {
+				<-s.stopCh
+
+				return true, nil
+			}
 		}
 
 		if err := s.updateInteration(i + 1); err != nil {
@@ -205,9 +224,14 @@ func (s *SubjectAccessDelegation) DeleteRoleBindings() error {
 }
 
 func (s *SubjectAccessDelegation) createRoleBinding(binding interfaces.Binding) error {
-	binding, err := binding.CreateRoleBinding()
+	binding, exists, err := binding.CreateRoleBinding()
 	if err != nil {
 		return fmt.Errorf("failed to create role binding: %v", err)
+	}
+
+	if exists {
+		s.log.Infof("Role Binding '%s' already exists, skipping", binding.Name())
+		return nil
 	}
 
 	s.log.Infof("Role Binding '%s' Created", binding.Name())

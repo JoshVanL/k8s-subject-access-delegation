@@ -74,6 +74,6 @@ type Binding interface {
 	Name() string
 	Kind() string
 	RoleRef() *rbacv1.RoleRef
-	CreateRoleBinding() (Binding, error)
+	CreateRoleBinding() (Binding, bool, error)
 	DeleteRoleBinding() error
 }
