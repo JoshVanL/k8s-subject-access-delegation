@@ -3,13 +3,16 @@ package service_account
 import (
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
 type ServiceAccount struct {
@@ -24,14 +27,50 @@ type ServiceAccount struct {
 
 var _ interfaces.DestinationSubject = &ServiceAccount{}
 
-func New(sad interfaces.SubjectAccessDelegation, name string) *ServiceAccount {
-	return &ServiceAccount{
-		log:       sad.Log(),
-		client:    sad.Client(),
-		sad:       sad,
-		namespace: sad.Namespace(),
-		name:      name,
+func New(sad interfaces.SubjectAccessDelegation, name string) ([]interfaces.DestinationSubject, error) {
+	if strings.Contains(name, "*") {
+		if !utils.ValidName(name) {
+			return nil, fmt.Errorf("Not a valid regular expression for Service Account '%s'", name)
+		}
+
+		options := metav1.ListOptions{}
+		sas, err := sad.Client().Core().ServiceAccounts(sad.Namespace()).List(options)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list service accounts: %v", err)
+		}
+
+		var result *multierror.Error
+		var serviceAccounts []interfaces.DestinationSubject
+
+		for _, sa := range sas.Items {
+			match, err := utils.MatchName(sa.Name, name)
+
+			if err != nil {
+				result = multierror.Append(result, fmt.Errorf("error matching service account regex: %v", err))
+			} else if match {
+
+				serviceAccounts = append(serviceAccounts, &ServiceAccount{
+					log:       sad.Log(),
+					client:    sad.Client(),
+					sad:       sad,
+					namespace: sad.Namespace(),
+					name:      sa.Name,
+				})
+			}
+		}
+
+		return serviceAccounts, result.ErrorOrNil()
 	}
+
+	return []interfaces.DestinationSubject{
+		&ServiceAccount{
+			log:       sad.Log(),
+			client:    sad.Client(),
+			sad:       sad,
+			namespace: sad.Namespace(),
+			name:      name,
+		},
+	}, nil
 }
 
 func (d *ServiceAccount) getServiceAccount() error {

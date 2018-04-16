@@ -13,19 +13,21 @@ const ServiceAccountKind = "ServiceAccount"
 const UserKind = "User"
 const GroupKind = "Group"
 
-func New(sad interfaces.SubjectAccessDelegation, name, kind string) (interfaces.DestinationSubject, error) {
-	var destinationSubject interfaces.DestinationSubject
+func New(sad interfaces.SubjectAccessDelegation, name, kind string) ([]interfaces.DestinationSubject, error) {
 
 	switch kind {
 	case ServiceAccountKind:
-		destinationSubject = service_account.New(sad, name)
-		return destinationSubject, nil
+		destinationSubjects, err := service_account.New(sad, name)
+		if err != nil {
+			return nil, err
+		}
+		return destinationSubjects, nil
 	case UserKind:
-		destinationSubject = user.New(sad, name)
-		return destinationSubject, nil
+		destinationSubject := user.New(sad, name)
+		return []interfaces.DestinationSubject{destinationSubject}, nil
 	case GroupKind:
-		destinationSubject = group.New(sad, name)
-		return destinationSubject, nil
+		destinationSubject := group.New(sad, name)
+		return []interfaces.DestinationSubject{destinationSubject}, nil
 	default:
 		return nil, fmt.Errorf("Subject Accesss Deletgation does not support Destination Subject Kind '%s'", kind)
 	}

@@ -480,12 +480,12 @@ func (s *SubjectAccessDelegation) getDestinationSubjects() ([]interfaces.Destina
 	}
 
 	for _, destinationSubject := range s.sad.Spec.DestinationSubjects {
-		subject, err := destination_subject.New(s, destinationSubject.Name, destinationSubject.Kind)
+		subjects, err := destination_subject.New(s, destinationSubject.Name, destinationSubject.Kind)
 
 		if err != nil {
 			result = multierror.Append(result, err)
 		} else {
-			destinationSubjects = append(destinationSubjects, subject)
+			destinationSubjects = append(destinationSubjects, subjects...)
 		}
 	}
 
