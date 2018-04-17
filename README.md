@@ -137,7 +137,8 @@ spec:
 passed NTP server URLs.
 - Permissions on destination subjects are dynamic in accordance to changes to
   the origin subject's within active rules.
-- Event trigger names accepts wildcards (\*) that are resolved during runtime.
+- Event trigger names and destination subjects accepts wildcards (\*) that are
+  resolved during runtime.
 - The controller will attempt failure recovery if for whatever reason the
   controller exits or crashes. This means a state re-sync with all rules in the
   API server.
