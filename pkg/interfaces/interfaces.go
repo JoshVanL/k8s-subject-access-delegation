@@ -24,6 +24,10 @@ type SubjectAccessDelegation interface {
 	Log() *logrus.Entry
 	Client() kubernetes.Interface
 	KubeInformerFactory() kubeinformers.SharedInformerFactory
+	SAD() *authzv1alpha1.SubjectAccessDelegation
+
+	InitDelegation() error
+	UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) (bool, error)
 
 	ResolveDestinations() error
 	OriginSubject() OriginSubject
@@ -38,7 +42,6 @@ type SubjectAccessDelegation interface {
 	UpdateRoleBinding(old, new Binding) error
 	DeleteRoleBinding(delBining Binding) error
 	BindingSubjects() []rbacv1.Subject
-	UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) (bool, error)
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool

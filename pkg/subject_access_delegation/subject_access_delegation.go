@@ -98,7 +98,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
 		s.triggered = false
 
-		if err := s.initDelegation(); err != nil {
+		if err := s.InitDelegation(); err != nil {
 			return false, fmt.Errorf("error initiating Subject Access Delegation: %v", err)
 		}
 
@@ -182,7 +182,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	return false, nil
 }
 
-func (s *SubjectAccessDelegation) initDelegation() error {
+func (s *SubjectAccessDelegation) InitDelegation() error {
 	var result *multierror.Error
 
 	if err := s.BuildTriggers(); err != nil {
@@ -662,6 +662,10 @@ func (s *SubjectAccessDelegation) ResolveDestinations() error {
 func (s *SubjectAccessDelegation) Delete() error {
 	var result *multierror.Error
 
+	if !s.sad.Status.Processed {
+		return nil
+	}
+
 	s.log.Debugf("Attempting to delete delegation '%s' bindings", s.Name())
 	if err := s.deleteAllBindings(); err != nil {
 		result = multierror.Append(result, err)
@@ -823,4 +827,8 @@ func (s *SubjectAccessDelegation) DeleteUid(uid types.UID) {
 
 func (s *SubjectAccessDelegation) BindingSubjects() []rbacv1.Subject {
 	return s.bindingSubjects
+}
+
+func (s *SubjectAccessDelegation) SAD() *authzv1alpha1.SubjectAccessDelegation {
+	return s.sad
 }

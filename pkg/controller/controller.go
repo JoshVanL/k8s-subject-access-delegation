@@ -284,6 +284,17 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		return err
 	}
 
+	if err := delegation.InitDelegation(); err != nil {
+		var result *multierror.Error
+		result = multierror.Append(err, result)
+
+		if err := c.manuallyDeleteSad(delegation.SAD()); err != nil {
+			result = multierror.Append(result, err)
+		}
+
+		return fmt.Errorf("error initiating Subject Access Delegation: %s", result.Error())
+	}
+
 	go func() {
 		closed, err := delegation.Delegate()
 		if err != nil {
@@ -293,7 +304,9 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		delegation.DeleteRoleBindings()
 
 		if !closed {
-			c.manuallyDeleteSad(sad)
+			if err := c.manuallyDeleteSad(sad); err != nil {
+				c.log.Error(err)
+			}
 		}
 
 		return
@@ -302,13 +315,14 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 	return nil
 }
 
-func (c *Controller) manuallyDeleteSad(sad *authzv1alpha1.SubjectAccessDelegation) {
+func (c *Controller) manuallyDeleteSad(sad *authzv1alpha1.SubjectAccessDelegation) error {
 	options := &metav1.DeleteOptions{}
 	err := c.sadclientset.Authz().SubjectAccessDelegations(sad.Namespace).Delete(sad.Name, options)
 	if err != nil {
-		c.log.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
-		return
+		return fmt.Errorf("Failed to delete Subject Access Delegation '%s' after completion: %v", sad.Name, err)
 	}
+
+	return nil
 }
 
 func (c *Controller) enqueueSad(obj interface{}) {

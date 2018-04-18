@@ -1,0 +1,19 @@
+apiVersion: authz.sad/v1alpha1
+kind: SubjectAccessDelegation
+metadata:
+  name: test-update
+  namespace: default
+spec:
+  repeat: 1
+  originSubject:
+    kind: ServiceAccount
+    name: test-sa
+  destinationSubjects:
+  - kind: Users
+    name: user
+  triggers:
+  - kind: AddPod
+    value: "*"
+  deletionTriggers:
+  - kind: Time
+    value: 500s
