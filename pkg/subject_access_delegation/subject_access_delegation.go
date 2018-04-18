@@ -43,6 +43,8 @@ type SubjectAccessDelegation struct {
 
 	triggered   bool
 	stopCh      chan struct{}
+	isActive    bool
+	revert      chan bool
 	clockOffset time.Duration
 }
 
@@ -69,6 +71,7 @@ func New(controller interfaces.Controller,
 		bindingSubjects:     make([]rbacv1.Subject, 0),
 		triggered:           false,
 		stopCh:              make(chan struct{}),
+		isActive:            false,
 		clockOffset:         clockOffset,
 	}
 }
@@ -81,6 +84,8 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 	}
 
 	for i := s.sad.Status.Iteration; i < s.Repeat(); i++ {
+
+		s.isActive = false
 
 		if err := s.updateLocalSAD(); err != nil {
 			return false, err
@@ -102,6 +107,8 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 			s.log.Debugf("A Trigger was found closed, exiting.")
 			return true, nil
 		}
+
+		s.isActive = true
 
 		if err := s.ApplyDelegation(); err != nil {
 			return false, fmt.Errorf("failed to apply delegation: %v", err)
@@ -170,6 +177,121 @@ func (s *SubjectAccessDelegation) initDelegation() error {
 	}
 
 	s.bindingSubjects = s.buildDestinationSubjects()
+
+	return result.ErrorOrNil()
+}
+
+func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) error {
+	var result *multierror.Error
+
+	s.revert = make(chan bool)
+
+	triggerChanged := true
+	subjectChanged := true
+
+	for _, newTrigger := range sad.Spec.EventTriggers {
+		triggerChanged = true
+
+		for _, oldTrigger := range s.sad.Spec.EventTriggers {
+			if newTrigger.Value == oldTrigger.Value && newTrigger.Kind == oldTrigger.Kind && newTrigger.Replicas == oldTrigger.Replicas {
+				triggerChanged = false
+				break
+			}
+		}
+
+		if triggerChanged {
+			break
+		}
+	}
+
+	if !triggerChanged {
+		for _, newTrigger := range sad.Spec.DeletionTriggers {
+			triggerChanged = true
+
+			for _, oldTrigger := range s.sad.Spec.DeletionTriggers {
+				if newTrigger.Value == oldTrigger.Value && newTrigger.Kind == oldTrigger.Kind && newTrigger.Replicas == oldTrigger.Replicas {
+					triggerChanged = false
+					break
+				}
+			}
+
+			if triggerChanged {
+				break
+			}
+		}
+	}
+
+	if triggerChanged {
+		for _, trigger := range s.triggers {
+			if err := trigger.Delete(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+
+		for _, delTrigger := range s.deletionTriggers {
+			if err := delTrigger.Delete(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
+	if sad.Spec.OriginSubject.Name == s.sad.Spec.OriginSubject.Name && sad.Spec.OriginSubject.Kind == s.sad.Spec.OriginSubject.Kind {
+		subjectChanged = false
+	}
+
+	if !subjectChanged {
+		subjectChanged = true
+
+		for _, newSubject := range sad.Spec.DestinationSubjects {
+			for _, oldSubject := range s.sad.Spec.DestinationSubjects {
+				if newSubject.Name == oldSubject.Name && newSubject.Kind == oldSubject.Kind {
+					subjectChanged = false
+					break
+				}
+			}
+
+			if subjectChanged {
+				break
+			}
+		}
+	}
+
+	if s.isActive && subjectChanged {
+		if err := s.DeleteRoleBindings(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	s.sad = sad.DeepCopy()
+
+	if subjectChanged {
+		if err := s.GetSubjects(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if triggerChanged {
+		if err := s.BuildTriggers(); err != nil {
+			result = multierror.Append(result, err)
+		}
+		if err := s.BuildDeletionTriggers(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if s.isActive && subjectChanged {
+		if err := s.ApplyDelegation(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if triggerChanged {
+		s.revert <- true
+	} else {
+		s.revert <- false
+	}
+
+	close(s.revert)
 
 	return result.ErrorOrNil()
 }
