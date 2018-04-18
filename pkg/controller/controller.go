@@ -151,12 +151,14 @@ func (c *Controller) updateSadObject(old, new interface{}) {
 		return
 	}
 
-	if err := delegation.UpdateSadObject(newSad); err != nil {
+	notify, err := delegation.UpdateSadObject(newSad)
+	if err != nil {
 		c.log.Errorf("error during update of Subject Access Delegation object: %v", err)
 		return
 	}
-
-	c.log.Infof("Subject Access Delegation '%s' Successfully Updated!")
+	if notify {
+		c.log.Infof("Subject Access Delegation '%s' Successfully Updated!", newSad.Name)
+	}
 }
 
 func (c *Controller) updateStateFromAPI() error {

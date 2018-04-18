@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -46,6 +47,7 @@ type SubjectAccessDelegation struct {
 	isActive    bool
 	revert      chan bool
 	clockOffset time.Duration
+	mx          *sync.Mutex
 }
 
 var (
@@ -73,6 +75,7 @@ func New(controller interfaces.Controller,
 		stopCh:              make(chan struct{}),
 		isActive:            false,
 		clockOffset:         clockOffset,
+		mx:                  new(sync.Mutex),
 	}
 }
 
@@ -199,9 +202,10 @@ func (s *SubjectAccessDelegation) initDelegation() error {
 	return result.ErrorOrNil()
 }
 
-func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) error {
+func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) (bool, error) {
 	var result *multierror.Error
 
+	s.mx.Lock()
 	s.revert = make(chan bool)
 
 	triggerChanged := true
@@ -274,6 +278,12 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 		}
 	}
 
+	if !subjectChanged && !triggerChanged {
+		close(s.revert)
+		s.mx.Unlock()
+		return false, nil
+	}
+
 	if s.isActive && subjectChanged {
 		if err := s.DeleteRoleBindings(); err != nil {
 			result = multierror.Append(result, err)
@@ -310,8 +320,9 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 	}
 
 	close(s.revert)
+	s.mx.Unlock()
 
-	return result.ErrorOrNil()
+	return true, result.ErrorOrNil()
 }
 
 func (s *SubjectAccessDelegation) ApplyDelegation() error {

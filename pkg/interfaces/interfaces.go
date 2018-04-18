@@ -38,7 +38,7 @@ type SubjectAccessDelegation interface {
 	UpdateRoleBinding(old, new Binding) error
 	DeleteRoleBinding(delBining Binding) error
 	BindingSubjects() []rbacv1.Subject
-	UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) error
+	UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) (bool, error)
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool
