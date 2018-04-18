@@ -28,6 +28,7 @@ import (
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/interfaces"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/ntp_client"
 	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation"
+	"github.com/joshvanl/k8s-subject-access-delegation/pkg/subject_access_delegation/utils"
 )
 
 const controllerAgentName = "SAD-controller"
@@ -86,7 +87,7 @@ func NewController(
 	sadInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSad,
 		UpdateFunc: func(old, new interface{}) {
-			controller.enqueueSad(new)
+			controller.updateSadObject(old, new)
 		},
 		DeleteFunc: controller.deleteSad,
 	})
@@ -130,6 +131,32 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	<-stopCh
 
 	return nil
+}
+
+func (c *Controller) updateSadObject(old, new interface{}) {
+	oldSad, err := utils.GetSubjectAccessDelegationObject(old)
+	if err != nil {
+		c.log.Errorf("unable to decode old sad from update: %v", err)
+		return
+	}
+	newSad, err := utils.GetSubjectAccessDelegationObject(new)
+	if err != nil {
+		c.log.Errorf("unable to decode new sad from update: %v", err)
+		return
+	}
+
+	delegation, ok := c.delegations[oldSad.Name]
+	if !ok {
+		c.log.Errorf("unable to find old delegation from old in update '%s'", oldSad.Name)
+		return
+	}
+
+	if err := delegation.UpdateSadObject(newSad); err != nil {
+		c.log.Errorf("error during update of Subject Access Delegation object: %v", err)
+		return
+	}
+
+	c.log.Infof("Subject Access Delegation '%s' Successfully Updated!")
 }
 
 func (c *Controller) updateStateFromAPI() error {

@@ -6,6 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+
+	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 )
 
 type Controller interface {
@@ -36,6 +38,7 @@ type SubjectAccessDelegation interface {
 	UpdateRoleBinding(old, new Binding) error
 	DeleteRoleBinding(delBining Binding) error
 	BindingSubjects() []rbacv1.Subject
+	UpdateSadObject(sad *authzv1alpha1.SubjectAccessDelegation) error
 
 	SeenUid(uid types.UID) bool
 	DeletedUid(uid types.UID) bool

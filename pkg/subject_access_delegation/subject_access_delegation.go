@@ -103,6 +103,13 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		if err != nil {
 			return false, err
 		}
+
+		revert, ok := <-s.revert
+		if ok && revert {
+			i -= 1
+			continue
+		}
+
 		if closed {
 			s.log.Debugf("A Trigger was found closed, exiting.")
 			return true, nil
@@ -127,13 +134,24 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 				return false, err
 			}
 
-			closed, err = s.ActivateDeletionTriggers()
-			if err != nil {
-				return false, err
-			}
-			if closed {
-				s.log.Debugf("A Trigger was found closed, exiting.")
-				return true, nil
+			revert := true
+
+			for revert {
+				closed, err = s.ActivateDeletionTriggers()
+				if err != nil {
+					return false, err
+				}
+
+				revert = false
+				r, ok := <-s.revert
+				if ok {
+					revert = r
+				}
+
+				if !revert && closed {
+					s.log.Debugf("A Trigger was found closed, exiting.")
+					return true, nil
+				}
 			}
 
 			if err := s.DeleteRoleBindings(); err != nil {

@@ -8,6 +8,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+
+	authzv1alpha1 "github.com/joshvanl/k8s-subject-access-delegation/pkg/apis/authz/v1alpha1"
 )
 
 func GetPodObject(obj interface{}) (*corev1.Pod, error) {
@@ -206,4 +208,26 @@ func GetClusterRoleBindingObject(obj interface{}) (*rbacv1.ClusterRoleBinding, e
 	}
 
 	return binding, nil
+}
+
+func GetSubjectAccessDelegationObject(obj interface{}) (*authzv1alpha1.SubjectAccessDelegation, error) {
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return nil, errors.New("error decoding object, invalid type")
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			return nil, errors.New("error decoding object tombstone, invalid type")
+		}
+	}
+
+	sad, ok := object.(*authzv1alpha1.SubjectAccessDelegation)
+	if !ok {
+		return nil, errors.New("failed to covert object to Subject Accesss Delegation type")
+	}
+
+	return sad, nil
 }
