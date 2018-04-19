@@ -74,7 +74,7 @@ func (s *ServiceAccount) updateRoleBinding(oldObj, newObj interface{}) {
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.bindingContainsSubject(oldRoleBinding) || !s.seenUID(oldRoleBinding.UID) {
+	if !s.bindingContainsSubject(oldRoleBinding) || !s.seenUID(oldRoleBinding.UID) || !s.changedBinding(oldRoleBinding, newRoleBinding) {
 		return
 	}
 
@@ -157,7 +157,7 @@ func (s *ServiceAccount) updateClusterRoleBinding(oldObj, newObj interface{}) {
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !s.clusterBindingContainsSubject(oldClusterRoleBinding) || !s.seenUID(oldClusterRoleBinding.UID) {
+	if !s.clusterBindingContainsSubject(oldClusterRoleBinding) || !s.seenUID(oldClusterRoleBinding.UID) || !s.changedClusterBinding(oldClusterRoleBinding, newClusterRoleBinding) {
 		return
 	}
 
@@ -235,6 +235,60 @@ func (s *ServiceAccount) seenUID(uid types.UID) bool {
 	}
 
 	return b
+}
+
+func (s *ServiceAccount) changedBinding(old, new *rbacv1.RoleBinding) bool {
+	if old.Name != new.Name || old.Namespace != new.Namespace {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
+}
+
+func (s *ServiceAccount) changedClusterBinding(old, new *rbacv1.ClusterRoleBinding) bool {
+	if old.Name != new.Name {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
 }
 
 func (s *ServiceAccount) addUID(uid types.UID) {

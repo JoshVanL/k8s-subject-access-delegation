@@ -3,7 +3,6 @@ package subject_access_delegation
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -79,19 +78,23 @@ func New(controller interfaces.Controller,
 	}
 }
 
-func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
+func (s *SubjectAccessDelegation) Delegate() (closed bool, initError bool, err error) {
+	initError = true
 
 	s.sad.Status.Processed = true
 	if err := s.updateRemoteSAD(); err != nil {
-		return false, fmt.Errorf("failed to set SAD Processed to true: %v", err)
+		return false, initError, fmt.Errorf("failed to set SAD Processed to true: %v", err)
 	}
 
 	for i := s.sad.Status.Iteration; i < s.Repeat(); i++ {
+		if i > 0 {
+			initError = false
+		}
 
 		s.isActive = false
 
 		if err := s.updateLocalSAD(); err != nil {
-			return false, err
+			return false, initError, err
 		}
 
 		s.log.Infof("Subject Access Delegation '%s' (%d/%d)", s.Name(), i+1, s.Repeat())
@@ -99,12 +102,12 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 		s.triggered = false
 
 		if err := s.InitDelegation(); err != nil {
-			return false, fmt.Errorf("error initiating Subject Access Delegation: %v", err)
+			return false, initError, fmt.Errorf("error initiating Subject Access Delegation: %v", err)
 		}
 
 		closed, err := s.ActivateTriggers()
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 
 		revert, ok := <-s.revert
@@ -115,63 +118,45 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
 		if closed {
 			s.log.Debugf("A Trigger was found closed, exiting.")
-			return true, nil
+			return true, false, nil
 		}
 
 		s.isActive = true
 
 		if err := s.ApplyDelegation(); err != nil {
-			return false, fmt.Errorf("failed to apply delegation: %v", err)
+			return false, false, fmt.Errorf("failed to apply delegation: %v", err)
 		}
 
-		skip := false
-		for _, trigger := range s.sad.Spec.DeletionTriggers {
-			if trigger.Kind == "Time" && strings.ToLower(trigger.Value) == "forever" {
-				skip = true
-				break
-			}
-		}
-
-		if !skip {
+		revert = true
+		for revert {
 			if err := s.BuildDeletionTriggers(); err != nil {
-				return false, err
+				return false, false, err
 			}
 
-			revert := true
-
-			for revert {
-				closed, err = s.ActivateDeletionTriggers()
-				if err != nil {
-					return false, err
-				}
-
-				revert = false
-				r, ok := <-s.revert
-				if ok {
-					revert = r
-				}
-
-				if !revert && closed {
-					s.log.Debugf("A Trigger was found closed, exiting.")
-					return true, nil
-				}
+			closed, err = s.ActivateDeletionTriggers()
+			if err != nil {
+				return false, false, err
 			}
 
-			if err := s.DeleteRoleBindings(); err != nil {
-				return false, err
+			revert = false
+			r, ok := <-s.revert
+			if ok {
+				revert = r
 			}
 
-			// if it's the last iteration, wait here 'forver' till deletion
-		} else {
-			if i == s.Repeat()-1 {
-				<-s.stopCh
+		}
 
-				return true, nil
-			}
+		if closed {
+			s.log.Debugf("A Deletion Trigger was found closed, exiting.")
+			return true, false, nil
+		}
+
+		if err := s.DeleteRoleBindings(); err != nil {
+			return false, false, err
 		}
 
 		if err := s.updateInteration(i + 1); err != nil {
-			return false, err
+			return false, false, err
 
 		}
 
@@ -179,7 +164,7 @@ func (s *SubjectAccessDelegation) Delegate() (closed bool, err error) {
 
 	s.log.Infof("Subject Access Delegation '%s' has completed", s.Name())
 
-	return false, nil
+	return false, false, nil
 }
 
 func (s *SubjectAccessDelegation) InitDelegation() error {
@@ -198,6 +183,12 @@ func (s *SubjectAccessDelegation) InitDelegation() error {
 	}
 
 	s.bindingSubjects = s.buildDestinationSubjects()
+
+	if result.ErrorOrNil() != nil {
+		if err := s.Delete(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
 
 	return result.ErrorOrNil()
 }
@@ -255,6 +246,8 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 				result = multierror.Append(result, err)
 			}
 		}
+		s.triggers = []interfaces.Trigger{}
+		s.deletionTriggers = []interfaces.Trigger{}
 	}
 
 	if sad.Spec.OriginSubject.Name == s.sad.Spec.OriginSubject.Name && sad.Spec.OriginSubject.Kind == s.sad.Spec.OriginSubject.Kind {
@@ -284,7 +277,7 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 		return false, nil
 	}
 
-	if s.isActive && subjectChanged {
+	if s.isActive {
 		if err := s.DeleteRoleBindings(); err != nil {
 			result = multierror.Append(result, err)
 		}
@@ -292,37 +285,27 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 
 	s.sad = sad.DeepCopy()
 
-	if subjectChanged {
-		if err := s.GetSubjects(); err != nil {
-			result = multierror.Append(result, err)
-		}
+	if err := s.GetSubjects(); err != nil {
+		result = multierror.Append(result, err)
 	}
 
-	if triggerChanged {
-		if err := s.BuildTriggers(); err != nil {
-			result = multierror.Append(result, err)
-		}
-		if err := s.BuildDeletionTriggers(); err != nil {
-			result = multierror.Append(result, err)
-		}
-	}
-
-	if s.isActive && subjectChanged {
+	if s.isActive {
 		if err := s.ApplyDelegation(); err != nil {
 			result = multierror.Append(result, err)
 		}
-	}
-
-	if triggerChanged {
-		s.revert <- true
-	} else {
-		s.revert <- false
+		if triggerChanged {
+			s.revert <- triggerChanged
+		}
 	}
 
 	close(s.revert)
 	s.mx.Unlock()
 
-	return true, result.ErrorOrNil()
+	if result.ErrorOrNil() != nil {
+		return false, result.ErrorOrNil()
+	}
+
+	return true, nil
 }
 
 func (s *SubjectAccessDelegation) ApplyDelegation() error {

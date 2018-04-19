@@ -34,7 +34,7 @@ type SubjectAccessDelegation interface {
 	DestinationSubjects() []DestinationSubject
 	Triggers() []Trigger
 
-	Delegate() (closed bool, err error)
+	Delegate() (closed bool, initError bool, err error)
 	DeleteRoleBindings() error
 	Delete() error
 

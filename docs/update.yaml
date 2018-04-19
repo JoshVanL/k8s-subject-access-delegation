@@ -9,11 +9,11 @@ spec:
     kind: ServiceAccount
     name: test-sa
   destinationSubjects:
-  - kind: Users
+  - kind: User
     name: user
   triggers:
   - kind: AddPod
-    value: "*"
+    value: nginx
   deletionTriggers:
   - kind: Time
     value: 500s

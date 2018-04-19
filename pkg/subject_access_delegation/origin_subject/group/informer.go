@@ -74,7 +74,7 @@ func (g *Group) updateRoleBindingOject(oldObj, newObj interface{}) {
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !g.bindingContainsSubject(oldRoleBinding) || !g.seenUID(oldRoleBinding.UID) {
+	if !g.bindingContainsSubject(oldRoleBinding) || !g.seenUID(oldRoleBinding.UID) || !g.changedBinding(oldRoleBinding, newRoleBinding) {
 		return
 	}
 
@@ -157,7 +157,7 @@ func (g *Group) updateClusterRoleBindingOject(oldObj, newObj interface{}) {
 	}
 
 	// if we arn't referenced or haven't seen this binding before, return
-	if !g.clusterBindingContainsSubject(oldClusterRoleBinding) || !g.seenUID(oldClusterRoleBinding.UID) {
+	if !g.clusterBindingContainsSubject(oldClusterRoleBinding) || !g.seenUID(oldClusterRoleBinding.UID) || !g.changedClusterBinding(oldClusterRoleBinding, newClusterRoleBinding) {
 		return
 	}
 
@@ -239,4 +239,58 @@ func (g *Group) seenUID(uid types.UID) bool {
 
 func (g *Group) addUID(uid types.UID) {
 	g.uids[uid] = true
+}
+
+func (g *Group) changedBinding(old, new *rbacv1.RoleBinding) bool {
+	if old.Name != new.Name || old.Namespace != new.Namespace {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
+}
+
+func (g *Group) changedClusterBinding(old, new *rbacv1.ClusterRoleBinding) bool {
+	if old.Name != new.Name {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
 }

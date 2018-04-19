@@ -74,7 +74,7 @@ func (u *User) updateRoleBinding(oldObj, newObj interface{}) {
 	}
 
 	// If we arn't referenced or haven't seen this binding before, return
-	if !u.bindingContainsSubject(oldRoleBinding) || !u.seenUID(oldRoleBinding.UID) {
+	if !u.bindingContainsSubject(oldRoleBinding) || !u.seenUID(oldRoleBinding.UID) || !u.changedBinding(oldRoleBinding, newRoleBinding) {
 		return
 	}
 
@@ -153,7 +153,7 @@ func (u *User) updateClusterRoleBinding(oldObj, newObj interface{}) {
 	}
 
 	// If we arn't referenced or haven't seen this binding before, return
-	if !u.clusterBindingContainsSubject(oldClusterRoleBinding) || !u.seenUID(oldClusterRoleBinding.UID) {
+	if !u.clusterBindingContainsSubject(oldClusterRoleBinding) || !u.seenUID(oldClusterRoleBinding.UID) || !u.changedClusterBinding(oldClusterRoleBinding, newClusterRoleBinding) {
 		return
 	}
 
@@ -235,4 +235,58 @@ func (u *User) seenUID(uid types.UID) bool {
 
 func (u *User) addUID(uid types.UID) {
 	u.uids[uid] = true
+}
+
+func (u *User) changedBinding(old, new *rbacv1.RoleBinding) bool {
+	if old.Name != new.Name || old.Namespace != new.Namespace {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
+}
+
+func (u *User) changedClusterBinding(old, new *rbacv1.ClusterRoleBinding) bool {
+	if old.Name != new.Name {
+		return false
+	}
+
+	if old.RoleRef.Name != new.RoleRef.Name || old.RoleRef.Kind != new.RoleRef.Kind {
+		return false
+	}
+
+	var changed bool
+	for _, oldS := range old.Subjects {
+		changed = true
+		for _, newS := range new.Subjects {
+			if oldS.Name == newS.Name && oldS.Kind == newS.Kind {
+				changed = false
+				break
+			}
+		}
+
+		if changed {
+			break
+		}
+	}
+
+	return changed
 }

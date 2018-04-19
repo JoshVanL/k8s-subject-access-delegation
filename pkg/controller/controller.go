@@ -284,21 +284,16 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 		return err
 	}
 
-	if err := delegation.InitDelegation(); err != nil {
-		var result *multierror.Error
-		result = multierror.Append(err, result)
-
-		if err := c.manuallyDeleteSad(delegation.SAD()); err != nil {
-			result = multierror.Append(result, err)
-		}
-
-		return fmt.Errorf("error initiating Subject Access Delegation: %s", result.Error())
-	}
-
 	go func() {
-		closed, err := delegation.Delegate()
+		closed, initError, err := delegation.Delegate()
 		if err != nil {
-			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
+			if initError {
+				if err := c.manuallyDeleteSad(delegation.SAD()); err != nil {
+					c.log.Errorf("error initiating Subject Access Delegation: %v", err)
+				}
+			} else {
+				c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
+			}
 		}
 
 		delegation.DeleteRoleBindings()
