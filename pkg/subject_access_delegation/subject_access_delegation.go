@@ -184,12 +184,6 @@ func (s *SubjectAccessDelegation) InitDelegation() error {
 
 	s.bindingSubjects = s.buildDestinationSubjects()
 
-	if result.ErrorOrNil() != nil {
-		if err := s.Delete(); err != nil {
-			result = multierror.Append(result, err)
-		}
-	}
-
 	return result.ErrorOrNil()
 }
 
@@ -659,7 +653,9 @@ func (s *SubjectAccessDelegation) Delete() error {
 	}
 
 	s.log.Debugf("Attempting to delete delegation '%s' Origin Subject", s.Name())
-	s.OriginSubject().Delete()
+	if s.OriginSubject() != nil {
+		s.OriginSubject().Delete()
+	}
 
 	s.log.Debugf("Attempting to delete delegation '%s' triggers", s.Name())
 	for _, trigger := range s.triggers {

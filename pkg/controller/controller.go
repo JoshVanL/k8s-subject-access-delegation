@@ -287,20 +287,21 @@ func (c *Controller) ProcessDelegation(sad *authzv1alpha1.SubjectAccessDelegatio
 	go func() {
 		closed, initError, err := delegation.Delegate()
 		if err != nil {
+			c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
 			if initError {
+				c.delegations[delegation.Name()] = delegation
 				if err := c.manuallyDeleteSad(delegation.SAD()); err != nil {
-					c.log.Errorf("error initiating Subject Access Delegation: %v", err)
+					c.log.Errorf("error deleting Subject Access Delegation: %v", err)
 				}
-			} else {
-				c.log.Errorf("Error processing Subject Access Delegation '%s': %v", delegation.Name(), err)
+				return
 			}
 		}
 
 		delegation.DeleteRoleBindings()
 
 		if !closed {
-			if err := c.manuallyDeleteSad(sad); err != nil {
-				c.log.Error(err)
+			if err := c.manuallyDeleteSad(delegation.SAD()); err != nil {
+				c.log.Errorf("error deleting Subject Access Delegation: %v", err)
 			}
 		}
 
@@ -382,6 +383,8 @@ func (c *Controller) deleteSad(obj interface{}) {
 	}
 
 	name := object.GetName()
+
+	c.log.Infof("Controller received delete from API server '%s'", name)
 
 	delegation, ok := c.delegations[name]
 	if !ok {
