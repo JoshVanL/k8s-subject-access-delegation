@@ -138,6 +138,42 @@ testing_blocks:
         split: 0
         match: "test-group-test-sa-default-pod-reader"
 
+  - name: "Updating SAD origin"
+    commands:
+    - program: "kubectl"
+      arguments: "delete sad --all"
+      delay: 1
+    - program: "kubectl"
+      arguments: "delete rolebindings --all"
+      delay: 1
+    - program: "kubectl"
+      arguments: "create -f docs/rolebinding2.yaml"
+      delay: 2
+    - program: "kubectl"
+      arguments: "apply -f docs/update.yaml"
+      delay: 3
+    - program: "kubectl"
+      arguments: "get rolebindings"
+      delay: 3
+      split_string_conditions:
+      - line: 3
+        split: 0
+        match: "test-update-test-sa-default-pod-reader"
+    - program: "sed"
+      arguments: "-i s/test-sa/test-sa2/g docs/update.yaml"
+    - program: "kubectl"
+      arguments: "apply -f docs/update.yaml"
+      delay: 5
+    - program: "kubectl"
+      arguments: "get rolebindings"
+      delay: 3
+      split_string_conditions:
+      - line: 3
+        split: 0
+        match: "test-update-test-sa2-default-pod-logs-reader"
+    - program: "sed"
+      arguments: "-i s/test-sa2/test-sa/g docs/update.yaml"
+
   - name: "Cleaning up"
     commands:
     - program: "minikube"

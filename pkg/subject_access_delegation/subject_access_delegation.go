@@ -380,6 +380,10 @@ func (s *SubjectAccessDelegation) createRoleBinding(binding interfaces.Binding) 
 }
 
 func (s *SubjectAccessDelegation) deleteRoleBinding(binding interfaces.Binding) error {
+	if binding == nil {
+		return nil
+	}
+
 	if b, ok := s.roleBindings[binding.Name()]; !ok || b == nil {
 		s.roleBindings[binding.Name()] = nil
 

@@ -12,8 +12,8 @@ spec:
   - kind: User
     name: user
   triggers:
-  - kind: AddPod
-    value: nginx
+  - kind: Time
+    value: now
   deletionTriggers:
   - kind: Time
     value: 500s
