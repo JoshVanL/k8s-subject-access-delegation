@@ -102,10 +102,10 @@ type fakeServiceAccount struct {
 	fakeClusterRoleBindingsInterface *mocks.MockClusterRoleBindingInterface
 	fakeServiceAccountInterface      *mocks.MockServiceAccountInterface
 
-	fakeBindingInformer *mocks.MockRoleBindingInformer
+	fakeBindingInformer        *mocks.MockRoleBindingInformer
+	fakeClusterBindingInformer *mocks.MockClusterRoleBindingInformer
 
-	fakeClusterRoleBindingsInterface *mocks.MockClusterRoleBindingInterface
-	fakeSharedIndexInformer          *mocks.MockSharedIndexInformer
+	fakeSharedIndexInformer *mocks.MockSharedIndexInformer
 }
 
 func newFakeServiceAccount(t *testing.T) *fakeServiceAccount {

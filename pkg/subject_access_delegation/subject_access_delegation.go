@@ -677,7 +677,6 @@ func (s *SubjectAccessDelegation) Delete() error {
 
 func (s *SubjectAccessDelegation) AddRoleBinding(addBinding interfaces.Binding) error {
 	if s.triggered {
-		// We need to create a rolebinding for sad, not the origin subject one
 		if err := s.createRoleBinding(addBinding); err != nil {
 			return err
 		}
@@ -686,8 +685,6 @@ func (s *SubjectAccessDelegation) AddRoleBinding(addBinding interfaces.Binding) 
 	return nil
 }
 
-// This is a bit wrong, although a role ref may be duped and this is fine, the
-// names will be wrong
 func (s *SubjectAccessDelegation) DeleteRoleBinding(delBinding interfaces.Binding) error {
 	if s.triggered {
 
@@ -700,8 +697,6 @@ func (s *SubjectAccessDelegation) DeleteRoleBinding(delBinding interfaces.Bindin
 	return nil
 }
 
-// Here we will want to delete all the new bindings THEN delete all the old or
-// via versa
 func (s *SubjectAccessDelegation) UpdateRoleBinding(old, new interfaces.Binding) error {
 	var result *multierror.Error
 
