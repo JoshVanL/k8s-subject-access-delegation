@@ -174,6 +174,21 @@ testing_blocks:
     - program: "sed"
       arguments: "-i s/test-sa2/test-sa/g docs/update.yaml"
 
+  - name: "Test clean up"
+    commands:
+    - program: "kubectl"
+      arguments: "delete sad --all"
+      delay: 1
+    - program: "kubectl"
+      arguments: "delete rolebindings --all"
+      delay: 1
+    - program: "kubectl"
+      arguments: "get rolebindings"
+      delay: 1
+      string_conditions:
+          - line: 0
+            match: "No resources found."
+
   - name: "Cleaning up"
     commands:
     - program: "minikube"
