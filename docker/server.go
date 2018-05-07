@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -21,26 +20,31 @@ const service = "pod-server-svc"
 
 func main() {
 	// Setup listener
-	listener, err := net.Listen(kind, addr)
-	if err != nil {
-		fmt.Println("Error listening:", err.Error())
-		os.Exit(1)
-	}
-	defer listener.Close()
+	//listener, err := net.Listen(kind, addr)
+	//if err != nil {
+	//	fmt.Println("Error listening:", err.Error())
+	//	os.Exit(1)
+	//}
+	//defer listener.Close()
 
-	fmt.Println("Listening on " + addr)
+	//fmt.Println("Listening on " + addr)
 
 	for {
-		// Acc connection
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
-		}
+		//// Acc connection
+		//conn, err := listener.Accept()
+		//if err != nil {
+		//	fmt.Println("Error accepting: ", err.Error())
+		//}
 
-		fmt.Printf("Connection opened: %v\n", conn.LocalAddr().String())
+		//fmt.Printf("Connection opened: %v\n", conn.LocalAddr().String())
 
-		// Handle connection -- concurrent
-		go handleReq(conn)
+		//// Handle connection -- concurrent
+		//go handleReq(conn)
+
+		go get("pod-server-pod")
+		//if _, _, err := get(os.Args[1]); err != nil {
+		//panic(err)
+		time.Sleep(time.Second)
 	}
 }
 

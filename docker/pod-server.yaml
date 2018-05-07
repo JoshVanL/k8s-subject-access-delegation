@@ -11,6 +11,39 @@ kind: ServiceAccount
 metadata:
  name: my-service-account
  namespace: default
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-server-svc
+  labels:
+    app: pod-server
+spec:
+  selector:
+    app: pod-server
+  ports:
+  - port: 8800
+    targetPort: 8800
+    protocol: TCP
+  type: LoadBalancer
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-server-svc2
+  labels:
+    app: pod-server2
+spec:
+  selector:
+    app: pod-server2
+  ports:
+  - port: 8800
+    targetPort: 8800
+    protocol: TCP
+  type: LoadBalancer
 
 ---
 
@@ -32,16 +65,1700 @@ spec:
 ---
 
 apiVersion: v1
-kind: Service
+kind: Pod
 metadata:
-  name: pod-server-svc
-  labels:
-    app: pod-server
+ name: pod-server-pod2
+ labels:
+   app: pod-server
 spec:
-  selector:
-    app: pod-server
-  ports:
-  - port: 8800
-    targetPort: 8800
-    protocol: TCP
-  type: LoadBalancer
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod2
+ labels:
+   app: pod-server2
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod3
+ labels:
+   app: pod-server3
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod4
+ labels:
+   app: pod-server4
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod5
+ labels:
+   app: pod-server5
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod6
+ labels:
+   app: pod-server6
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod7
+ labels:
+   app: pod-server7
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod8
+ labels:
+   app: pod-server8
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod9
+ labels:
+   app: pod-server9
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod10
+ labels:
+   app: pod-server10
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod11
+ labels:
+   app: pod-server11
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod12
+ labels:
+   app: pod-server12
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod13
+ labels:
+   app: pod-server13
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod14
+ labels:
+   app: pod-server14
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod15
+ labels:
+   app: pod-server15
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod16
+ labels:
+   app: pod-server16
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod17
+ labels:
+   app: pod-server17
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod18
+ labels:
+   app: pod-server18
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod19
+ labels:
+   app: pod-server19
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod20
+ labels:
+   app: pod-server20
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod21
+ labels:
+   app: pod-server21
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod22
+ labels:
+   app: pod-server22
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod23
+ labels:
+   app: pod-server23
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod24
+ labels:
+   app: pod-server24
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod25
+ labels:
+   app: pod-server25
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod26
+ labels:
+   app: pod-server26
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod27
+ labels:
+   app: pod-server27
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod28
+ labels:
+   app: pod-server28
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod29
+ labels:
+   app: pod-server29
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod30
+ labels:
+   app: pod-server30
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod31
+ labels:
+   app: pod-server31
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod32
+ labels:
+   app: pod-server32
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod33
+ labels:
+   app: pod-server33
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod34
+ labels:
+   app: pod-server34
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod35
+ labels:
+   app: pod-server35
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod36
+ labels:
+   app: pod-server36
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod37
+ labels:
+   app: pod-server37
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod38
+ labels:
+   app: pod-server38
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod39
+ labels:
+   app: pod-server39
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod40
+ labels:
+   app: pod-server40
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod41
+ labels:
+   app: pod-server41
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod42
+ labels:
+   app: pod-server42
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod43
+ labels:
+   app: pod-server43
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod44
+ labels:
+   app: pod-server44
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod45
+ labels:
+   app: pod-server45
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod46
+ labels:
+   app: pod-server46
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod47
+ labels:
+   app: pod-server47
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod48
+ labels:
+   app: pod-server48
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod49
+ labels:
+   app: pod-server49
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod50
+ labels:
+   app: pod-server50
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod51
+ labels:
+   app: pod-server51
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod52
+ labels:
+   app: pod-server52
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod53
+ labels:
+   app: pod-server53
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod54
+ labels:
+   app: pod-server54
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod55
+ labels:
+   app: pod-server55
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod56
+ labels:
+   app: pod-server56
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod57
+ labels:
+   app: pod-server57
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod58
+ labels:
+   app: pod-server58
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod59
+ labels:
+   app: pod-server59
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod60
+ labels:
+   app: pod-server60
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod61
+ labels:
+   app: pod-server61
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod62
+ labels:
+   app: pod-server62
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod63
+ labels:
+   app: pod-server63
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod64
+ labels:
+   app: pod-server64
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod65
+ labels:
+   app: pod-server65
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod66
+ labels:
+   app: pod-server66
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod67
+ labels:
+   app: pod-server67
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod68
+ labels:
+   app: pod-server68
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod69
+ labels:
+   app: pod-server69
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: pod-server-pod70
+ labels:
+   app: pod-server70
+spec:
+ serviceAccountName: my-service-account
+ containers:
+     - name: pod-server
+       image: pod-server
+       imagePullPolicy: IfNotPresent
+       ports:
+           - containerPort: 8800
+
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod71
+             #             # labels:
+             #             #   app: pod-server71
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod72
+             #             # labels:
+             #             #   app: pod-server72
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod73
+             #             # labels:
+             #             #   app: pod-server73
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod74
+             #             # labels:
+             #             #   app: pod-server74
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod75
+             #             # labels:
+             #             #   app: pod-server75
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod76
+             #             # labels:
+             #             #   app: pod-server76
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod77
+             #             # labels:
+             #             #   app: pod-server77
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod78
+             #             # labels:
+             #             #   app: pod-server78
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod79
+             #             # labels:
+             #             #   app: pod-server79
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod80
+             #             # labels:
+             #             #   app: pod-server80
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod81
+             #             # labels:
+             #             #   app: pod-server81
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod82
+             #             # labels:
+             #             #   app: pod-server82
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod83
+             #             # labels:
+             #             #   app: pod-server83
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod84
+             #             # labels:
+             #             #   app: pod-server84
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod85
+             #             # labels:
+             #             #   app: pod-server85
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod86
+             #             # labels:
+             #             #   app: pod-server86
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod87
+             #             # labels:
+             #             #   app: pod-server87
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod88
+             #             # labels:
+             #             #   app: pod-server88
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod89
+             #             # labels:
+             #             #   app: pod-server89
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod90
+             #             # labels:
+             #             #   app: pod-server90
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod91
+             #             # labels:
+             #             #   app: pod-server91
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod92
+             #             # labels:
+             #             #   app: pod-server92
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod93
+             #             # labels:
+             #             #   app: pod-server93
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod94
+             #             # labels:
+             #             #   app: pod-server94
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod95
+             #             # labels:
+             #             #   app: pod-server95
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod96
+             #             # labels:
+             #             #   app: pod-server96
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod97
+             #             # labels:
+             #             #   app: pod-server97
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod98
+             #             # labels:
+             #             #   app: pod-server98
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod99
+             #             # labels:
+             #             #   app: pod-server99
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800
+             #             #
+             #             #---
+             #             #
+             #             #apiVersion: v1
+             #             #kind: Pod
+             #             #metadata:
+             #             # name: pod-server-pod100
+             #             # labels:
+             #             #   app: pod-server100
+             #             #spec:
+             #             # serviceAccountName: my-service-account
+             #             # containers:
+             #             #     - name: pod-server
+             #             #       image: pod-server
+             #             #       imagePullPolicy: IfNotPresent
+             #             #       ports:
+             #             #           - containerPort: 8800

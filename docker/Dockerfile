@@ -1,7 +1,9 @@
 FROM centos:latest
 
-ADD server /opt/server
+ADD server /server
+
+RUN chmod +x /server
 
 EXPOSE 8800
 
-CMD ["/opt/server"]
+CMD ["/server"]

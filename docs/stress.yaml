@@ -1,19 +1,19 @@
 apiVersion: authz.sad/v1alpha1
 kind: SubjectAccessDelegation
 metadata:
-  name: test-pod-add
+  name: stress
   namespace: default
 spec:
   repeat: 1
   originSubject:
-    kind: Role
-    name: pod-reader
+    kind: ServiceAccount
+    name: origin-service-account
   destinationSubjects:
-  - kind: ServiceAccount
-    name: test-sa
+  - kind: User
+    name: user
   triggers:
-  - kind: AddPod
-    value: n*
+  - kind: Time
+    value: now
   deletionTriggers:
   - kind: Time
-    value: 5s
+    value: now
