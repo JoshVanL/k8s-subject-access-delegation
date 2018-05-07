@@ -193,7 +193,7 @@ func (s *SubjectAccessDelegation) UpdateSadObject(sad *authzv1alpha1.SubjectAcce
 	s.mx.Lock()
 	s.revert = make(chan bool)
 
-	triggerChanged := true
+	triggerChanged := false
 	subjectChanged := true
 
 	for _, newTrigger := range sad.Spec.EventTriggers {
